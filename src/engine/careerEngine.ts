@@ -57,29 +57,55 @@ function leagueForAge(age: number, currentLeague: League, hasBeenDrafted: boolea
   return 'lycee';
 }
 
-export function createNewCareer(id: string, playerName: string, archetype: Archetype, position: Position): Career {
+export type CareerPath = 'full' | 'skipToNba';
+
+export function createNewCareer(
+  id: string,
+  playerName: string,
+  archetype: Archetype,
+  position: Position,
+  path: CareerPath = 'full',
+): Career {
   const now = Date.now();
-  const startingTeam = HIGH_SCHOOL_TEAM_POOL[randInt(0, HIGH_SCHOOL_TEAM_POOL.length - 1)];
-  const stats = initialStats(ARCHETYPE_BOOSTS[archetype]);
+  const skip = path === 'skipToNba';
+  const startingTeam = skip
+    ? NBA_TEAM_POOL[randInt(0, NBA_TEAM_POOL.length - 1)]
+    : HIGH_SCHOOL_TEAM_POOL[randInt(0, HIGH_SCHOOL_TEAM_POOL.length - 1)];
+  let stats = initialStats(ARCHETYPE_BOOSTS[archetype]);
+  // Going straight to the pros skips the high-school grind, so the prospect
+  // arrives already NBA-caliber — but without the seasons of choices that
+  // would normally have shaped (and potentially refined) those stats.
+  if (skip) {
+    stats = applyEffects(stats, {
+      technique: 20,
+      physique: 15,
+      mental: 10,
+      iqBasket: 10,
+      reputation: 30,
+      popularite: 25,
+      tempsDeJeu: 15,
+    });
+  }
+  const age = skip ? 19 : 15;
   const career: Career = {
     id,
     createdAt: now,
     updatedAt: now,
     playerName,
-    age: 15,
+    age,
     archetype,
     position,
     season: 1,
     eventInSeasonIndex: 0,
     eventsPerSeason: EVENTS_PER_SEASON,
     stats,
-    argent: 200,
-    valeurMarchande: computeMarketValue(stats, 15, 'lycee'),
+    argent: skip ? 50000 : 200,
+    valeurMarchande: computeMarketValue(stats, age, skip ? 'nba' : 'lycee'),
     currentTeam: startingTeam,
     history: [],
     trophies: [],
     pressArticles: [],
-    seenEventIds: [],
+    seenEventIds: skip ? [...DRAFT_SEQUENCE] : [],
     usedThisSeasonIds: [],
     pendingDelayed: [],
     choiceLog: [],

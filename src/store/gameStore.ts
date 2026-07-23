@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Archetype, Career, Lang, Position, Team } from '../types';
 import {
+  type CareerPath,
   checkEnding,
   createNewCareer,
   EVENTS_PER_SEASON,
@@ -24,7 +25,7 @@ interface GameStore {
   careers: Career[];
   activeCareerId: string | null;
 
-  createCareer: (playerName: string, archetype: Archetype, position: Position) => void;
+  createCareer: (playerName: string, archetype: Archetype, position: Position, path?: CareerPath) => void;
   selectCareer: (id: string) => void;
   deleteCareer: (id: string) => void;
   exitToMenu: () => void;
@@ -60,9 +61,9 @@ export const useGameStore = create<GameStore>()(
       careers: [],
       activeCareerId: null,
 
-      createCareer: (playerName, archetype, position) => {
+      createCareer: (playerName, archetype, position, path = 'full') => {
         const id = uid();
-        const career = createNewCareer(id, playerName || 'Rookie', archetype, position);
+        const career = createNewCareer(id, playerName || 'Rookie', archetype, position, path);
         set((state) => ({ careers: [...state.careers, career], activeCareerId: id }));
       },
 

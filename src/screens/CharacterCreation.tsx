@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Archetype, Position } from '../types';
+import type { CareerPath } from '../engine/careerEngine';
 import { useGameStore } from '../store/gameStore';
 import { useT } from '../i18n/useT';
 import type { DictionaryKey } from '../i18n/dictionary';
@@ -26,15 +27,21 @@ const POSITIONS: { value: Position; labelKey: DictionaryKey }[] = [
   { value: 'C', labelKey: 'positionC' },
 ];
 
+const PATHS: { value: CareerPath; labelKey: DictionaryKey; descKey: DictionaryKey }[] = [
+  { value: 'full', labelKey: 'createPathFull', descKey: 'createPathFullDesc' },
+  { value: 'skipToNba', labelKey: 'createPathSkip', descKey: 'createPathSkipDesc' },
+];
+
 export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProps) {
   const t = useT();
   const createCareer = useGameStore((s) => s.createCareer);
   const [name, setName] = useState('');
   const [archetype, setArchetype] = useState<Archetype>('scorer');
   const [position, setPosition] = useState<Position>('SG');
+  const [path, setPath] = useState<CareerPath>('full');
 
   const handleStart = () => {
-    createCareer(name.trim(), archetype, position);
+    createCareer(name.trim(), archetype, position, path);
     onCreated();
   };
 
@@ -46,7 +53,7 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
         className="w-full max-w-md rounded-3xl border border-court-600/60 bg-court-800/90 px-6 py-8 shadow-2xl shadow-black/40"
       >
         <h1 className="mb-1 text-xl font-bold text-slate-50">{t('createTitle')}</h1>
-        <p className="mb-6 text-xs text-slate-400">{t('createAge')}</p>
+        <p className="mb-6 text-xs text-slate-400">{path === 'full' ? t('createAge') : t('createPathSkipDesc')}</p>
 
         <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">{t('createNameLabel')}</label>
         <input
@@ -87,6 +94,24 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
               }`}
             >
               {p.value}
+            </button>
+          ))}
+        </div>
+
+        <label className="mb-2 block text-xs uppercase tracking-wide text-slate-400">{t('createPathLabel')}</label>
+        <div className="mb-7 grid grid-cols-1 gap-2">
+          {PATHS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setPath(p.value)}
+              className={`rounded-xl border px-4 py-2.5 text-left transition-colors ${
+                path === p.value
+                  ? 'border-gold-400 bg-gold-400/10'
+                  : 'border-court-600 bg-court-700/40 hover:border-court-500'
+              }`}
+            >
+              <div className={`text-sm font-semibold ${path === p.value ? 'text-gold-300' : 'text-slate-300'}`}>{t(p.labelKey)}</div>
+              <div className="text-xs text-slate-400">{t(p.descKey)}</div>
             </button>
           ))}
         </div>

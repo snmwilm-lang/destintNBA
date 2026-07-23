@@ -28,6 +28,18 @@ export const dictionary = {
   createStartButton: { fr: 'Commencer la carrière', en: 'Start career' },
   createAge: { fr: '15 ans, dernière année de collège.', en: '15 years old, finishing middle school.' },
 
+  createPathLabel: { fr: 'Point de départ', en: 'Starting point' },
+  createPathFull: { fr: 'Parcours complet', en: 'Full journey' },
+  createPathFullDesc: {
+    fr: 'Dès le lycée à 15 ans : construis ta réputation, vis la draft, façonne ta légende pas à pas.',
+    en: 'Starting in high school at 15: build your reputation, live the draft, shape your legend step by step.',
+  },
+  createPathSkip: { fr: 'Direct en NBA', en: 'Straight to the NBA' },
+  createPathSkipDesc: {
+    fr: "Saute la phase lycée/draft et débarque déjà en NBA à 19 ans, prêt à jouer.",
+    en: 'Skip the high school and draft years and arrive already in the NBA at 19, ready to play.',
+  },
+
   archetypeScorer: { fr: 'Scoreur explosif', en: 'Explosive scorer' },
   archetypePlaymaker: { fr: 'Meneur visionnaire', en: 'Visionary playmaker' },
   archetypeDefender: { fr: 'Défenseur élite', en: 'Elite defender' },
