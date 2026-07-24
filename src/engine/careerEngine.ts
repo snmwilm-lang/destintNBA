@@ -153,6 +153,13 @@ export function createNewCareer(
   return career;
 }
 
+// Olympics and the World Cup are once-every-four-years events, offset from each other like in
+// real international calendars — not something that can come up every single season.
+const QUADRENNIAL_CYCLE: Partial<Record<EventCategory, number>> = {
+  jeuxOlympiques: 0,
+  coupeDuMonde: 2,
+};
+
 function meetsRequirements(event: GameEvent, career: Career): boolean {
   if (event.minAge !== undefined && career.age < event.minAge) return false;
   if (event.maxAge !== undefined && career.age > event.maxAge) return false;
@@ -161,6 +168,8 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
   if (event.leagues && !event.leagues.includes(career.currentTeam.league)) return false;
   if (event.unique && career.seenEventIds.includes(event.id)) return false;
   if (career.usedThisSeasonIds.includes(event.id)) return false;
+  const cycleOffset = QUADRENNIAL_CYCLE[event.category];
+  if (cycleOffset !== undefined && career.season % 4 !== cycleOffset) return false;
   if (event.requirements) {
     for (const req of event.requirements) {
       const val = career.stats[req.stat];
@@ -176,6 +185,12 @@ const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 
 const NBA_SPECIALTY_EVENT_ID = 'nba-arrival-specialty';
 
+const FINALE_EVENT_ID = 'finale-moment-decisif';
+
+export function seasonsPlayedInLeague(career: Career, league: League): number {
+  return career.history.filter((h) => h.league === league).length;
+}
+
 function forcedMilestone(career: Career): GameEvent | null {
   if (career.age >= 18 && career.currentTeam.league === 'lycee') {
     for (const id of DRAFT_SEQUENCE) {
@@ -187,11 +202,22 @@ function forcedMilestone(career: Career): GameEvent | null {
   if (career.currentTeam.league === 'nba' && career.specialty === null && !career.usedThisSeasonIds.includes(NBA_SPECIALTY_EVENT_ID)) {
     return getEvent(NBA_SPECIALTY_EVENT_ID) ?? null;
   }
+  // The career-defining Finals moment is otherwise a rare random draw — guarantee it shows up
+  // as a season closer by year 3 in the league if luck hasn't brought it up already.
+  if (
+    career.currentTeam.league === 'nba' &&
+    !career.seenEventIds.includes(FINALE_EVENT_ID) &&
+    !career.usedThisSeasonIds.includes(FINALE_EVENT_ID) &&
+    seasonsPlayedInLeague(career, 'nba') >= 2 &&
+    career.eventInSeasonIndex === career.eventsPerSeason - 1
+  ) {
+    return getEvent(FINALE_EVENT_ID) ?? null;
+  }
   return null;
 }
 
 /** Categories that should feel more present once the stakes (and the awards race) are real. */
-const BIG_MOMENT_CATEGORIES: EventCategory[] = ['allStar', 'playoffs', 'selectionNationale', 'jeuxOlympiques', 'coupeDuMonde'];
+const BIG_MOMENT_CATEGORIES: EventCategory[] = ['allStar', 'playoffs', 'selectionNationale', 'finale', 'jeuxOlympiques', 'coupeDuMonde'];
 
 function eventWeight(event: GameEvent, career: Career): number {
   const base = event.weight ?? 1;
@@ -287,6 +313,11 @@ function progressStats(career: Career): PlayerStats {
   s.mental = clampStat(s.mental + (career.age <= 26 ? 1 : 0));
   s.forme = clampStat(s.forme + (100 - s.forme) * 0.15);
   s.moral = clampStat(s.moral + (60 - s.moral) * 0.1);
+  // A coach can only ignore genuine quality for so long — minutes drift toward what the
+  // player's actual level (plus standing with the coach) justifies, not just past choices.
+  const skillComposite = (s.technique + s.physique + s.mental + s.iqBasket) / 4;
+  const minutesTarget = Math.min(97, skillComposite * 0.9 + s.reputation * 0.25 + s.relationCoach * 0.15);
+  s.tempsDeJeu = clampStat(s.tempsDeJeu + (minutesTarget - s.tempsDeJeu) * 0.3);
   return s;
 }
 
@@ -331,8 +362,9 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
 
   const scoringSkill = (stats.technique * 0.6 + stats.iqBasket * 0.2 + stats.physique * 0.2) / 100;
   let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 1.45;
-  // Rare career-defining scoring explosion — uncommon, but can push well past the usual ceiling.
-  if (Math.random() < 0.035) points *= randFloat(1.25, 1.7);
+  // A rare career-year bump — this is a SEASON average, so it stays modest even when it lands,
+  // rather than the wild multiplier a single highlight game could get away with.
+  if (Math.random() < 0.04) points *= randFloat(1.05, 1.18);
 
   const reboundSkill = (stats.physique * 0.7 + stats.iqBasket * 0.3) / 100;
   const rebonds = reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45;
@@ -499,12 +531,17 @@ export function generateTransferOffers(career: Career): Team[] {
   return offers;
 }
 
-export function estimateSalary(valeurMarchande: number, team: Team): number {
-  const contractFloor = CONTRACT_SCALE[team.league].min;
-  return Math.max(
-    contractFloor,
-    Math.round(valeurMarchande * (0.85 + (team.salaryBudget / 100) * 0.35) * randFloat(0.92, 1.08)),
-  );
+// Real rookie-scale contracts are set by years of service, not by projected value — a
+// can't-miss rookie still gets paid off this ladder, not a veteran max.
+const NBA_ROOKIE_SCALE = [1_200_000, 2_200_000, 3_400_000, 5_000_000];
+
+export function estimateSalary(valeurMarchande: number, team: Team, nbaServiceYears?: number): number {
+  if (team.league === 'nba' && nbaServiceYears !== undefined && nbaServiceYears < NBA_ROOKIE_SCALE.length) {
+    return NBA_ROOKIE_SCALE[nbaServiceYears];
+  }
+  const { min: contractFloor, max: contractCeiling } = CONTRACT_SCALE[team.league];
+  const raw = valeurMarchande * (0.85 + (team.salaryBudget / 100) * 0.35) * randFloat(0.92, 1.08);
+  return Math.round(Math.max(contractFloor, Math.min(contractCeiling, raw)));
 }
 
 export function simulateSeason(career: Career): { career: Career; result: SeasonResult } {
@@ -516,7 +553,8 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   const { rank, total } = computeClassement(career, statLine.noteMoyenne);
   const trophies = generateTrophies(career, statLine, rank);
   const valeurMarchande = computeMarketValue(stats, career.age, career.currentTeam.league);
-  const salaire = estimateSalary(valeurMarchande, career.currentTeam);
+  const nbaServiceYears = career.currentTeam.league === 'nba' ? seasonsPlayedInLeague(career, 'nba') : undefined;
+  const salaire = estimateSalary(valeurMarchande, career.currentTeam, nbaServiceYears);
 
   const pressArticles = generatePressArticles(
     {

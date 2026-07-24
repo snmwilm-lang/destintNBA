@@ -7,7 +7,7 @@ export const conflitsEvents: EventTemplate[] = [
     category: 'conflits',
     title: tt("Accrochage avec {teammate} à l'entraînement", 'Clash with {teammate} at practice'),
     description: tt(
-      'Un tacle trop appuyé de {teammate} pendant un exercice dégénère en échange de mots vifs.',
+      'Une faute beaucoup trop appuyée de {teammate} pendant un exercice dégénère en échange de mots vifs.',
       'A hard foul from {teammate} during a drill escalates into a heated exchange.',
     ),
     slots: [{ key: 'teammate', pool: TEAMMATES }],

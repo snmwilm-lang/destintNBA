@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import type { Career, Team } from '../types';
 import { useLang, useT } from '../i18n/useT';
-import { computeMarketValue, estimateSalary } from '../engine/careerEngine';
+import { computeMarketValue, estimateSalary, seasonsPlayedInLeague } from '../engine/careerEngine';
 
 interface TransferOffersScreenProps {
   career: Career;
@@ -35,7 +35,8 @@ export function TransferOffersScreen({ career, offers, onChoose }: TransferOffer
           const isStay = team === null;
           const displayTeam = team ?? career.currentTeam;
           const projectedValue = computeMarketValue(career.stats, career.age, displayTeam.league);
-          const salary = estimateSalary(projectedValue, displayTeam);
+          const nbaServiceYears = displayTeam.league === 'nba' ? seasonsPlayedInLeague(career, 'nba') : undefined;
+          const salary = estimateSalary(projectedValue, displayTeam, nbaServiceYears);
           return (
             <motion.div
               key={team?.id ?? 'stay'}
