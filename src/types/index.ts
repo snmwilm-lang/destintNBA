@@ -216,6 +216,8 @@ export interface Career {
   age: number;
   archetype: Archetype;
   position: Position;
+  /** Height in centimeters, chosen at creation within the position's realistic range. */
+  height: number;
   season: number;
   eventInSeasonIndex: number;
   eventsPerSeason: number;
@@ -237,6 +239,10 @@ export interface Career {
   phase: CareerPhase;
   currentEventId: string | null;
   lastChoiceResultText: LocalizedText | null;
+  /** Visible immediate stat impact of the last choice, shown to the player right after picking. */
+  lastChoiceStatDeltas: Partial<Record<StatKey, number>> | null;
+  lastChoiceMoneyDelta: number;
+  lastChoiceWasSuccess: boolean | null;
   lastSeasonResult: SeasonResult | null;
   pendingTransferOffers: Team[] | null;
 }

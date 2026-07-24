@@ -37,7 +37,13 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
           />
         )}
         {career.phase === 'choiceResult' && (
-          <ChoiceResultCard text={career.lastChoiceResultText} onContinue={acknowledgeChoiceResult} />
+          <ChoiceResultCard
+            text={career.lastChoiceResultText}
+            statDeltas={career.lastChoiceStatDeltas}
+            moneyDelta={career.lastChoiceMoneyDelta}
+            wasSuccess={career.lastChoiceWasSuccess}
+            onContinue={acknowledgeChoiceResult}
+          />
         )}
         {career.phase === 'seasonRecap' && career.lastSeasonResult && (
           <SeasonRecapScreen career={career} result={career.lastSeasonResult} onContinue={acknowledgeSeasonRecap} />

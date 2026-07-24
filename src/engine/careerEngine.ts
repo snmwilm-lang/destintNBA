@@ -38,6 +38,52 @@ const POSITION_PROFILE: Record<Position, { score: number; rebound: number; pass:
   C: { score: 0.75, rebound: 1.0, pass: 0.25, steal: 0.4, block: 1.0 },
 };
 
+/** Realistic height range (cm) the player can pick from at creation, per position. */
+export const POSITION_HEIGHT_RANGE: Record<Position, [number, number]> = {
+  PG: [178, 193],
+  SG: [185, 201],
+  SF: [198, 206],
+  PF: [203, 211],
+  C: [208, 218],
+};
+
+export function defaultHeightForPosition(position: Position): number {
+  const [min, max] = POSITION_HEIGHT_RANGE[position];
+  return Math.round((min + max) / 2);
+}
+
+/** -1 (shortest for the position) .. +1 (tallest for the position), 0 = average. */
+export function heightTilt(position: Position, height: number): number {
+  const [min, max] = POSITION_HEIGHT_RANGE[position];
+  const mid = (min + max) / 2;
+  const half = (max - min) / 2 || 1;
+  return Math.max(-1, Math.min(1, (height - mid) / half));
+}
+
+/** Where each playing style sits on the same -1 (short/quick) .. +1 (tall/strong) axis. */
+const ARCHETYPE_HEIGHT_BIAS: Record<Archetype, number> = {
+  playmaker: -0.6,
+  shooter: -0.15,
+  allround: 0,
+  scorer: 0.15,
+  defender: 0.55,
+};
+
+/** The playing style that best matches a given position + height combo. */
+export function bestFitArchetype(position: Position, height: number): Archetype {
+  const tilt = heightTilt(position, height);
+  let best: Archetype = 'allround';
+  let bestDistance = Infinity;
+  for (const archetype of Object.keys(ARCHETYPE_HEIGHT_BIAS) as Archetype[]) {
+    const distance = Math.abs(ARCHETYPE_HEIGHT_BIAS[archetype] - tilt);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = archetype;
+    }
+  }
+  return best;
+}
+
 function eventMap(): Map<string, GameEvent> {
   const map = new Map<string, GameEvent>();
   for (const e of allEvents) map.set(e.id, e);
@@ -65,6 +111,7 @@ export function createNewCareer(
   archetype: Archetype,
   position: Position,
   path: CareerPath = 'full',
+  height: number = defaultHeightForPosition(position),
 ): Career {
   const now = Date.now();
   const skip = path === 'skipToNba';
@@ -72,6 +119,14 @@ export function createNewCareer(
     ? NBA_TEAM_POOL[randInt(0, NBA_TEAM_POOL.length - 1)]
     : HIGH_SCHOOL_TEAM_POOL[randInt(0, HIGH_SCHOOL_TEAM_POOL.length - 1)];
   let stats = initialStats(ARCHETYPE_BOOSTS[archetype]);
+  // Taller-than-average builds lean into strength and rim protection at the cost of
+  // some quickness/ball-handling touch; shorter builds trade the other way.
+  const tilt = heightTilt(position, height);
+  stats = applyEffects(stats, {
+    physique: Math.round(tilt * 6),
+    technique: Math.round(-tilt * 4),
+    risqueBlessure: Math.round(Math.max(0, tilt) * 4),
+  });
   // Going straight to the pros skips the high-school grind, so the prospect
   // arrives already NBA-caliber — but without the seasons of choices that
   // would normally have shaped (and potentially refined) those stats.
@@ -95,6 +150,7 @@ export function createNewCareer(
     age,
     archetype,
     position,
+    height,
     season: 1,
     eventInSeasonIndex: 0,
     eventsPerSeason: EVENTS_PER_SEASON,
@@ -114,6 +170,9 @@ export function createNewCareer(
     phase: 'event',
     currentEventId: null,
     lastChoiceResultText: null,
+    lastChoiceStatDeltas: null,
+    lastChoiceMoneyDelta: 0,
+    lastChoiceWasSuccess: null,
     lastSeasonResult: null,
     pendingTransferOffers: null,
   };
@@ -170,12 +229,24 @@ export interface ChoiceOutcome {
   argent: number;
   resultText: { fr: string; en: string } | null;
   wasSuccess: boolean | null;
+  /** Immediate, visible stat impact — excludes hidden delayed effects on purpose. */
+  statDeltas: Partial<Record<StatKey, number>>;
+  moneyDelta: number;
+}
+
+function diffStats(before: PlayerStats, after: PlayerStats): Partial<Record<StatKey, number>> {
+  const deltas: Partial<Record<StatKey, number>> = {};
+  for (const key of Object.keys(after) as StatKey[]) {
+    const delta = after[key] - before[key];
+    if (delta !== 0) deltas[key] = delta;
+  }
+  return deltas;
 }
 
 export function resolveChoice(career: Career, event: GameEvent, choiceId: string): ChoiceOutcome {
   const choice = event.choices.find((c) => c.id === choiceId);
   if (!choice) {
-    return { stats: career.stats, argent: career.argent, resultText: null, wasSuccess: null };
+    return { stats: career.stats, argent: career.argent, resultText: null, wasSuccess: null, statDeltas: {}, moneyDelta: 0 };
   }
   let stats = applyEffects(career.stats, choice.effects);
   let argent = career.argent + (choice.moneyDelta ?? 0);
@@ -197,7 +268,7 @@ export function resolveChoice(career: Career, event: GameEvent, choiceId: string
     resultText = (wasSuccess ? sc.successText : sc.failureText) ?? resultText;
   }
 
-  return { stats, argent, resultText, wasSuccess };
+  return { stats, argent, resultText, wasSuccess, statDeltas: diffStats(career.stats, stats), moneyDelta: argent - career.argent };
 }
 
 // --- Season progression -----------------------------------------------
@@ -263,6 +334,7 @@ function maxMinutes(league: League): number {
 function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: number): SeasonStatLine {
   const league = career.currentTeam.league;
   const profile = POSITION_PROFILE[career.position];
+  const tilt = heightTilt(career.position, career.height);
   const total = scheduledGames(league);
   const matchs = Math.max(0, total - matchesMissed);
   const minutesFactor = stats.tempsDeJeu / 100;
@@ -272,16 +344,16 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   const points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 0.9;
 
   const reboundSkill = (stats.physique * 0.7 + stats.iqBasket * 0.3) / 100;
-  const rebonds = reboundSkill * minutes * profile.rebound * randFloat(0.85, 1.15) * 0.45;
+  const rebonds = reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45;
 
   const passSkill = (stats.iqBasket * 0.6 + stats.technique * 0.2 + stats.mental * 0.2) / 100;
-  const passes = passSkill * minutes * profile.pass * randFloat(0.85, 1.15) * 0.4;
+  const passes = passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4;
 
   const stealSkill = (stats.iqBasket * 0.5 + stats.physique * 0.3 + stats.mental * 0.2) / 100;
-  const interceptions = stealSkill * minutes * profile.steal * randFloat(0.8, 1.2) * 0.08;
+  const interceptions = stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08;
 
   const blockSkill = (stats.physique * 0.6 + stats.iqBasket * 0.4) / 100;
-  const contres = blockSkill * minutes * profile.block * randFloat(0.8, 1.2) * 0.12;
+  const contres = blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12;
 
   const adresse3pts = Math.max(15, Math.min(52, 24 + stats.technique * 0.32 - stats.physique * 0.04 + randFloat(-3, 3)));
 

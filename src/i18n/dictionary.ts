@@ -24,7 +24,9 @@ export const dictionary = {
   createNameLabel: { fr: 'Nom du joueur', en: "Player's name" },
   createNamePlaceholder: { fr: 'Ex : Jalen Moreau', en: 'e.g. Jalen Moore' },
   createArchetypeLabel: { fr: 'Style de jeu', en: 'Playing style' },
+  createArchetypeFit: { fr: 'Adapté à ta taille', en: 'Fits your height' },
   createPositionLabel: { fr: 'Poste', en: 'Position' },
+  createHeightLabel: { fr: 'Taille', en: 'Height' },
   createStartButton: { fr: 'Commencer la carrière', en: 'Start career' },
   createAge: { fr: '15 ans, dernière année de collège.', en: '15 years old, finishing middle school.' },
 
@@ -93,6 +95,8 @@ export const dictionary = {
   // Event screen
   eventContinue: { fr: 'Continuer', en: 'Continue' },
   eventSeasonProgress: { fr: 'Événement {current} / {total}', en: 'Event {current} / {total}' },
+  choiceOutcomeSuccess: { fr: 'Réussi !', en: 'Success!' },
+  choiceOutcomeFailure: { fr: 'Raté...', en: 'Failed...' },
 
   // Season recap
   recapTitle: { fr: 'Bilan de la saison {season}', en: 'Season {season} recap' },

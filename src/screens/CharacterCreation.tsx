@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Archetype, Position } from '../types';
-import type { CareerPath } from '../engine/careerEngine';
+import { bestFitArchetype, type CareerPath, defaultHeightForPosition, POSITION_HEIGHT_RANGE } from '../engine/careerEngine';
 import { useGameStore } from '../store/gameStore';
-import { useT } from '../i18n/useT';
+import { useLang, useT } from '../i18n/useT';
 import type { DictionaryKey } from '../i18n/dictionary';
+
+function formatHeight(cm: number, lang: 'fr' | 'en'): string {
+  const meters = (cm / 100).toFixed(2);
+  return lang === 'fr' ? `${meters.replace('.', ',')} m` : `${meters} m`;
+}
 
 interface CharacterCreationProps {
   onCancel: () => void;
@@ -34,14 +39,23 @@ const PATHS: { value: CareerPath; labelKey: DictionaryKey; descKey: DictionaryKe
 
 export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProps) {
   const t = useT();
+  const lang = useLang();
   const createCareer = useGameStore((s) => s.createCareer);
   const [name, setName] = useState('');
   const [archetype, setArchetype] = useState<Archetype>('scorer');
   const [position, setPosition] = useState<Position>('SG');
   const [path, setPath] = useState<CareerPath>('full');
+  const [height, setHeight] = useState(() => defaultHeightForPosition('SG'));
+
+  const [heightMin, heightMax] = POSITION_HEIGHT_RANGE[position];
+  const recommended = bestFitArchetype(position, height);
+
+  useEffect(() => {
+    setHeight(defaultHeightForPosition(position));
+  }, [position]);
 
   const handleStart = () => {
-    createCareer(name.trim(), archetype, position, path);
+    createCareer(name.trim(), archetype, position, path, height);
     onCreated();
   };
 
@@ -63,25 +77,8 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
           className="mb-5 w-full rounded-xl border border-court-600 bg-court-700/60 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-gold-400 focus:outline-none"
         />
 
-        <label className="mb-2 block text-xs uppercase tracking-wide text-slate-400">{t('createArchetypeLabel')}</label>
-        <div className="mb-5 grid grid-cols-1 gap-2">
-          {ARCHETYPES.map((a) => (
-            <button
-              key={a.value}
-              onClick={() => setArchetype(a.value)}
-              className={`rounded-xl border px-4 py-2.5 text-left text-sm font-semibold transition-colors ${
-                archetype === a.value
-                  ? 'border-gold-400 bg-gold-400/10 text-gold-300'
-                  : 'border-court-600 bg-court-700/40 text-slate-300 hover:border-court-500'
-              }`}
-            >
-              {t(a.labelKey)}
-            </button>
-          ))}
-        </div>
-
         <label className="mb-2 block text-xs uppercase tracking-wide text-slate-400">{t('createPositionLabel')}</label>
-        <div className="mb-7 grid grid-cols-5 gap-2">
+        <div className="mb-5 grid grid-cols-5 gap-2">
           {POSITIONS.map((p) => (
             <button
               key={p.value}
@@ -94,6 +91,48 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
               }`}
             >
               {p.value}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-5">
+          <div className="mb-2 flex items-baseline justify-between">
+            <label className="text-xs uppercase tracking-wide text-slate-400">{t('createHeightLabel')}</label>
+            <span className="text-sm font-bold text-gold-300 tabular-nums">{formatHeight(height, lang)}</span>
+          </div>
+          <input
+            type="range"
+            min={heightMin}
+            max={heightMax}
+            step={1}
+            value={height}
+            onChange={(e) => setHeight(Number(e.target.value))}
+            className="w-full accent-hoop-500"
+          />
+          <div className="mt-1 flex justify-between text-[10px] text-slate-500 tabular-nums">
+            <span>{formatHeight(heightMin, lang)}</span>
+            <span>{formatHeight(heightMax, lang)}</span>
+          </div>
+        </div>
+
+        <label className="mb-2 block text-xs uppercase tracking-wide text-slate-400">{t('createArchetypeLabel')}</label>
+        <div className="mb-7 grid grid-cols-1 gap-2">
+          {ARCHETYPES.map((a) => (
+            <button
+              key={a.value}
+              onClick={() => setArchetype(a.value)}
+              className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-left text-sm font-semibold transition-colors ${
+                archetype === a.value
+                  ? 'border-gold-400 bg-gold-400/10 text-gold-300'
+                  : 'border-court-600 bg-court-700/40 text-slate-300 hover:border-court-500'
+              }`}
+            >
+              <span>{t(a.labelKey)}</span>
+              {a.value === recommended && (
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                  {t('createArchetypeFit')}
+                </span>
+              )}
             </button>
           ))}
         </div>

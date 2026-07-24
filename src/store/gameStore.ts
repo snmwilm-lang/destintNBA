@@ -25,7 +25,7 @@ interface GameStore {
   careers: Career[];
   activeCareerId: string | null;
 
-  createCareer: (playerName: string, archetype: Archetype, position: Position, path?: CareerPath) => void;
+  createCareer: (playerName: string, archetype: Archetype, position: Position, path?: CareerPath, height?: number) => void;
   selectCareer: (id: string) => void;
   deleteCareer: (id: string) => void;
   exitToMenu: () => void;
@@ -49,7 +49,15 @@ function advancePastChoice(c: Career): Career {
     return { ...simulated, phase: 'seasonRecap' };
   }
   const next = pickNextEvent(c);
-  return { ...c, phase: 'event', currentEventId: next?.id ?? null, lastChoiceResultText: null };
+  return {
+    ...c,
+    phase: 'event',
+    currentEventId: next?.id ?? null,
+    lastChoiceResultText: null,
+    lastChoiceStatDeltas: null,
+    lastChoiceMoneyDelta: 0,
+    lastChoiceWasSuccess: null,
+  };
 }
 
 export const useGameStore = create<GameStore>()(
@@ -61,9 +69,9 @@ export const useGameStore = create<GameStore>()(
       careers: [],
       activeCareerId: null,
 
-      createCareer: (playerName, archetype, position, path = 'full') => {
+      createCareer: (playerName, archetype, position, path = 'full', height) => {
         const id = uid();
-        const career = createNewCareer(id, playerName || 'Rookie', archetype, position, path);
+        const career = createNewCareer(id, playerName || 'Rookie', archetype, position, path, height);
         set((state) => ({ careers: [...state.careers, career], activeCareerId: id }));
       },
 
@@ -116,10 +124,12 @@ export const useGameStore = create<GameStore>()(
               pendingDelayed,
               phase: 'choiceResult',
               lastChoiceResultText: outcome.resultText,
+              lastChoiceStatDeltas: outcome.statDeltas,
+              lastChoiceMoneyDelta: outcome.moneyDelta,
+              lastChoiceWasSuccess: outcome.wasSuccess,
               eventInSeasonIndex: c.eventInSeasonIndex + 1,
             };
-            // Skip the extra tap when there's no flavor text to show.
-            return outcome.resultText ? withChoice : advancePastChoice(withChoice);
+            return withChoice;
           }),
         );
       },

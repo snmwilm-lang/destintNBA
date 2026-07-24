@@ -2,37 +2,13 @@ import { motion } from 'framer-motion';
 import type { Career, SeasonResult, StatKey } from '../types';
 import { useLang, useT } from '../i18n/useT';
 import type { DictionaryKey } from '../i18n/dictionary';
+import { INJURY_LABEL_KEYS, isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLabels';
 
 interface SeasonRecapScreenProps {
   career: Career;
   result: SeasonResult;
   onContinue: () => void;
 }
-
-const STAT_LABEL_KEYS: Record<StatKey, DictionaryKey> = {
-  technique: 'statTechnique',
-  physique: 'statPhysique',
-  mental: 'statMental',
-  iqBasket: 'statIqBasket',
-  reputation: 'statReputation',
-  popularite: 'statPopularite',
-  moral: 'statMoral',
-  forme: 'statForme',
-  relationCoach: 'statRelationCoach',
-  relationCoequipiers: 'statRelationCoequipiers',
-  tempsDeJeu: 'statTempsDeJeu',
-  risqueBlessure: 'statRisqueBlessure',
-  potentiel: 'statPotentiel',
-};
-
-const INJURY_LABEL_KEYS: Record<string, DictionaryKey> = {
-  cheville: 'injuryCheville',
-  genou: 'injuryGenou',
-  dos: 'injuryDos',
-  ischio: 'injuryIschio',
-  epaule: 'injuryEpaule',
-  poignet: 'injuryPoignet',
-};
 
 export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScreenProps) {
   const lang = useLang();
@@ -133,7 +109,7 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
               {progressionEntries.map(([key, delta]) => (
                 <span
                   key={key}
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${delta >= 0 ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'}`}
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isGoodDelta(key, delta) ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'}`}
                 >
                   {t(STAT_LABEL_KEYS[key])} {delta >= 0 ? '+' : ''}
                   {delta}
