@@ -2,6 +2,7 @@ import type {
   Archetype,
   Career,
   CareerEnding,
+  EventCategory,
   GameEvent,
   InjuryKey,
   InjuryRecord,
@@ -122,6 +123,7 @@ export function createNewCareer(
     position,
     height,
     specialty: null,
+    skillPoints: 0,
     season: 1,
     eventInSeasonIndex: 0,
     eventsPerSeason: EVENTS_PER_SEASON,
@@ -188,6 +190,17 @@ function forcedMilestone(career: Career): GameEvent | null {
   return null;
 }
 
+/** Categories that should feel more present once the stakes (and the awards race) are real. */
+const BIG_MOMENT_CATEGORIES: EventCategory[] = ['allStar', 'playoffs', 'selectionNationale', 'jeuxOlympiques', 'coupeDuMonde'];
+
+function eventWeight(event: GameEvent, career: Career): number {
+  const base = event.weight ?? 1;
+  if (career.currentTeam.league === 'nba' && BIG_MOMENT_CATEGORIES.includes(event.category)) {
+    return base * 6;
+  }
+  return base;
+}
+
 export function pickNextEvent(career: Career): GameEvent | null {
   const forced = forcedMilestone(career);
   if (forced) return forced;
@@ -195,9 +208,9 @@ export function pickNextEvent(career: Career): GameEvent | null {
   if (candidates.length === 0) {
     // fall back: allow season repeats if the pool is exhausted, but never re-show unique events
     const fallback = allEvents.filter((e) => !e.unique || !career.seenEventIds.includes(e.id));
-    return weightedPick(fallback, (e) => e.weight ?? 1);
+    return weightedPick(fallback, (e) => eventWeight(e, career));
   }
-  return weightedPick(candidates, (e) => e.weight ?? 1);
+  return weightedPick(candidates, (e) => eventWeight(e, career));
 }
 
 export interface ChoiceOutcome {
@@ -317,7 +330,9 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   const minutes = 6 + minutesFactor * (maxMinutes(league) - 6);
 
   const scoringSkill = (stats.technique * 0.6 + stats.iqBasket * 0.2 + stats.physique * 0.2) / 100;
-  const points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 0.9;
+  let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 1.45;
+  // Rare career-defining scoring explosion — uncommon, but can push well past the usual ceiling.
+  if (Math.random() < 0.035) points *= randFloat(1.25, 1.7);
 
   const reboundSkill = (stats.physique * 0.7 + stats.iqBasket * 0.3) / 100;
   const rebonds = reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45;
@@ -348,6 +363,15 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   };
 }
 
+/** Contract scale per league, loosely mirroring real-world pay bands (min .. supermax-ish ceiling). */
+const CONTRACT_SCALE: Record<League, { min: number; max: number }> = {
+  lycee: { min: 0, max: 0 },
+  ncaa: { min: 0, max: 0 },
+  europe: { min: 150_000, max: 8_000_000 },
+  nba: { min: 1_200_000, max: 55_000_000 },
+  gLeague: { min: 40_000, max: 600_000 },
+};
+
 export function computeMarketValue(stats: PlayerStats, age: number, league: League): number {
   const composite =
     stats.technique * 0.25 +
@@ -357,9 +381,15 @@ export function computeMarketValue(stats: PlayerStats, age: number, league: Leag
     stats.reputation * 0.15 +
     stats.popularite * 0.1 +
     stats.potentiel * 0.05;
-  const ageMultiplier = age <= 24 ? 1.2 : age <= 29 ? 1.0 : age <= 33 ? 0.7 : 0.4;
-  const leagueMultiplier = league === 'nba' ? 1.6 : league === 'europe' ? 1.0 : 0.15;
-  return Math.round(composite * 900 * ageMultiplier * leagueMultiplier);
+  const ageMultiplier = age <= 24 ? 1.15 : age <= 29 ? 1.0 : age <= 33 ? 0.7 : 0.4;
+
+  if (league === 'lycee') {
+    // High schoolers aren't paid — this is just recruiting buzz, kept on a small scale.
+    return Math.round(composite * 9 * ageMultiplier);
+  }
+  const { min, max } = CONTRACT_SCALE[league];
+  const value01 = Math.max(0, Math.min(1.1, (composite / 100) * ageMultiplier));
+  return Math.round(min + Math.min(1, value01) * (max - min));
 }
 
 function computeClassement(career: Career, noteMoyenne: number): { rank: number; total: number } {
@@ -374,11 +404,16 @@ function computeClassement(career: Career, noteMoyenne: number): { rank: number;
 function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number): Trophy[] {
   const trophies: Trophy[] = [];
   const idBase = `trophy-s${career.season}`;
+  const league = career.currentTeam.league;
+  const isFirstProSeason = league !== 'lycee' && !career.history.some((h) => h.league === league);
+
   if (rank === 1) {
+    const champLabel =
+      league === 'nba' ? tt('Champion NBA', 'NBA Champion') : league === 'europe' ? tt("Champion d'Europe", 'European Champion') : tt('Champion', 'Champion');
     trophies.push({
       id: `${idBase}-champion`,
       season: career.season,
-      name: tt('Champion', 'Champion'),
+      name: champLabel,
       description: tt(
         `${career.currentTeam.name} termine 1er de la ligue cette saison.`,
         `${career.currentTeam.name} finish 1st in the league this season.`,
@@ -389,18 +424,28 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
     trophies.push({
       id: `${idBase}-mvp`,
       season: career.season,
-      name: tt('Joueur de la saison', 'Player of the Season'),
+      name: tt('MVP', 'MVP'),
       description: tt(
         `Une note moyenne de ${statLine.noteMoyenne}/10 qui impose le respect.`,
         `A ${statLine.noteMoyenne}/10 average rating that commands respect.`,
       ),
     });
+  } else if (isFirstProSeason && statLine.noteMoyenne >= 6.5) {
+    trophies.push({
+      id: `${idBase}-royo`,
+      season: career.season,
+      name: tt("Recrue de l'année", 'Rookie of the Year'),
+      description: tt(
+        'Une première saison professionnelle qui ne passe pas inaperçue.',
+        'A rookie season that did not go unnoticed.',
+      ),
+    });
   }
-  if (statLine.points >= 26) {
+  if (statLine.points >= 30) {
     trophies.push({
       id: `${idBase}-scoring`,
       season: career.season,
-      name: tt('Meilleur marqueur', 'Scoring leader'),
+      name: tt('Meilleur marqueur de la ligue', 'Scoring Champion'),
       description: tt(
         `${statLine.points} points de moyenne sur la saison.`,
         `${statLine.points} points per game this season.`,
@@ -411,15 +456,26 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
     trophies.push({
       id: `${idBase}-defense`,
       season: career.season,
-      name: tt('Défenseur de la saison', 'Defensive Player of the Season'),
+      name: tt("Défenseur de l'année", 'Defensive Player of the Year'),
       description: tt('Un mur infranchissable près du cercle.', 'An impenetrable wall near the rim.'),
+    });
+  }
+  if (statLine.passes >= 9) {
+    trophies.push({
+      id: `${idBase}-assists`,
+      season: career.season,
+      name: tt('Meilleur passeur de la ligue', 'Assists Champion'),
+      description: tt(
+        `${statLine.passes} passes décisives de moyenne sur la saison.`,
+        `${statLine.passes} assists per game this season.`,
+      ),
     });
   }
   if (career.stats.popularite >= 92) {
     trophies.push({
       id: `${idBase}-fan`,
       season: career.season,
-      name: tt('Idole des supporters', 'Fan favorite'),
+      name: tt('Idole des supporters', 'Fan Favorite'),
       description: tt('Le public ne jure plus que par toi.', 'The crowd can\'t get enough of you.'),
     });
   }
@@ -428,9 +484,11 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
 
 export function generateTransferOffers(career: Career): Team[] {
   const leaguePools = career.currentTeam.league === 'lycee' ? [...NBA_TEAM_POOL] : [...NBA_TEAM_POOL, ...EUROPE_TEAM_POOL];
+  const scale = CONTRACT_SCALE[career.currentTeam.league];
+  const normalizedValue = scale.max > scale.min ? ((career.valeurMarchande - scale.min) / (scale.max - scale.min)) * 100 : 50;
   const sorted = leaguePools
     .filter((t) => t.id !== career.currentTeam.id)
-    .sort((a, b) => Math.abs(a.salaryBudget - career.valeurMarchande / 200) - Math.abs(b.salaryBudget - career.valeurMarchande / 200));
+    .sort((a, b) => Math.abs(a.salaryBudget - normalizedValue) - Math.abs(b.salaryBudget - normalizedValue));
   const count = career.currentTeam.league === 'lycee' ? 3 : 2 + randInt(0, 2);
   const offers: Team[] = [];
   const shuffled = sorted.sort(() => Math.random() - 0.5);
@@ -439,6 +497,14 @@ export function generateTransferOffers(career: Career): Team[] {
     offers.push(team);
   }
   return offers;
+}
+
+export function estimateSalary(valeurMarchande: number, team: Team): number {
+  const contractFloor = CONTRACT_SCALE[team.league].min;
+  return Math.max(
+    contractFloor,
+    Math.round(valeurMarchande * (0.85 + (team.salaryBudget / 100) * 0.35) * randFloat(0.92, 1.08)),
+  );
 }
 
 export function simulateSeason(career: Career): { career: Career; result: SeasonResult } {
@@ -450,7 +516,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   const { rank, total } = computeClassement(career, statLine.noteMoyenne);
   const trophies = generateTrophies(career, statLine, rank);
   const valeurMarchande = computeMarketValue(stats, career.age, career.currentTeam.league);
-  const salaire = Math.round((career.currentTeam.salaryBudget / 100) * valeurMarchande * 0.35 + valeurMarchande * 0.05);
+  const salaire = estimateSalary(valeurMarchande, career.currentTeam);
 
   const pressArticles = generatePressArticles(
     {
@@ -471,6 +537,9 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     if (delta !== 0) statDeltas[k] = Math.round(delta * 10) / 10;
   });
 
+  // Training points earned this season: a baseline, plus more for a strong rating and any hardware.
+  const earnedSkillPoints = 1 + Math.floor(statLine.noteMoyenne / 3) + trophies.length;
+
   const result: SeasonResult = {
     season: career.season,
     age: career.age,
@@ -487,6 +556,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     statDeltas,
     blessures,
     transferOffers: [],
+    skillPointsEarned: earnedSkillPoints,
   };
 
   const updatedCareer: Career = {
@@ -494,6 +564,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     stats,
     valeurMarchande,
     argent: career.argent + salaire,
+    skillPoints: career.skillPoints + earnedSkillPoints,
     trophies: [...career.trophies, ...trophies],
     pressArticles: [...career.pressArticles, ...pressArticles],
     history: [...career.history, result],
@@ -568,6 +639,18 @@ export function checkEnding(career: Career): CareerEnding | null {
       "Une carrière solide et respectable, sans être exceptionnelle. Tu peux être fier du chemin parcouru.",
       "A solid, respectable career, if not an exceptional one. You can be proud of the journey.",
     ),
+  };
+}
+
+/** Stats the player can directly train up by spending earned skill points. */
+export const TRAINABLE_STATS: StatKey[] = ['technique', 'physique', 'mental', 'iqBasket'];
+
+export function spendSkillPoint(career: Career, stat: StatKey): Career {
+  if (career.skillPoints <= 0 || !TRAINABLE_STATS.includes(stat)) return career;
+  return {
+    ...career,
+    skillPoints: career.skillPoints - 1,
+    stats: applyEffects(career.stats, { [stat]: 1 }),
   };
 }
 

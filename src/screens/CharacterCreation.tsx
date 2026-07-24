@@ -54,7 +54,7 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen items-start justify-center px-4 py-8 sm:items-center sm:py-12">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}

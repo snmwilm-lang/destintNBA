@@ -182,6 +182,7 @@ export interface SeasonResult {
   statDeltas: Partial<Record<StatKey, number>>;
   blessures: InjuryRecord[];
   transferOffers: TransferOffer[];
+  skillPointsEarned: number;
 }
 
 export type EndingType =
@@ -221,6 +222,8 @@ export interface Career {
   height: number;
   /** NBA specialty picked once the player reaches the league — null until then. */
   specialty: LocalizedText | null;
+  /** Earned through good seasons; the player spends them to directly train up a skill. */
+  skillPoints: number;
   season: number;
   eventInSeasonIndex: number;
   eventsPerSeason: number;

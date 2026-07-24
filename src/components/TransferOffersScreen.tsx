@@ -1,17 +1,12 @@
 import { motion } from 'framer-motion';
 import type { Career, Team } from '../types';
 import { useLang, useT } from '../i18n/useT';
-import { computeMarketValue } from '../engine/careerEngine';
+import { computeMarketValue, estimateSalary } from '../engine/careerEngine';
 
 interface TransferOffersScreenProps {
   career: Career;
   offers: Team[];
   onChoose: (team: Team | null) => void;
-}
-
-function estimateSalary(team: Team, career: Career): number {
-  const value = computeMarketValue(career.stats, career.age, team.league);
-  return Math.round((team.salaryBudget / 100) * value * 0.35 + value * 0.05);
 }
 
 export function TransferOffersScreen({ career, offers, onChoose }: TransferOffersScreenProps) {
@@ -39,7 +34,8 @@ export function TransferOffersScreen({ career, offers, onChoose }: TransferOffer
         {cards.map(({ team, label }, i) => {
           const isStay = team === null;
           const displayTeam = team ?? career.currentTeam;
-          const salary = isStay ? estimateSalary(career.currentTeam, career) : estimateSalary(team, career);
+          const projectedValue = computeMarketValue(career.stats, career.age, displayTeam.league);
+          const salary = estimateSalary(projectedValue, displayTeam);
           return (
             <motion.div
               key={team?.id ?? 'stay'}

@@ -121,6 +121,9 @@ export const dictionary = {
   recapInjuries: { fr: 'Blessures', en: 'Injuries' },
   recapNoInjuries: { fr: 'Saison sans blessure.', en: 'Injury-free season.' },
   recapContinue: { fr: 'Saison suivante', en: 'Next season' },
+  recapTraining: { fr: 'Entraînement ciblé', en: 'Targeted training' },
+  recapPointsAvailable: { fr: '{count} pts disponibles', en: '{count} pts available' },
+  recapPointsEarned: { fr: '+{count} points gagnés cette saison', en: '+{count} points earned this season' },
   recapSeeOffers: { fr: 'Voir les offres', en: 'See offers' },
 
   injuryCheville: { fr: 'Entorse à la cheville', en: 'Ankle sprain' },

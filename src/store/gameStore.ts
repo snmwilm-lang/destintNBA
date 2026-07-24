@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Archetype, Career, Lang, Position, Team } from '../types';
+import type { Archetype, Career, Lang, Position, StatKey, Team } from '../types';
 import {
   type CareerPath,
   checkEnding,
@@ -11,6 +11,7 @@ import {
   pickNextEvent,
   resolveChoice,
   simulateSeason,
+  spendSkillPoint,
   startNextSeason,
 } from '../engine/careerEngine';
 
@@ -34,6 +35,7 @@ interface GameStore {
   acknowledgeChoiceResult: () => void;
   acknowledgeSeasonRecap: () => void;
   chooseTransferOffer: (team: Team | null) => void;
+  spendPoint: (stat: StatKey) => void;
 }
 
 function updateActiveCareer(state: GameStore, updater: (c: Career) => Career): Partial<GameStore> {
@@ -163,6 +165,10 @@ export const useGameStore = create<GameStore>()(
             return startNextSeason(withTeam);
           }),
         );
+      },
+
+      spendPoint: (stat) => {
+        set((s) => updateActiveCareer(s, (c) => spendSkillPoint(c, stat)));
       },
     }),
     {

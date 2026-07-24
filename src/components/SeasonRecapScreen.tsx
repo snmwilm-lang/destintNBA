@@ -3,6 +3,8 @@ import type { Career, SeasonResult, StatKey } from '../types';
 import { useLang, useT } from '../i18n/useT';
 import type { DictionaryKey } from '../i18n/dictionary';
 import { INJURY_LABEL_KEYS, isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLabels';
+import { TRAINABLE_STATS } from '../engine/careerEngine';
+import { useGameStore } from '../store/gameStore';
 
 interface SeasonRecapScreenProps {
   career: Career;
@@ -13,6 +15,7 @@ interface SeasonRecapScreenProps {
 export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScreenProps) {
   const lang = useLang();
   const t = useT();
+  const spendPoint = useGameStore((s) => s.spendPoint);
   const currency = lang === 'fr' ? 'fr-FR' : 'en-US';
 
   const statRows: [DictionaryKey, string][] = [
@@ -132,6 +135,33 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
               ))}
             </ul>
           )}
+        </section>
+        <section className="col-span-2 sm:col-span-3 text-left">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-xs uppercase tracking-wide text-slate-400">{t('recapTraining')}</h3>
+            <span className="rounded-full bg-gold-400/15 px-2.5 py-0.5 text-xs font-bold text-gold-300 tabular-nums">
+              {t('recapPointsAvailable', { count: career.skillPoints })}
+            </span>
+          </div>
+          {result.skillPointsEarned > 0 && (
+            <p className="mb-2 text-xs text-emerald-300">{t('recapPointsEarned', { count: result.skillPointsEarned })}</p>
+          )}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {TRAINABLE_STATS.map((stat) => (
+              <button
+                key={stat}
+                onClick={() => spendPoint(stat)}
+                disabled={career.skillPoints <= 0}
+                className="rounded-lg border border-court-600 bg-court-700/50 px-3 py-2 text-left transition-colors enabled:hover:border-gold-400 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <div className="text-[10px] uppercase text-slate-400">{t(STAT_LABEL_KEYS[stat])}</div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-slate-100 tabular-nums">{career.stats[stat]}</span>
+                  <span className="text-xs font-bold text-emerald-400">+1</span>
+                </div>
+              </button>
+            ))}
+          </div>
         </section>
       </div>
 

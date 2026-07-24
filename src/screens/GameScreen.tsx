@@ -28,7 +28,7 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
   return (
     <div className="flex min-h-screen flex-col">
       {career.phase !== 'ended' && <TopBar career={career} onOpenMenu={onOpenMenu} />}
-      <div className="flex flex-1 items-center justify-center px-4 py-10">
+      <div className="flex flex-1 items-start justify-center px-4 py-6 sm:items-center sm:py-10">
         {career.phase === 'event' && currentEvent && (
           <EventCard
             event={currentEvent}
