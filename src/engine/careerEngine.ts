@@ -22,7 +22,7 @@ import { applyEffects, clampStat, initialStats, randFloat, randInt, weightedPick
 import { generatePressArticles } from './pressGenerator';
 import { tt } from './eventTemplate';
 
-export const EVENTS_PER_SEASON = 10;
+export const EVENTS_PER_SEASON = 7;
 
 const POSITION_PROFILE: Record<Position, { score: number; rebound: number; pass: number; steal: number; block: number }> = {
   PG: { score: 0.85, rebound: 0.25, pass: 1.0, steal: 1.1, block: 0.15 },
@@ -136,6 +136,7 @@ export function createNewCareer(
     pressArticles: [],
     seenEventIds: skip ? [...DRAFT_SEQUENCE] : [],
     usedThisSeasonIds: [],
+    recentEventIds: [],
     pendingDelayed: [],
     choiceLog: [],
     retired: false,
@@ -199,7 +200,12 @@ function forcedMilestone(career: Career): GameEvent | null {
       }
     }
   }
-  if (career.currentTeam.league === 'nba' && career.specialty === null && !career.usedThisSeasonIds.includes(NBA_SPECIALTY_EVENT_ID)) {
+  if (
+    career.currentTeam.league === 'nba' &&
+    career.specialty === null &&
+    !career.seenEventIds.includes(NBA_SPECIALTY_EVENT_ID) &&
+    !career.usedThisSeasonIds.includes(NBA_SPECIALTY_EVENT_ID)
+  ) {
     return getEvent(NBA_SPECIALTY_EVENT_ID) ?? null;
   }
   // The career-defining Finals moment is otherwise a rare random draw — guarantee it shows up
@@ -219,12 +225,24 @@ function forcedMilestone(career: Career): GameEvent | null {
 /** Categories that should feel more present once the stakes (and the awards race) are real. */
 const BIG_MOMENT_CATEGORIES: EventCategory[] = ['allStar', 'playoffs', 'selectionNationale', 'finale', 'jeuxOlympiques', 'coupeDuMonde'];
 
+/** Strips the numeric variant suffix so all name-swapped instances of a card share one id. */
+export function baseEventId(id: string): string {
+  return id.replace(/-\d+$/, '');
+}
+
 function eventWeight(event: GameEvent, career: Career): number {
-  const base = event.weight ?? 1;
+  let weight = event.weight ?? 1;
   if (career.currentTeam.league === 'nba' && BIG_MOMENT_CATEGORIES.includes(event.category)) {
-    return base * 6;
+    weight *= 6;
   }
-  return base;
+  // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
+  const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
+  if (recencyIndex !== -1) {
+    const stepsAgo = career.recentEventIds.length - recencyIndex;
+    const recencyPenalty = Math.min(0.95, 1 / (stepsAgo + 1));
+    weight *= 1 - recencyPenalty;
+  }
+  return Math.max(0.01, weight);
 }
 
 export function pickNextEvent(career: Career): GameEvent | null {

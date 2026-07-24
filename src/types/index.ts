@@ -238,6 +238,8 @@ export interface Career {
   seenEventIds: string[];
   /** Event ids already drawn this season (reset every season, avoids repeats). */
   usedThisSeasonIds: string[];
+  /** Rolling history of recently-drawn base event templates, used to space out repeat beats. */
+  recentEventIds: string[];
   pendingDelayed: { effect: DelayedEffect; triggerSeason: number }[];
   choiceLog: PendingChoiceLog[];
   retired: boolean;

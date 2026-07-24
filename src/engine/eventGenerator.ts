@@ -1,9 +1,24 @@
-import type { GameEvent, EventChoice, LocalizedText } from '../types';
+import type { GameEvent, EventChoice, LocalizedText, StatKey } from '../types';
 import type { EventTemplate } from './eventTemplate';
 
 function fillText(text: LocalizedText, ctx: Record<string, string>): LocalizedText {
   const fill = (str: string) => str.replace(/\{(\w+)\}/g, (_, k: string) => ctx[k] ?? `{${k}}`);
   return { fr: fill(text.fr), en: fill(text.en) };
+}
+
+// Hand-authored effect numbers read as too timid on a 0-100 stat scale — scale them up
+// uniformly at generation time so choices feel consequential without hand-editing every event.
+const EFFECT_AMPLIFIER = 1.6;
+
+function amplifyEffects(effects?: Partial<Record<StatKey, number>>): Partial<Record<StatKey, number>> | undefined {
+  if (!effects) return effects;
+  const scaled: Partial<Record<StatKey, number>> = {};
+  for (const key of Object.keys(effects) as StatKey[]) {
+    const value = effects[key] ?? 0;
+    const amplified = Math.round(value * EFFECT_AMPLIFIER);
+    scaled[key] = amplified === 0 && value !== 0 ? Math.sign(value) : amplified;
+  }
+  return scaled;
 }
 
 function instantiateChoice(tpl: Omit<EventChoice, 'id'>, ctx: Record<string, string>, idPrefix: string, index: number): EventChoice {
@@ -12,9 +27,13 @@ function instantiateChoice(tpl: Omit<EventChoice, 'id'>, ctx: Record<string, str
     id: `${idPrefix}-c${index}`,
     label: fillText(tpl.label, ctx),
     resultText: tpl.resultText ? fillText(tpl.resultText, ctx) : undefined,
+    effects: amplifyEffects(tpl.effects),
+    delayedEffects: tpl.delayedEffects?.map((d) => ({ ...d, effects: amplifyEffects(d.effects) ?? {} })),
     successChance: tpl.successChance
       ? {
           ...tpl.successChance,
+          onSuccess: amplifyEffects(tpl.successChance.onSuccess) ?? {},
+          onFailure: amplifyEffects(tpl.successChance.onFailure) ?? {},
           successText: tpl.successChance.successText ? fillText(tpl.successChance.successText, ctx) : undefined,
           failureText: tpl.successChance.failureText ? fillText(tpl.successChance.failureText, ctx) : undefined,
         }

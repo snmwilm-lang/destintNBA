@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Archetype, Career, Lang, Position, StatKey, Team } from '../types';
 import {
+  baseEventId,
   type CareerPath,
   checkEnding,
   createNewCareer,
@@ -14,6 +15,8 @@ import {
   spendSkillPoint,
   startNextSeason,
 } from '../engine/careerEngine';
+
+const RECENT_EVENTS_MEMORY = 40;
 
 function uid(): string {
   return `career-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -99,6 +102,7 @@ export const useGameStore = create<GameStore>()(
           updateActiveCareer(s, (c) => {
             const seenEventIds = event.unique ? [...c.seenEventIds, event.id] : c.seenEventIds;
             const usedThisSeasonIds = [...c.usedThisSeasonIds, event.id];
+            const recentEventIds = [...c.recentEventIds, baseEventId(event.id)].slice(-RECENT_EVENTS_MEMORY);
             const choiceLog = [
               ...c.choiceLog,
               {
@@ -123,6 +127,7 @@ export const useGameStore = create<GameStore>()(
               argent: outcome.argent,
               seenEventIds,
               usedThisSeasonIds,
+              recentEventIds,
               choiceLog,
               pendingDelayed,
               specialty,
