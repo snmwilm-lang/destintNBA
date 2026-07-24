@@ -22,7 +22,14 @@ export function TopBar({ career, onOpenMenu }: TopBarProps) {
               🏀
             </div>
             <div className="min-w-0 text-left">
-              <div className="truncate text-sm font-semibold text-slate-100">{career.playerName}</div>
+              <div className="flex items-center gap-2 truncate">
+                <span className="text-sm font-semibold text-slate-100">{career.playerName}</span>
+                {career.specialty && (
+                  <span className="shrink-0 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gold-300">
+                    {career.specialty[lang]}
+                  </span>
+                )}
+              </div>
               <div className="truncate text-xs text-slate-400">
                 {t('hudTeam', { team: career.currentTeam.name })} · {t('hudSeason', { season: career.season })} ·{' '}
                 {t('hudAge', { age: career.age })}

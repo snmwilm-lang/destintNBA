@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Archetype, Position } from '../types';
-import { bestFitArchetype, type CareerPath, defaultHeightForPosition, POSITION_HEIGHT_RANGE } from '../engine/careerEngine';
+import { type CareerPath, defaultHeightForPosition, POSITION_HEIGHT_RANGE } from '../engine/careerEngine';
+import { buildsForPosition, defaultBuildForPosition } from '../data/builds';
 import { useGameStore } from '../store/gameStore';
 import { useLang, useT } from '../i18n/useT';
 import type { DictionaryKey } from '../i18n/dictionary';
@@ -15,14 +16,6 @@ interface CharacterCreationProps {
   onCancel: () => void;
   onCreated: () => void;
 }
-
-const ARCHETYPES: { value: Archetype; labelKey: DictionaryKey }[] = [
-  { value: 'scorer', labelKey: 'archetypeScorer' },
-  { value: 'playmaker', labelKey: 'archetypePlaymaker' },
-  { value: 'defender', labelKey: 'archetypeDefender' },
-  { value: 'allround', labelKey: 'archetypeAllround' },
-  { value: 'shooter', labelKey: 'archetypeShooter' },
-];
 
 const POSITIONS: { value: Position; labelKey: DictionaryKey }[] = [
   { value: 'PG', labelKey: 'positionPG' },
@@ -42,16 +35,17 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
   const lang = useLang();
   const createCareer = useGameStore((s) => s.createCareer);
   const [name, setName] = useState('');
-  const [archetype, setArchetype] = useState<Archetype>('scorer');
   const [position, setPosition] = useState<Position>('SG');
+  const [archetype, setArchetype] = useState<Archetype>(() => defaultBuildForPosition('SG'));
   const [path, setPath] = useState<CareerPath>('full');
   const [height, setHeight] = useState(() => defaultHeightForPosition('SG'));
 
   const [heightMin, heightMax] = POSITION_HEIGHT_RANGE[position];
-  const recommended = bestFitArchetype(position, height);
+  const builds = useMemo(() => buildsForPosition(position), [position]);
 
   useEffect(() => {
     setHeight(defaultHeightForPosition(position));
+    setArchetype(defaultBuildForPosition(position));
   }, [position]);
 
   const handleStart = () => {
@@ -117,22 +111,18 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
 
         <label className="mb-2 block text-xs uppercase tracking-wide text-slate-400">{t('createArchetypeLabel')}</label>
         <div className="mb-7 grid grid-cols-1 gap-2">
-          {ARCHETYPES.map((a) => (
+          {builds.map((build) => (
             <button
-              key={a.value}
-              onClick={() => setArchetype(a.value)}
-              className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-left text-sm font-semibold transition-colors ${
-                archetype === a.value
-                  ? 'border-gold-400 bg-gold-400/10 text-gold-300'
-                  : 'border-court-600 bg-court-700/40 text-slate-300 hover:border-court-500'
+              key={build.id}
+              onClick={() => setArchetype(build.id)}
+              className={`rounded-xl border px-4 py-2.5 text-left transition-colors ${
+                archetype === build.id
+                  ? 'border-gold-400 bg-gold-400/10'
+                  : 'border-court-600 bg-court-700/40 hover:border-court-500'
               }`}
             >
-              <span>{t(a.labelKey)}</span>
-              {a.value === recommended && (
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
-                  {t('createArchetypeFit')}
-                </span>
-              )}
+              <div className={`text-sm font-semibold ${archetype === build.id ? 'text-gold-300' : 'text-slate-200'}`}>{build.name[lang]}</div>
+              <div className="text-xs text-slate-400">{build.description[lang]}</div>
             </button>
           ))}
         </div>

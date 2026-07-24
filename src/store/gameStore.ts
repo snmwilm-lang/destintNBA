@@ -114,6 +114,7 @@ export const useGameStore = create<GameStore>()(
                 pendingDelayed.push({ effect: d, triggerSeason: c.season + d.delaySeasons });
               }
             }
+            const specialty = event.id === 'nba-arrival-specialty' && choice ? choice.label : c.specialty;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -122,6 +123,7 @@ export const useGameStore = create<GameStore>()(
               usedThisSeasonIds,
               choiceLog,
               pendingDelayed,
+              specialty,
               phase: 'choiceResult',
               lastChoiceResultText: outcome.resultText,
               lastChoiceStatDeltas: outcome.statDeltas,

@@ -52,7 +52,8 @@ export type League = 'lycee' | 'ncaa' | 'nba' | 'europe' | 'gLeague';
 
 export type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
 
-export type Archetype = 'scorer' | 'playmaker' | 'defender' | 'allround' | 'shooter';
+/** A build id, e.g. 'pg-floor-general' — one of five position-specific builds per position. */
+export type Archetype = string;
 
 /** A delayed effect fires N seasons (or events) after the choice was made. */
 export interface DelayedEffect {
@@ -218,6 +219,8 @@ export interface Career {
   position: Position;
   /** Height in centimeters, chosen at creation within the position's realistic range. */
   height: number;
+  /** NBA specialty picked once the player reaches the league — null until then. */
+  specialty: LocalizedText | null;
   season: number;
   eventInSeasonIndex: number;
   eventsPerSeason: number;

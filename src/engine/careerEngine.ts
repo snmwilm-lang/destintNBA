@@ -16,19 +16,12 @@ import type {
 } from '../types';
 import { allEvents } from '../data/events';
 import { HIGH_SCHOOL_TEAM_POOL, NBA_TEAM_POOL, EUROPE_TEAM_POOL, allTeamsForLeague } from '../data/teams';
+import { getBuild } from '../data/builds';
 import { applyEffects, clampStat, initialStats, randFloat, randInt, weightedPick } from './statUtils';
 import { generatePressArticles } from './pressGenerator';
 import { tt } from './eventTemplate';
 
 export const EVENTS_PER_SEASON = 10;
-
-const ARCHETYPE_BOOSTS: Record<Archetype, Partial<Record<StatKey, number>>> = {
-  scorer: { technique: 10, mental: 5, popularite: 5 },
-  playmaker: { iqBasket: 12, mental: 5, relationCoequipiers: 5 },
-  defender: { physique: 10, mental: 8, iqBasket: 4 },
-  allround: { technique: 4, physique: 4, iqBasket: 4, mental: 4 },
-  shooter: { technique: 14, mental: 3 },
-};
 
 const POSITION_PROFILE: Record<Position, { score: number; rebound: number; pass: number; steal: number; block: number }> = {
   PG: { score: 0.85, rebound: 0.25, pass: 1.0, steal: 1.1, block: 0.15 },
@@ -60,29 +53,6 @@ export function heightTilt(position: Position, height: number): number {
   return Math.max(-1, Math.min(1, (height - mid) / half));
 }
 
-/** Where each playing style sits on the same -1 (short/quick) .. +1 (tall/strong) axis. */
-const ARCHETYPE_HEIGHT_BIAS: Record<Archetype, number> = {
-  playmaker: -0.6,
-  shooter: -0.15,
-  allround: 0,
-  scorer: 0.15,
-  defender: 0.55,
-};
-
-/** The playing style that best matches a given position + height combo. */
-export function bestFitArchetype(position: Position, height: number): Archetype {
-  const tilt = heightTilt(position, height);
-  let best: Archetype = 'allround';
-  let bestDistance = Infinity;
-  for (const archetype of Object.keys(ARCHETYPE_HEIGHT_BIAS) as Archetype[]) {
-    const distance = Math.abs(ARCHETYPE_HEIGHT_BIAS[archetype] - tilt);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = archetype;
-    }
-  }
-  return best;
-}
 
 function eventMap(): Map<string, GameEvent> {
   const map = new Map<string, GameEvent>();
@@ -118,7 +88,7 @@ export function createNewCareer(
   const startingTeam = skip
     ? NBA_TEAM_POOL[randInt(0, NBA_TEAM_POOL.length - 1)]
     : HIGH_SCHOOL_TEAM_POOL[randInt(0, HIGH_SCHOOL_TEAM_POOL.length - 1)];
-  let stats = initialStats(ARCHETYPE_BOOSTS[archetype]);
+  let stats = initialStats(getBuild(archetype)?.boosts ?? {});
   // Taller-than-average builds lean into strength and rim protection at the cost of
   // some quickness/ball-handling touch; shorter builds trade the other way.
   const tilt = heightTilt(position, height);
@@ -151,6 +121,7 @@ export function createNewCareer(
     archetype,
     position,
     height,
+    specialty: null,
     season: 1,
     eventInSeasonIndex: 0,
     eventsPerSeason: EVENTS_PER_SEASON,
@@ -201,6 +172,8 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
 /** The draft is a scripted three-beat sequence, not a random draw — force it in order once eligible. */
 const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 
+const NBA_SPECIALTY_EVENT_ID = 'nba-arrival-specialty';
+
 function forcedMilestone(career: Career): GameEvent | null {
   if (career.age >= 18 && career.currentTeam.league === 'lycee') {
     for (const id of DRAFT_SEQUENCE) {
@@ -208,6 +181,9 @@ function forcedMilestone(career: Career): GameEvent | null {
         return getEvent(id) ?? null;
       }
     }
+  }
+  if (career.currentTeam.league === 'nba' && career.specialty === null && !career.usedThisSeasonIds.includes(NBA_SPECIALTY_EVENT_ID)) {
+    return getEvent(NBA_SPECIALTY_EVENT_ID) ?? null;
   }
   return null;
 }
