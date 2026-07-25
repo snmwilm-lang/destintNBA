@@ -221,6 +221,7 @@ export function createNewCareer(
     rivalHighSchool: HIGH_SCHOOL_TEAMS.filter((s) => s !== startingTeam.name)[randInt(0, HIGH_SCHOOL_TEAMS.length - 2)],
     rivalHighSchoolRecord: { wins: 0, losses: 0 },
     nationality,
+    momentum: 50,
     pendingNationalCampaign: null,
     newlyUnlockedAchievements: [],
     traits: [],
@@ -782,6 +783,16 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   const { blessures, matchesMissed, statsAfter } = rollInjuries(career, stats);
   stats = statsAfter;
 
+  // A genuine hot streak — built from a season's chain of good choices, with real luck on the
+  // risky ones — is what actually raises a player's ceiling. A cold or mixed season leaves
+  // potentiel untouched, no matter how many seasons have gone by.
+  if (career.age <= 30) {
+    const breakthroughChance = career.momentum >= 90 ? 0.5 : career.momentum >= 75 ? 0.3 : career.momentum >= 60 ? 0.12 : 0;
+    if (breakthroughChance > 0 && Math.random() < breakthroughChance) {
+      stats = applyEffects(stats, { potentiel: career.momentum >= 90 ? 2 : 1 });
+    }
+  }
+
   // Traits are earned from how the player has actually developed this season — each one is a
   // permanent, double-edged personality trait: a real buff paired with a real nerf.
   const newTraits = checkNewTraits({ ...career, stats });
@@ -1048,6 +1059,9 @@ export const TRAINABLE_STATS: StatKey[] = ['technique', 'physique', 'mental', 'i
 
 export function spendSkillPoint(career: Career, stat: StatKey): Career {
   if (career.skillPoints <= 0 || !TRAINABLE_STATS.includes(stat)) return career;
+  // Training can't push a stat past the player's own talent ceiling — potentiel has to rise
+  // first, through real seasons of good decisions, not just spent points.
+  if (career.stats[stat] >= career.stats.potentiel) return career;
   return {
     ...career,
     skillPoints: career.skillPoints - 1,
@@ -1103,6 +1117,9 @@ export function startNextSeason(career: Career): Career {
     lastSeasonResult: null,
     pendingTransferOffers: null,
     newlyUnlockedTraits: [],
+    // Each new season is a fresh challenge — momentum regresses partway back toward neutral
+    // instead of carrying a hot (or cold) streak forever.
+    momentum: Math.round(career.momentum + (50 - career.momentum) * 0.4),
     updatedAt: Date.now(),
   };
 }

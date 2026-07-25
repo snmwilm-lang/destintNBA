@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Archetype, Career, Lang, Position, StatKey, Team } from '../types';
+import { isGoodDelta } from '../i18n/statLabels';
 import {
   baseEventId,
   type CareerPath,
@@ -55,6 +56,7 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     rivalHighSchool: c.rivalHighSchool ?? 'Northview High',
     rivalHighSchoolRecord: c.rivalHighSchoolRecord ?? { wins: 0, losses: 0 },
     nationality: c.nationality ?? 'US',
+    momentum: c.momentum ?? 50,
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
     newlyUnlockedAchievements: c.newlyUnlockedAchievements ?? [],
     traits: c.traits ?? [],
@@ -166,6 +168,20 @@ export const useGameStore = create<GameStore>()(
                 pendingDelayed.push({ effect: d, triggerSeason: c.season + d.delaySeasons });
               }
             }
+            // Momentum tracks a real streak of good decisions (and luck on risky ones) — this
+            // is what actually gates potentiel growth each season, not just playing a lot of
+            // seasons regardless of how they went.
+            let momentumDelta = 0;
+            if (outcome.wasSuccess === true) momentumDelta = 8;
+            else if (outcome.wasSuccess === false) momentumDelta = -10;
+            else {
+              const netGood = (Object.entries(outcome.statDeltas) as [StatKey, number][]).reduce(
+                (acc, [key, delta]) => acc + (isGoodDelta(key, delta) ? 1 : -1) * Math.abs(delta),
+                0,
+              );
+              momentumDelta = netGood > 0 ? 2 : netGood < 0 ? -2 : 0;
+            }
+            const momentum = Math.max(0, Math.min(100, c.momentum + momentumDelta));
             const rivalRecord =
               event.tags?.includes('rivalDuel') && outcome.wasSuccess !== null
                 ? {
@@ -232,6 +248,7 @@ export const useGameStore = create<GameStore>()(
               rivalRecord,
               rivalTeamRecord,
               rivalHighSchoolRecord,
+              momentum,
               rivalryProvoked,
               draftStock,
               draftPick,

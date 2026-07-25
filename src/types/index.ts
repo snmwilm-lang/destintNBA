@@ -259,6 +259,10 @@ export interface Career {
   rivalHighSchoolRecord: { wins: number; losses: number };
   /** Country represented in international competition (Olympics, World Cup). */
   nationality: string;
+  /** 0-100, starts neutral. Rises on successful/good choices, falls on failed/bad ones — a real
+   * streak of good decisions (and luck) is what actually unlocks potentiel growth each season,
+   * not just the passage of time. */
+  momentum: number;
   /** Set the moment the national team is selected; resolved into the matching
    * result event (final or an early-exit round), then cleared. */
   pendingNationalCampaign: { competition: 'jeuxOlympiques' | 'coupeDuMonde'; round: 'groupes' | 'quarts' | 'demies' | 'finale' } | null;

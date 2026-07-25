@@ -25,7 +25,10 @@ export function applyEffects(stats: PlayerStats, effects?: Partial<Record<StatKe
   const next = { ...stats };
   for (const key of Object.keys(effects) as StatKey[]) {
     const delta = effects[key] ?? 0;
-    next[key] = clampStat(next[key] + delta);
+    // Diminishing returns near the ceiling — the last points of any stat take real, sustained
+    // excellence to earn, not just repetition. Negative effects always apply at full strength.
+    const resistance = delta > 0 ? Math.max(0.25, 1 - (Math.max(0, next[key] - 70) / 30) * 0.75) : 1;
+    next[key] = clampStat(next[key] + delta * resistance);
   }
   return next;
 }
