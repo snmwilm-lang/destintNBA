@@ -233,6 +233,7 @@ export function createNewCareer(
     pendingNationalCampaign: null,
     pendingFinaleResult: null,
     hasReachedFinale: false,
+    hadEliteBreakthrough: false,
     newlyUnlockedAchievements: [],
     traits: [],
     newlyUnlockedTraits: [],
@@ -894,6 +895,29 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   const statLine = generateStatLine(career, stats, matchesMissed, vintage);
   const { rank, total } = computeClassement(career, statLine.noteMoyenne, career.pendingFinaleResult === true);
   const trophies = generateTrophies(career, statLine, rank);
+
+  // A season that sweeps the league's hardware is proof the player is legitimately elite right
+  // now — the recognized skill stats (and Overall) shouldn't need years of gradual progression to
+  // catch up to what the whole league just watched happen. The bigger the haul, the bigger and
+  // more immediate the jump — instead of a trophy case that reads MVP/Champion/Scoring next to a
+  // GEN badge that still looks middling. This is a one-time "the league was underrating you"
+  // correction, not a repeatable engine — an already-recognized star sweeping hardware again
+  // doesn't need to keep re-proving it, or every dominant career would rocket to 100 in a few
+  // seasons flat, right back to the "everyone ends up maxed" problem this was built to avoid.
+  const majorTrophyCount = trophies.filter((t) => /-(mvp|champion|scoring|assists|defense)$/.test(t.id)).length;
+  const eliteSeasonBonus = majorTrophyCount >= 3 ? 7 : majorTrophyCount === 2 ? 5 : statLine.noteMoyenne >= 8.7 ? 3 : 0;
+  let hadEliteBreakthrough = career.hadEliteBreakthrough;
+  if (eliteSeasonBonus > 0 && career.age <= 32 && !career.hadEliteBreakthrough) {
+    hadEliteBreakthrough = true;
+    const newPotentiel = clampStat(stats.potentiel + eliteSeasonBonus);
+    stats = { ...stats, potentiel: newPotentiel };
+    for (const key of TRAINABLE_STATS) {
+      if (stats[key] < newPotentiel) {
+        stats = { ...stats, [key]: clampStat(stats[key] + (newPotentiel - stats[key]) * 0.5) };
+      }
+    }
+  }
+
   const valeurMarchande = computeMarketValue(stats, career.age, career.currentTeam.league);
   const nbaServiceYears = career.currentTeam.league === 'nba' ? seasonsPlayedInLeague(career, 'nba') : undefined;
   const salaire = estimateSalary(valeurMarchande, career.currentTeam, nbaServiceYears);
@@ -951,6 +975,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     history: [...career.history, result],
     lastSeasonResult: result,
     pendingFinaleResult: null,
+    hadEliteBreakthrough,
     traits: [...career.traits, ...newTraits.map((t) => t.id)],
     newlyUnlockedTraits: newTraits.map((t) => t.id),
   };

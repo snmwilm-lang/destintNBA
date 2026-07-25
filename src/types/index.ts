@@ -274,6 +274,10 @@ export interface Career {
    * year 3 in the league; every trip after that is a normal (reputation-gated) random draw, so a
    * genuinely great player/team can make it back more than once instead of exactly once ever. */
   hasReachedFinale: boolean;
+  /** True once a single trophy-sweeping season has already given the player's recognized skill
+   * stats (and potentiel) a one-time "the league was underrating you" correction — keeps that
+   * catch-up from firing every single dominant season and snowballing straight to the max. */
+  hadEliteBreakthrough: boolean;
   /** Achievement ids unlocked by THIS career's ending, for a one-time flash on the ending screen. */
   newlyUnlockedAchievements: string[];
   /** Permanent double-edged personality traits earned mid-career (a buff paired with a nerf). */

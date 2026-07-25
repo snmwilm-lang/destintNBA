@@ -61,6 +61,7 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
     pendingFinaleResult: c.pendingFinaleResult ?? null,
     hasReachedFinale: c.hasReachedFinale ?? false,
+    hadEliteBreakthrough: c.hadEliteBreakthrough ?? false,
     newlyUnlockedAchievements: c.newlyUnlockedAchievements ?? [],
     traits: c.traits ?? [],
     newlyUnlockedTraits: c.newlyUnlockedTraits ?? [],
