@@ -19,6 +19,7 @@ import type {
 import { allEvents } from '../data/events';
 import { HIGH_SCHOOL_TEAM_POOL, NBA_TEAM_POOL, EUROPE_TEAM_POOL, allTeamsForLeague } from '../data/teams';
 import { getBuild } from '../data/builds';
+import { RIVAL_PLAYERS } from '../data/names';
 import { applyEffects, clampStat, initialStats, randFloat, randInt, weightedPick } from './statUtils';
 import { generatePressArticles } from './pressGenerator';
 import { tt } from './eventTemplate';
@@ -68,6 +69,39 @@ export function getEvent(id: string): GameEvent | undefined {
   return EVENT_MAP.get(id);
 }
 
+/** Swaps whichever generic rival name a "rivalDuel"-tagged card was generated with for this
+ * career's own pinned rival, so the same named opponent keeps showing up across seasons. */
+export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
+  if (!event.tags?.includes('rivalDuel')) return event;
+  const swap = (text: LocalizedText): LocalizedText => {
+    let fr = text.fr;
+    let en = text.en;
+    for (const name of RIVAL_PLAYERS) {
+      if (name === rivalName) continue;
+      if (fr.includes(name)) fr = fr.split(name).join(rivalName);
+      if (en.includes(name)) en = en.split(name).join(rivalName);
+    }
+    return { fr, en };
+  };
+  return {
+    ...event,
+    title: swap(event.title),
+    description: swap(event.description),
+    choices: event.choices.map((c) => ({
+      ...c,
+      label: swap(c.label),
+      resultText: c.resultText ? swap(c.resultText) : undefined,
+      successChance: c.successChance
+        ? {
+            ...c.successChance,
+            successText: c.successChance.successText ? swap(c.successChance.successText) : undefined,
+            failureText: c.successChance.failureText ? swap(c.successChance.failureText) : undefined,
+          }
+        : undefined,
+    })),
+  };
+}
+
 function leagueForAge(age: number, currentLeague: League, hasBeenDrafted: boolean): League {
   if (currentLeague !== 'lycee') return currentLeague;
   // Stay in high school until the player has actually lived through draft night.
@@ -84,6 +118,7 @@ export function createNewCareer(
   position: Position,
   path: CareerPath = 'full',
   height: number = defaultHeightForPosition(position),
+  bonusSkillPoints = 0,
 ): Career {
   const now = Date.now();
   const skip = path === 'skipToNba';
@@ -124,7 +159,10 @@ export function createNewCareer(
     position,
     height,
     specialty: null,
-    skillPoints: 0,
+    skillPoints: bonusSkillPoints,
+    rivalName: RIVAL_PLAYERS[randInt(0, RIVAL_PLAYERS.length - 1)],
+    rivalRecord: { wins: 0, losses: 0 },
+    newlyUnlockedAchievements: [],
     season: 1,
     eventInSeasonIndex: 0,
     eventsPerSeason: EVENTS_PER_SEASON,
@@ -188,6 +226,7 @@ const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 const NBA_SPECIALTY_EVENT_ID = 'nba-arrival-specialty';
 
 const FINALE_EVENT_ID = 'finale-moment-decisif';
+const FINALE_PREQUEL_EVENT_ID = 'finale-prequel-timeout';
 
 export function seasonsPlayedInLeague(career: Career, league: League): number {
   return career.history.filter((h) => h.league === league).length;
@@ -210,15 +249,18 @@ function forcedMilestone(career: Career): GameEvent | null {
     return getEvent(NBA_SPECIALTY_EVENT_ID) ?? null;
   }
   // The career-defining Finals moment is otherwise a rare random draw — guarantee it shows up
-  // as a season closer by year 3 in the league if luck hasn't brought it up already.
+  // as a season closer by year 3 in the league if luck hasn't brought it up already. It's staged
+  // as a two-part moment: this timeout beat chains straight into the actual shot.
   if (
     career.currentTeam.league === 'nba' &&
     !career.seenEventIds.includes(FINALE_EVENT_ID) &&
     !career.usedThisSeasonIds.includes(FINALE_EVENT_ID) &&
+    !career.seenEventIds.includes(FINALE_PREQUEL_EVENT_ID) &&
+    !career.usedThisSeasonIds.includes(FINALE_PREQUEL_EVENT_ID) &&
     seasonsPlayedInLeague(career, 'nba') >= 2 &&
     career.eventInSeasonIndex === career.eventsPerSeason - 1
   ) {
-    return getEvent(FINALE_EVENT_ID) ?? null;
+    return getEvent(FINALE_PREQUEL_EVENT_ID) ?? null;
   }
   return null;
 }

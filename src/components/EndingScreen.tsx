@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import type { Career } from '../types';
 import { useLang, useT } from '../i18n/useT';
 import { computeCareerSheet } from '../engine/careerEngine';
+import { ACHIEVEMENTS } from '../data/achievements';
 
 interface EndingScreenProps {
   career: Career;
@@ -100,7 +101,36 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
             </ul>
           )}
         </div>
+
+        <div className="mt-4">
+          <div className="mb-2 text-xs uppercase tracking-wide text-slate-400">{t('endingRivalry')}</div>
+          <p className="text-sm text-slate-300">
+            {t('endingRivalryRecord', { rival: career.rivalName, wins: career.rivalRecord.wins, losses: career.rivalRecord.losses })}
+          </p>
+        </div>
       </div>
+
+      {career.newlyUnlockedAchievements.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6 rounded-2xl border border-gold-400/40 bg-gold-400/10 px-5 py-4 text-left"
+        >
+          <div className="mb-2 text-xs uppercase tracking-wide text-gold-300">{t('endingNewAchievements')}</div>
+          <ul className="flex flex-col gap-1">
+            {career.newlyUnlockedAchievements.map((id) => {
+              const achievement = ACHIEVEMENTS.find((a) => a.id === id);
+              if (!achievement) return null;
+              return (
+                <li key={id} className="text-sm text-gold-200">
+                  <span className="font-semibold">🏅 {achievement.name[lang]}</span> — {achievement.description[lang]}
+                </li>
+              );
+            })}
+          </ul>
+        </motion.div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <button

@@ -21,6 +21,22 @@ function amplifyEffects(effects?: Partial<Record<StatKey, number>>): Partial<Rec
   return scaled;
 }
 
+// The riskier the play (lower baseChance), the bigger BOTH the upside and the downside should
+// swing — a legendary attempt that whiffs should sting more than a safe pass that doesn't pan
+// out. riskTier > 0 for risky/legendary choices, < 0 for safe/altruistic ones.
+function riskScale(effects: Partial<Record<StatKey, number>> | undefined, baseChance: number, branch: 'success' | 'failure') {
+  if (!effects) return effects;
+  const riskTier = 0.5 - baseChance;
+  const multiplier = branch === 'success' ? 1 + riskTier * 0.8 : 1 + riskTier * 1.3;
+  const scaled: Partial<Record<StatKey, number>> = {};
+  for (const key of Object.keys(effects) as StatKey[]) {
+    const value = effects[key] ?? 0;
+    const result = Math.round(value * Math.max(0.4, multiplier));
+    scaled[key] = result === 0 && value !== 0 ? Math.sign(value) : result;
+  }
+  return scaled;
+}
+
 function instantiateChoice(tpl: Omit<EventChoice, 'id'>, ctx: Record<string, string>, idPrefix: string, index: number): EventChoice {
   return {
     ...tpl,
@@ -32,8 +48,8 @@ function instantiateChoice(tpl: Omit<EventChoice, 'id'>, ctx: Record<string, str
     successChance: tpl.successChance
       ? {
           ...tpl.successChance,
-          onSuccess: amplifyEffects(tpl.successChance.onSuccess) ?? {},
-          onFailure: amplifyEffects(tpl.successChance.onFailure) ?? {},
+          onSuccess: riskScale(amplifyEffects(tpl.successChance.onSuccess), tpl.successChance.baseChance, 'success') ?? {},
+          onFailure: riskScale(amplifyEffects(tpl.successChance.onFailure), tpl.successChance.baseChance, 'failure') ?? {},
           successText: tpl.successChance.successText ? fillText(tpl.successChance.successText, ctx) : undefined,
           failureText: tpl.successChance.failureText ? fillText(tpl.successChance.failureText, ctx) : undefined,
         }

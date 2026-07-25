@@ -1,6 +1,6 @@
 import type { Career } from '../types';
 import { useGameStore } from '../store/gameStore';
-import { getEvent } from '../engine/careerEngine';
+import { getEvent, pinRivalName } from '../engine/careerEngine';
 import { useT } from '../i18n/useT';
 import { TopBar } from '../components/TopBar';
 import { EventCard } from '../components/EventCard';
@@ -23,7 +23,8 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
   const chooseTransferOffer = useGameStore((s) => s.chooseTransferOffer);
   const exitToMenu = useGameStore((s) => s.exitToMenu);
 
-  const currentEvent = career.currentEventId ? getEvent(career.currentEventId) : undefined;
+  const rawCurrentEvent = career.currentEventId ? getEvent(career.currentEventId) : undefined;
+  const currentEvent = rawCurrentEvent ? pinRivalName(rawCurrentEvent, career.rivalName) : undefined;
 
   return (
     <div className="flex min-h-screen flex-col">

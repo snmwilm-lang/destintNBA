@@ -1,10 +1,19 @@
 import { motion } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 import { useLang, useT } from '../i18n/useT';
+import { computeCareerSheet } from '../engine/careerEngine';
 
 interface MainMenuProps {
   onNewCareer: () => void;
 }
+
+const TIER_COLOR: Record<string, string> = {
+  S: 'text-gold-300',
+  A: 'text-emerald-300',
+  B: 'text-sky-300',
+  C: 'text-slate-300',
+  D: 'text-rose-300',
+};
 
 export function MainMenu({ onNewCareer }: MainMenuProps) {
   const t = useT();
@@ -13,6 +22,11 @@ export function MainMenu({ onNewCareer }: MainMenuProps) {
   const careers = useGameStore((s) => s.careers);
   const selectCareer = useGameStore((s) => s.selectCareer);
   const deleteCareer = useGameStore((s) => s.deleteCareer);
+  const activeCareers = careers.filter((c) => !c.retired);
+  const retiredCareers = careers
+    .filter((c) => c.retired)
+    .map((c) => ({ career: c, sheet: computeCareerSheet(c) }))
+    .sort((a, b) => b.sheet.score - a.sheet.score);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-start gap-8 px-4 py-12 sm:justify-center">
@@ -51,11 +65,11 @@ export function MainMenu({ onNewCareer }: MainMenuProps) {
 
       <div className="w-full max-w-md">
         <h2 className="mb-3 text-center text-xs uppercase tracking-widest text-slate-500">{t('menuYourCareers')}</h2>
-        {careers.length === 0 ? (
+        {activeCareers.length === 0 ? (
           <p className="text-center text-sm text-slate-500">{t('menuNoSaves')}</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {careers
+            {activeCareers
               .slice()
               .sort((a, b) => b.updatedAt - a.updatedAt)
               .map((c) => (
@@ -84,6 +98,38 @@ export function MainMenu({ onNewCareer }: MainMenuProps) {
           </div>
         )}
       </div>
+
+      {retiredCareers.length > 0 && (
+        <div className="w-full max-w-md">
+          <h2 className="mb-3 text-center text-xs uppercase tracking-widest text-slate-500">{t('menuLegendsWall')}</h2>
+          <div className="flex flex-col gap-2">
+            {retiredCareers.map(({ career: c, sheet }) => (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-between rounded-xl border border-gold-500/20 bg-court-800/70 px-4 py-3"
+              >
+                <div className="flex-1 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-100">{c.playerName}</span>
+                    <span className={`text-xs font-black ${TIER_COLOR[sheet.tier]}`}>{sheet.tier}</span>
+                  </div>
+                  <div className="text-xs italic text-slate-400">“{sheet.legacyTitle[lang]}”</div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (window.confirm(t('menuDeleteConfirm'))) deleteCareer(c.id);
+                  }}
+                  className="ml-3 shrink-0 rounded-full border border-court-600 px-3 py-1 text-xs text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
+                >
+                  {t('menuDelete')}
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

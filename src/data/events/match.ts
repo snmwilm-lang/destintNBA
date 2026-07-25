@@ -42,6 +42,7 @@ export const matchEvents: EventTemplate[] = [
       },
     ],
     weight: 3,
+    tags: ['rivalDuel'],
   },
   {
     id: 'match-fin-serree',
@@ -217,7 +218,12 @@ export const matchEvents: EventTemplate[] = [
       {
         label: tt('Aller en parler directement après le match', 'Talk to the coach right after the game'),
         effects: { relationCoach: -2, mental: 2 },
-        successChance: { baseChance: 0.5, onSuccess: { tempsDeJeu: 5, relationCoach: 1 }, onFailure: { relationCoach: -4 } },
+        successChance: {
+          baseChance: 0.5,
+          statBonus: { relationCoach: 0.012, mental: 0.006 },
+          onSuccess: { tempsDeJeu: 5, relationCoach: 1 },
+          onFailure: { relationCoach: -4 },
+        },
       },
       {
         label: tt('Rester professionnel et travailler encore plus dur', 'Stay professional and work even harder'),
@@ -257,6 +263,7 @@ export const matchEvents: EventTemplate[] = [
       },
     ],
     weight: 2,
+    tags: ['rivalDuel'],
   },
   {
     id: 'match-back-to-back',

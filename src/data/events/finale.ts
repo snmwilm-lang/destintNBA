@@ -2,6 +2,47 @@ import { tt, type EventTemplate } from '../../engine/eventTemplate';
 
 export const finaleEvents: EventTemplate[] = [
   {
+    id: 'finale-prequel-timeout',
+    category: 'finale',
+    title: tt('Dernier temps mort', 'Final timeout'),
+    description: tt(
+      "98-98. Le coach appelle le dernier temps mort de la finale. Dans le rond central, onze visages te regardent attendre ta décision pour la dernière possession.",
+      "98-98. The coach calls the final timeout of the finals. In the huddle, eleven faces look to you for the call on the last possession.",
+    ),
+    unique: true,
+    minSeason: 2,
+    weight: 12,
+    choices: [
+      {
+        label: tt('Demander le ballon, quoi qu\'il arrive', 'Call for the ball, no matter what'),
+        resultText: tt(
+          'Tu regardes ton coach droit dans les yeux : "Donnez-moi le ballon." Le silence retombe dans le huddle.',
+          'You look your coach dead in the eye: "Give me the ball." Silence falls over the huddle.',
+        ),
+        effects: { mental: 3, reputation: 1 },
+        linkedNextEventId: 'finale-moment-decisif',
+      },
+      {
+        label: tt('Proposer un système collectif', 'Propose a team play'),
+        resultText: tt(
+          'Tu dessines rapidement un système sur ta paume pour impliquer tout le monde sur la dernière action.',
+          'You quickly sketch a play on your palm to get everyone involved on the last possession.',
+        ),
+        effects: { iqBasket: 3, relationCoequipiers: 2 },
+        linkedNextEventId: 'finale-moment-decisif',
+      },
+      {
+        label: tt('Rester silencieux et respirer', 'Stay silent and breathe'),
+        resultText: tt(
+          "Tu n'as pas besoin de mots. Tu respires, tu te recentres, prêt pour ce qui va suivre.",
+          "You don't need words. You breathe, you refocus, ready for what comes next.",
+        ),
+        effects: { mental: 5, moral: 1 },
+        linkedNextEventId: 'finale-moment-decisif',
+      },
+    ],
+  },
+  {
     id: 'finale-moment-decisif',
     category: 'finale',
     title: tt('Moment décisif', 'The decisive moment'),

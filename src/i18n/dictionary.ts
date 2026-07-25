@@ -11,6 +11,7 @@ export const dictionary = {
   menuNewCareer: { fr: 'Nouvelle carrière', en: 'New career' },
   menuContinue: { fr: 'Continuer', en: 'Continue' },
   menuYourCareers: { fr: 'Tes carrières', en: 'Your careers' },
+  menuLegendsWall: { fr: 'Mur des légendes', en: 'Legends wall' },
   menuNoSaves: { fr: 'Aucune carrière pour le moment. Lance-toi !', en: 'No careers yet. Get started!' },
   menuDelete: { fr: 'Supprimer', en: 'Delete' },
   menuDeleteConfirm: { fr: 'Supprimer cette carrière ?', en: 'Delete this career?' },
@@ -165,6 +166,9 @@ export const dictionary = {
   endingPeakValue: { fr: 'Valeur marchande record', en: 'Peak market value' },
   endingTrophyCase: { fr: 'Palmarès complet', en: 'Full trophy case' },
   endingNoTrophyCase: { fr: 'Aucun trophée remporté.', en: 'No trophies won.' },
+  endingRivalry: { fr: 'Rivalité', en: 'Rivalry' },
+  endingRivalryRecord: { fr: 'Face à {rival} : {wins} victoires — {losses} défaites', en: 'Against {rival}: {wins} wins — {losses} losses' },
+  endingNewAchievements: { fr: 'Nouveaux succès débloqués', en: 'New achievements unlocked' },
 
   // Top bar / HUD
   hudSeason: { fr: 'Saison {season}', en: 'Season {season}' },

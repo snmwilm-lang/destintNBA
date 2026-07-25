@@ -46,6 +46,7 @@ export const conflitsEvents: EventTemplate[] = [
       { label: tt('Répondre avec la même agressivité', 'Fire back with the same aggression'), effects: { reputation: -2, popularite: 2, mental: -1 } },
       { label: tt('Ignorer complètement', 'Ignore it completely'), effects: { mental: 3 } },
     ],
+    tags: ['rivalDuel'],
   },
   {
     id: 'conflit-media-declaration',
@@ -87,5 +88,6 @@ export const conflitsEvents: EventTemplate[] = [
       { label: tt('Supprimer et calmer le jeu', 'Delete it and cool things down'), effects: { reputation: 1, popularite: -1 } },
       { label: tt("Continuer l'échange publiquement", 'Keep the exchange going publicly'), effects: { popularite: 4, reputation: -3 } },
     ],
+    tags: ['rivalDuel'],
   },
 ];

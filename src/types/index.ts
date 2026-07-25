@@ -88,6 +88,9 @@ export interface EventChoice {
     successText?: LocalizedText;
     failureText?: LocalizedText;
   };
+  /** Chains straight into another event as the payoff of a multi-step moment, without
+   * consuming an extra season slot or showing the usual choice-result screen in between. */
+  linkedNextEventId?: string;
 }
 
 export interface GameEvent {
@@ -224,6 +227,11 @@ export interface Career {
   specialty: LocalizedText | null;
   /** Earned through good seasons; the player spends them to directly train up a skill. */
   skillPoints: number;
+  /** Persistent named rival for duel-style events, pinned for this career. */
+  rivalName: string;
+  rivalRecord: { wins: number; losses: number };
+  /** Achievement ids unlocked by THIS career's ending, for a one-time flash on the ending screen. */
+  newlyUnlockedAchievements: string[];
   season: number;
   eventInSeasonIndex: number;
   eventsPerSeason: number;

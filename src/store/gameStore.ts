@@ -5,16 +5,19 @@ import {
   baseEventId,
   type CareerPath,
   checkEnding,
+  computeCareerSheet,
   createNewCareer,
   EVENTS_PER_SEASON,
   generateTransferOffers,
   getEvent,
   pickNextEvent,
+  pinRivalName,
   resolveChoice,
   simulateSeason,
   spendSkillPoint,
   startNextSeason,
 } from '../engine/careerEngine';
+import { ACHIEVEMENTS, MAX_ACHIEVEMENT_BONUS_POINTS } from '../data/achievements';
 
 const RECENT_EVENTS_MEMORY = 40;
 
@@ -28,6 +31,7 @@ interface GameStore {
 
   careers: Career[];
   activeCareerId: string | null;
+  unlockedAchievements: string[];
 
   createCareer: (playerName: string, archetype: Archetype, position: Position, path?: CareerPath, height?: number) => void;
   selectCareer: (id: string) => void;
@@ -73,11 +77,15 @@ export const useGameStore = create<GameStore>()(
 
       careers: [],
       activeCareerId: null,
+      unlockedAchievements: [],
 
       createCareer: (playerName, archetype, position, path = 'full', height) => {
         const id = uid();
-        const career = createNewCareer(id, playerName || 'Rookie', archetype, position, path, height);
-        set((state) => ({ careers: [...state.careers, career], activeCareerId: id }));
+        set((state) => {
+          const bonusSkillPoints = Math.min(MAX_ACHIEVEMENT_BONUS_POINTS, state.unlockedAchievements.length);
+          const career = createNewCareer(id, playerName || 'Rookie', archetype, position, path, height, bonusSkillPoints);
+          return { careers: [...state.careers, career], activeCareerId: id };
+        });
       },
 
       selectCareer: (id) => set({ activeCareerId: id }),
@@ -94,8 +102,9 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const career = state.careers.find((c) => c.id === state.activeCareerId);
         if (!career || !career.currentEventId) return;
-        const event = getEvent(career.currentEventId);
-        if (!event) return;
+        const rawEvent = getEvent(career.currentEventId);
+        if (!rawEvent) return;
+        const event = pinRivalName(rawEvent, career.rivalName);
         const outcome = resolveChoice(career, event, choiceId);
 
         set((s) =>
@@ -121,6 +130,16 @@ export const useGameStore = create<GameStore>()(
               }
             }
             const specialty = event.id === 'nba-arrival-specialty' && choice ? choice.label : c.specialty;
+            const rivalRecord =
+              event.tags?.includes('rivalDuel') && outcome.wasSuccess !== null
+                ? {
+                    wins: c.rivalRecord.wins + (outcome.wasSuccess ? 1 : 0),
+                    losses: c.rivalRecord.losses + (outcome.wasSuccess ? 0 : 1),
+                  }
+                : c.rivalRecord;
+            // A choice can chain straight into a follow-up event (a multi-step moment) instead
+            // of showing the usual result screen — it doesn't eat an extra slot from the season.
+            const linkedNextEventId = choice?.linkedNextEventId;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -131,12 +150,14 @@ export const useGameStore = create<GameStore>()(
               choiceLog,
               pendingDelayed,
               specialty,
-              phase: 'choiceResult',
-              lastChoiceResultText: outcome.resultText,
+              rivalRecord,
+              phase: linkedNextEventId ? 'event' : 'choiceResult',
+              currentEventId: linkedNextEventId ?? c.currentEventId,
+              lastChoiceResultText: linkedNextEventId ? null : outcome.resultText,
               lastChoiceStatDeltas: outcome.statDeltas,
               lastChoiceMoneyDelta: outcome.moneyDelta,
               lastChoiceWasSuccess: outcome.wasSuccess,
-              eventInSeasonIndex: c.eventInSeasonIndex + 1,
+              eventInSeasonIndex: linkedNextEventId ? c.eventInSeasonIndex : c.eventInSeasonIndex + 1,
             };
             return withChoice;
           }),
@@ -148,19 +169,30 @@ export const useGameStore = create<GameStore>()(
       },
 
       acknowledgeSeasonRecap: () => {
-        set((s) =>
-          updateActiveCareer(s, (c) => {
-            const ending = checkEnding(c);
-            if (ending) {
-              return { ...c, ending, retired: true, phase: 'ended' };
-            }
+        set((s) => {
+          const career = s.careers.find((c) => c.id === s.activeCareerId);
+          if (!career) return {};
+          const ending = checkEnding(career);
+          if (ending) {
+            const endedCareer: Career = { ...career, ending, retired: true, phase: 'ended' };
+            const sheet = computeCareerSheet(endedCareer);
+            const newlyUnlocked = ACHIEVEMENTS.filter((a) => !s.unlockedAchievements.includes(a.id) && a.check(endedCareer, sheet)).map(
+              (a) => a.id,
+            );
+            const withAchievements: Career = { ...endedCareer, newlyUnlockedAchievements: newlyUnlocked, updatedAt: Date.now() };
+            return {
+              careers: s.careers.map((c) => (c.id === s.activeCareerId ? withAchievements : c)),
+              unlockedAchievements: [...s.unlockedAchievements, ...newlyUnlocked],
+            };
+          }
+          return updateActiveCareer(s, (c) => {
             if (c.currentTeam.league !== 'lycee') {
               const offers = generateTransferOffers(c);
               return { ...c, phase: 'transferOffers', pendingTransferOffers: offers };
             }
             return startNextSeason(c);
-          }),
-        );
+          });
+        });
       },
 
       chooseTransferOffer: (team) => {
