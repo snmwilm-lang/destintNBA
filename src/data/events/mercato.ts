@@ -28,7 +28,9 @@ export const mercatoEvents: EventTemplate[] = [
       "Scouts from {team} have attended three of your last games.",
     ),
     slots: [{ key: 'team', pool: allTeams }],
-    minAge: 16,
+    // NBA-club interest shouldn't start until the player is genuinely a draft prospect — one
+    // year out from the typical draft age (18), not two.
+    minAge: 17,
     choices: [
       { label: tt('Rester concentré sur ta saison actuelle', 'Stay focused on your current season'), effects: { mental: 2, relationCoach: 1 } },
       { label: tt('Laisser filtrer l\'information à la presse', 'Let the info leak to the press'), effects: { popularite: 3, reputation: 1, relationCoach: -2, relationCoequipiers: -1 } },
@@ -58,7 +60,9 @@ export const mercatoEvents: EventTemplate[] = [
       'The press speculates about a possible move to {team}, with no official confirmation.',
     ),
     slots: [{ key: 'team', pool: allTeams }],
-    minAge: 16,
+    // NBA-club interest shouldn't start until the player is genuinely a draft prospect — one
+    // year out from the typical draft age (18), not two.
+    minAge: 17,
     choices: [
       { label: tt('Démentir publiquement', 'Deny it publicly'), effects: { relationCoach: 2, relationCoequipiers: 2, popularite: -1 } },
       { label: tt('Ne pas commenter', 'Decline to comment'), effects: { mental: 1 } },
@@ -74,7 +78,9 @@ export const mercatoEvents: EventTemplate[] = [
       '{team} invites you to tour its state-of-the-art training center to convince you to sign.',
     ),
     slots: [{ key: 'team', pool: allTeams }],
-    minAge: 16,
+    // NBA-club interest shouldn't start until the player is genuinely a draft prospect — one
+    // year out from the typical draft age (18), not two.
+    minAge: 17,
     choices: [
       { label: tt('Être impressionné et se projeter', 'Be impressed and picture yourself there'), effects: { moral: 3, mental: 1 } },
       { label: tt('Rester lucide sur le projet sportif', 'Stay clear-eyed about the sporting project'), effects: { iqBasket: 2 } },
