@@ -234,6 +234,7 @@ export function createNewCareer(
     pendingFinaleResult: null,
     hasReachedFinale: false,
     eliteBreakthroughCount: 0,
+    hasBeenSelectedInternationally: false,
     newlyUnlockedAchievements: [],
     traits: [],
     newlyUnlockedTraits: [],
@@ -404,6 +405,24 @@ function forcedMilestone(career: Career): GameEvent | null {
   ) {
     return getEvent(RIVALRY_PROVOCATION_EVENT_ID) ?? null;
   }
+  // Getting picked for the national team at all was otherwise a normal random draw inside a pool
+  // of well over a thousand event variants, gated to only a handful of eligible seasons — a
+  // player could go a whole career without ever once seeing it happen. Guarantee a real shot at
+  // the very next eligible Olympic/World Cup cycle once the player is an established pro.
+  if (
+    !career.hasBeenSelectedInternationally &&
+    !career.pendingNationalCampaign &&
+    career.currentTeam.league !== 'lycee' &&
+    career.age >= 24 &&
+    career.stats.reputation >= 45
+  ) {
+    if (career.season % 4 === QUADRENNIAL_CYCLE.jeuxOlympiques && !career.usedThisSeasonIds.includes('jo-selection-equipe')) {
+      return getEvent('jo-selection-equipe') ?? null;
+    }
+    if (career.season % 4 === QUADRENNIAL_CYCLE.coupeDuMonde && !career.usedThisSeasonIds.includes('cdm-qualification')) {
+      return getEvent('cdm-qualification') ?? null;
+    }
+  }
   // A national team call-up rolls the tournament run once, then the matching result event
   // (the final, or an early-exit round) is guaranteed to follow — so the player always sees
   // exactly how far their country went, not just a chance of it coming up.
@@ -536,9 +555,10 @@ function ageGrowthFactor(age: number, vintage: boolean): number {
   // ceiling by the end of it, not still stuck catching up.
   if (age <= 29) return 1.0;
   if (age <= 32) return 0.4;
-  // The prime is over — from here it's real decline, unless a rare, truly elite talent defies
-  // the curve for a season and still looks like a legend deep into their 30s.
-  return vintage ? 0.2 : -0.6;
+  if (age <= 35) return vintage ? 0.2 : -0.6;
+  // Past the mid-30s the decline steepens for real — a 38-40 year old is trading on reputation
+  // and experience by then, not still playing like a player in their prime.
+  return vintage ? 0.15 : -0.9;
 }
 
 // Extremely elite, well-rounded veterans get a small, rare (~12%) chance each season past 33
@@ -553,7 +573,7 @@ function growTowardPotential(current: number, potentiel: number, driver: number,
   const factor = ageGrowthFactor(age, vintage);
   const headroom = potentiel - current;
   const growth = factor * driver * Math.max(0, headroom) * 0.02;
-  const decay = factor < 0 ? factor * 1.5 : 0;
+  const decay = factor < 0 ? factor * 2.2 : 0;
   return clampStat(current + growth + decay);
 }
 
@@ -892,14 +912,24 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   const { blessures, matchesMissed, statsAfter } = rollInjuries(career, stats);
   stats = statsAfter;
 
+  // Every source that can push the talent ceiling itself (not just grow toward it) shares this
+  // one lifetime counter and hard cap. Without a shared cap, a consistently dominant player could
+  // trigger a hot-streak bump AND a trophy-sweep bump most seasons for a decade-plus, so even
+  // heavily diminishing per-trigger returns still crept toward the max "every time" — a true
+  // 90+ legend was supposed to be a handful of careers, not the default outcome of playing well.
+  let eliteBreakthroughCount = career.eliteBreakthroughCount;
+  const MAX_BREAKTHROUGH_TRIGGERS = 6;
+
   // A genuine hot streak — built from a season's chain of good choices, with real luck on the
   // risky ones — is what actually raises a player's ceiling. A cold or mixed season leaves
   // potentiel untouched, no matter how many seasons have gone by.
-  if (career.age <= 30) {
+  if (career.age <= 30 && eliteBreakthroughCount < MAX_BREAKTHROUGH_TRIGGERS) {
     const breakthroughChance = career.momentum >= 90 ? 0.5 : career.momentum >= 75 ? 0.3 : career.momentum >= 60 ? 0.12 : 0;
     if (breakthroughChance > 0 && Math.random() < breakthroughChance) {
-      const breakthroughGain = career.momentum >= 90 ? 3 : career.momentum >= 75 ? 2 : 1;
+      const baseGain = career.momentum >= 90 ? 3 : career.momentum >= 75 ? 2 : 1;
+      const breakthroughGain = Math.max(1, Math.round(baseGain * Math.pow(0.6, eliteBreakthroughCount)));
       stats = applyEffects(stats, { potentiel: breakthroughGain });
+      eliteBreakthroughCount += 1;
     }
   }
 
@@ -928,8 +958,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   // way an uncapped repeatable version did.
   const majorTrophyCount = trophies.filter((t) => /-(mvp|champion|scoring|assists|defense)$/.test(t.id)).length;
   const eliteSeasonBonus = majorTrophyCount >= 3 ? 10 : majorTrophyCount === 2 ? 7 : statLine.noteMoyenne >= 8.7 ? 4 : 0;
-  let eliteBreakthroughCount = career.eliteBreakthroughCount;
-  if (eliteSeasonBonus > 0 && career.age <= 32) {
+  if (eliteSeasonBonus > 0 && career.age <= 32 && eliteBreakthroughCount < MAX_BREAKTHROUGH_TRIGGERS) {
     const effectiveBonus = Math.max(1, Math.round(eliteSeasonBonus * Math.pow(0.5, eliteBreakthroughCount)));
     eliteBreakthroughCount += 1;
     const newPotentiel = clampStat(stats.potentiel + effectiveBonus);

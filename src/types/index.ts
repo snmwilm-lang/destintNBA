@@ -279,6 +279,10 @@ export interface Career {
    * the last, so a career can keep climbing toward true legend status on sustained dominance
    * without any single hot stretch snowballing straight to the max. */
   eliteBreakthroughCount: number;
+  /** True once the player has ever been called up for the national team (Olympics or World Cup),
+   * win or lose — guarantees at least one real shot at international competition over a career
+   * instead of leaving the initial call-up to a near-invisible random draw. */
+  hasBeenSelectedInternationally: boolean;
   /** Achievement ids unlocked by THIS career's ending, for a one-time flash on the ending screen. */
   newlyUnlockedAchievements: string[];
   /** Permanent double-edged personality traits earned mid-career (a buff paired with a nerf). */

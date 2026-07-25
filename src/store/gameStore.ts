@@ -63,6 +63,7 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     hasReachedFinale: c.hasReachedFinale ?? false,
     // Saves from before the diminishing multi-trigger version stored a plain boolean.
     eliteBreakthroughCount: typeof c.eliteBreakthroughCount === 'number' ? c.eliteBreakthroughCount : c.hadEliteBreakthrough ? 1 : 0,
+    hasBeenSelectedInternationally: c.hasBeenSelectedInternationally ?? false,
     newlyUnlockedAchievements: c.newlyUnlockedAchievements ?? [],
     traits: c.traits ?? [],
     newlyUnlockedTraits: c.newlyUnlockedTraits ?? [],
@@ -291,6 +292,7 @@ export const useGameStore = create<GameStore>()(
             const pendingFinaleResult = event.id === 'finale-moment-decisif' ? outcome.wasSuccess : c.pendingFinaleResult;
             const hasReachedFinale =
               c.hasReachedFinale || event.id === 'finale-prequel-timeout' || event.id === 'finale-moment-decisif';
+            const hasBeenSelectedInternationally = c.hasBeenSelectedInternationally || !!selectionCompetition;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -310,6 +312,7 @@ export const useGameStore = create<GameStore>()(
               pendingNationalCampaign,
               pendingFinaleResult,
               hasReachedFinale,
+              hasBeenSelectedInternationally,
               phase: linkedNextEventId ? 'event' : 'choiceResult',
               currentEventId: linkedNextEventId ?? c.currentEventId,
               lastChoiceResultText: resultText,
