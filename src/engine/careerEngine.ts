@@ -527,6 +527,9 @@ export function resolveChoice(career: Career, event: GameEvent, choiceId: string
 // --- Season progression -----------------------------------------------
 
 function ageGrowthFactor(age: number, vintage: boolean): number {
+  // Still a raw, unfinished prospect as a teenager — the body and the game catch up together,
+  // not before, so real development shouldn't already be maxed out at 17.
+  if (age <= 19) return 0.8;
   if (age <= 24) return 1.3;
   // The athletic prime (roughly 24-29): still developing at close to full speed, not coasting —
   // a player who reaches the league and puts the seasons in should be closing in on their real
@@ -1253,12 +1256,21 @@ export function startNextSeason(career: Career): Career {
   const nextAge = career.age + 1;
   const nextLeague = leagueForAge(nextAge, career.currentTeam.league, career.seenEventIds.includes('draft-soiree'));
   let currentTeam = career.currentTeam;
+  const justDrafted = nextLeague === 'nba' && career.currentTeam.league === 'lycee';
   if (nextLeague !== career.currentTeam.league) {
     // Landing in the NBA off the back of an actual draft night uses the pick that was rolled
     // there, instead of a purely random team assignment.
     currentTeam = nextLeague === 'nba' && career.draftPick !== null ? teamForDraftPick(career.draftPick) : allTeamsForLeague(nextLeague)[randInt(0, allTeamsForLeague(nextLeague).length - 1)];
   }
-  const withDelayed = applyDueDelayedEffects({ ...career, age: nextAge, currentTeam });
+  let stats = career.stats;
+  if (justDrafted) {
+    // A consensus top prospect and a guy who barely got picked shouldn't share the same talent
+    // ceiling — four years of high-school performance and behavior (draftStock) now actually
+    // shapes how far the player can develop from here, not just where they get picked.
+    const draftPotentielAdjustment = Math.round((career.draftStock - 50) * 0.3);
+    stats = { ...stats, potentiel: clampStat(stats.potentiel + draftPotentielAdjustment) };
+  }
+  const withDelayed = applyDueDelayedEffects({ ...career, age: nextAge, currentTeam, stats });
   // Vary the pace season to season instead of always the same fixed count.
   const eventsPerSeason = randomEventsPerSeason();
   return {
