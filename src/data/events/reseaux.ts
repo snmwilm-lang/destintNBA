@@ -12,8 +12,8 @@ export const reseauxEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'platform', pool: PLATFORMS }],
     choices: [
-      { label: tt('Surfer sur le buzz avec du contenu', 'Ride the buzz with more content'), effects: { popularite: 6, forme: -1 } },
-      { label: tt('Rester discret et laisser passer', 'Stay low-key and let it pass'), effects: { moral: 1, popularite: 1 } },
+      { label: tt('Surfer sur le buzz avec du contenu', 'Ride the buzz with more content'), effects: { popularite: 6, forme: -1, relationCoequipiers: -1 } },
+      { label: tt('Rester discret et laisser passer', 'Stay low-key and let it pass'), effects: { moral: 1, popularite: 1, relationCoequipiers: 1 } },
     ],
     weight: 2,
   },
@@ -58,8 +58,8 @@ export const reseauxEvents: EventTemplate[] = [
     slots: [{ key: 'platform', pool: PLATFORMS }],
     choices: [
       { label: tt('Supprimer et présenter des excuses', 'Delete it and apologize'), effects: { reputation: -1, moral: -1 } },
-      { label: tt('Assumer et clarifier ton propos', 'Own it and clarify what you meant'), effects: { reputation: 1, mental: 2 } },
-      { label: tt('Ne rien faire', 'Do nothing'), effects: { reputation: -3 } },
+      { label: tt('Assumer et clarifier ton propos', 'Own it and clarify what you meant'), effects: { reputation: 1, mental: 2, relationCoequipiers: 1 } },
+      { label: tt('Ne rien faire', 'Do nothing'), effects: { reputation: -3, relationCoequipiers: -2 } },
     ],
   },
   {
@@ -101,8 +101,8 @@ export const reseauxEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'platform', pool: PLATFORMS }],
     choices: [
-      { label: tt('Partager régulièrement', 'Share regularly'), effects: { popularite: 3, forme: -1 } },
-      { label: tt('Garder ta vie privée pour toi', 'Keep your private life private'), effects: { mental: 1, popularite: -1 } },
+      { label: tt('Partager régulièrement', 'Share regularly'), effects: { popularite: 3, forme: -1, relationCoequipiers: -1 } },
+      { label: tt('Garder ta vie privée pour toi', 'Keep your private life private'), effects: { mental: 1, popularite: -1, relationCoequipiers: 1 } },
     ],
   },
   {

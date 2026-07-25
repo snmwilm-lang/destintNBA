@@ -31,7 +31,7 @@ export const mercatoEvents: EventTemplate[] = [
     minAge: 16,
     choices: [
       { label: tt('Rester concentré sur ta saison actuelle', 'Stay focused on your current season'), effects: { mental: 2, relationCoach: 1 } },
-      { label: tt('Laisser filtrer l\'information à la presse', 'Let the info leak to the press'), effects: { popularite: 3, reputation: 1, relationCoach: -2 } },
+      { label: tt('Laisser filtrer l\'information à la presse', 'Let the info leak to the press'), effects: { popularite: 3, reputation: 1, relationCoach: -2, relationCoequipiers: -1 } },
     ],
   },
   {
@@ -60,9 +60,9 @@ export const mercatoEvents: EventTemplate[] = [
     slots: [{ key: 'team', pool: allTeams }],
     minAge: 16,
     choices: [
-      { label: tt('Démentir publiquement', 'Deny it publicly'), effects: { relationCoach: 2, popularite: -1 } },
+      { label: tt('Démentir publiquement', 'Deny it publicly'), effects: { relationCoach: 2, relationCoequipiers: 2, popularite: -1 } },
       { label: tt('Ne pas commenter', 'Decline to comment'), effects: { mental: 1 } },
-      { label: tt('Laisser planer le doute', 'Let the doubt linger'), effects: { popularite: 3, relationCoach: -3 } },
+      { label: tt('Laisser planer le doute', 'Let the doubt linger'), effects: { popularite: 3, relationCoach: -3, relationCoequipiers: -3 } },
     ],
   },
   {
@@ -90,8 +90,8 @@ export const mercatoEvents: EventTemplate[] = [
     ),
     leagues: ['nba', 'europe', 'gLeague'],
     choices: [
-      { label: tt('Réaffirmer ta fidélité publiquement', 'Publicly reaffirm your loyalty'), effects: { relationCoach: 4, popularite: 2 }, moneyDelta: -1000 },
-      { label: tt('Rester ouvert à toutes les options', 'Stay open to all options'), effects: { relationCoach: -2 }, moneyDelta: 500 },
+      { label: tt('Réaffirmer ta fidélité publiquement', 'Publicly reaffirm your loyalty'), effects: { relationCoach: 4, relationCoequipiers: 3, popularite: 2 }, moneyDelta: -1000 },
+      { label: tt('Rester ouvert à toutes les options', 'Stay open to all options'), effects: { relationCoach: -2, relationCoequipiers: -2 }, moneyDelta: 500 },
     ],
   },
 ];
