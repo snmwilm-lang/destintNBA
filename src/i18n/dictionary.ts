@@ -226,6 +226,13 @@ export const dictionary = {
   },
   endingNewAchievements: { fr: 'Nouveaux succès débloqués', en: 'New achievements unlocked' },
 
+  // Rivalry (shown live during the career, not just at the end)
+  rivalryStatusLeading: { fr: 'Tu domines cette rivalité', en: "You're leading this rivalry" },
+  rivalryStatusTrailing: { fr: 'Il/elle domine cette rivalité', en: "They're leading this rivalry" },
+  rivalryStatusTied: { fr: 'Rivalité totalement équilibrée', en: 'Dead even rivalry' },
+  rivalryBannerTitle: { fr: 'Face à {rival}', en: 'Against {rival}' },
+  recapRivalryTitle: { fr: 'Rivalités', en: 'Rivalries' },
+
   // Top bar / HUD
   hudSeason: { fr: 'Saison {season}', en: 'Season {season}' },
   hudAge: { fr: '{age} ans', en: 'Age {age}' },

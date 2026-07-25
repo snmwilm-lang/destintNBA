@@ -13,6 +13,12 @@ const VICTORY_CONTENT: Record<CareerDefiningVariant, { winIcon: string; loseIcon
   cdm: { winIcon: '🌍', loseIcon: '🥈', winTitleKey: 'choiceVictoryTitleCdm', loseTitleKey: 'choiceDefeatTitleCdm' },
 };
 
+export interface RivalryUpdate {
+  rivalName: string;
+  wins: number;
+  losses: number;
+}
+
 interface ChoiceResultCardProps {
   text: LocalizedText | null;
   statDeltas: Partial<Record<StatKey, number>> | null;
@@ -24,10 +30,14 @@ interface ChoiceResultCardProps {
    * competition gets its own icon and headline (gold medal, world champion, etc.) instead of one
    * generic "victory" screen for all three. */
   careerDefiningVariant?: CareerDefiningVariant | null;
+  /** The updated head-to-head record right after a rival-duel or city-rivalry choice resolves —
+   * surfaces the score live, in the moment, instead of leaving the rivalry invisible until the
+   * end-of-career sheet where it can't actually build any tension. */
+  rivalryUpdate?: RivalryUpdate | null;
   onContinue: () => void;
 }
 
-export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, careerDefiningVariant, onContinue }: ChoiceResultCardProps) {
+export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, careerDefiningVariant, rivalryUpdate, onContinue }: ChoiceResultCardProps) {
   const lang = useLang();
   const t = useT();
   const currency = lang === 'fr' ? 'fr-FR' : 'en-US';
@@ -117,6 +127,26 @@ export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, car
               {t('commonMoney', { amount: moneyDelta.toLocaleString(currency) })}
             </span>
           )}
+        </div>
+      )}
+
+      {rivalryUpdate && (
+        <div className="mb-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3">
+          <div className="text-xs font-bold uppercase tracking-wide text-rose-300">
+            {t('rivalryBannerTitle', { rival: rivalryUpdate.rivalName })}
+          </div>
+          <div className="mt-1 text-2xl font-black tabular-nums text-slate-100">
+            {rivalryUpdate.wins} — {rivalryUpdate.losses}
+          </div>
+          <div className="mt-1 text-xs text-slate-400">
+            {t(
+              rivalryUpdate.wins === rivalryUpdate.losses
+                ? 'rivalryStatusTied'
+                : rivalryUpdate.wins > rivalryUpdate.losses
+                  ? 'rivalryStatusLeading'
+                  : 'rivalryStatusTrailing',
+            )}
+          </div>
         </div>
       )}
 

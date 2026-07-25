@@ -98,6 +98,27 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
           )}
         </section>
 
+        {(career.rivalRecord.wins > 0 ||
+          career.rivalRecord.losses > 0 ||
+          career.rivalTeamRecord.wins > 0 ||
+          career.rivalTeamRecord.losses > 0) && (
+          <section className="col-span-2 sm:col-span-3 text-left">
+            <h3 className="text-xs uppercase tracking-wide text-slate-400 mb-2">{t('recapRivalryTitle')}</h3>
+            <div className="flex flex-col gap-2">
+              {(career.rivalRecord.wins > 0 || career.rivalRecord.losses > 0) && (
+                <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 px-3 py-2 text-sm text-slate-200">
+                  {t('endingRivalryRecord', { rival: career.rivalName, wins: career.rivalRecord.wins, losses: career.rivalRecord.losses })}
+                </div>
+              )}
+              {(career.rivalTeamRecord.wins > 0 || career.rivalTeamRecord.losses > 0) && (
+                <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 px-3 py-2 text-sm text-slate-200">
+                  {t('endingRivalTeamRecord', { team: career.rivalTeamName, wins: career.rivalTeamRecord.wins, losses: career.rivalTeamRecord.losses })}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         <section className="col-span-2 sm:col-span-3 text-left">
           <h3 className="text-xs uppercase tracking-wide text-slate-400 mb-2">{t('recapPress')}</h3>
           <div className="flex flex-col gap-2">

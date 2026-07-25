@@ -4,7 +4,7 @@ import { getEvent, pinRivalHighSchool, pinRivalName, pinRivalTeam } from '../eng
 import { useT } from '../i18n/useT';
 import { TopBar } from '../components/TopBar';
 import { EventCard } from '../components/EventCard';
-import { ChoiceResultCard, type CareerDefiningVariant } from '../components/ChoiceResultCard';
+import { ChoiceResultCard, type CareerDefiningVariant, type RivalryUpdate } from '../components/ChoiceResultCard';
 import { SeasonRecapScreen } from '../components/SeasonRecapScreen';
 import { TransferOffersScreen } from '../components/TransferOffersScreen';
 import { EndingScreen } from '../components/EndingScreen';
@@ -41,6 +41,16 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
           ? 'cdm'
           : null;
 
+  // Right after a rival-duel or city-rivalry choice resolves, surface the updated head-to-head
+  // score in the moment — that's what actually makes the rivalry feel alive, instead of a stat
+  // that only shows up once, on the end-of-career sheet.
+  const lastResolvedEvent = lastResolvedEventId ? getEvent(lastResolvedEventId) : undefined;
+  const rivalryUpdate: RivalryUpdate | null = lastResolvedEvent?.tags?.includes('rivalDuel')
+    ? { rivalName: career.rivalName, wins: career.rivalRecord.wins, losses: career.rivalRecord.losses }
+    : lastResolvedEvent?.tags?.includes('cityRivalry')
+      ? { rivalName: career.rivalTeamName, wins: career.rivalTeamRecord.wins, losses: career.rivalTeamRecord.losses }
+      : null;
+
   return (
     <div className="flex min-h-screen flex-col">
       {career.phase !== 'ended' && <TopBar career={career} onOpenMenu={onOpenMenu} />}
@@ -59,6 +69,7 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
             moneyDelta={career.lastChoiceMoneyDelta}
             wasSuccess={career.lastChoiceWasSuccess}
             careerDefiningVariant={careerDefiningVariant}
+            rivalryUpdate={rivalryUpdate}
             onContinue={acknowledgeChoiceResult}
           />
         )}

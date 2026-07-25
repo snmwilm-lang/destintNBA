@@ -454,6 +454,15 @@ function eventWeight(event: GameEvent, career: Career): number {
   if (career.rivalryProvoked && event.tags?.includes('cityRivalry')) {
     weight *= 14;
   }
+  // The persistent named rival is meant to be a real, felt storyline across the whole career —
+  // left at base weight it was buried deep enough in a pool of well over a thousand variants that
+  // players could go years without crossing paths. Make it a recurring presence once pro, and
+  // heat it up further the more the two have already clashed.
+  if (event.tags?.includes('rivalDuel')) {
+    weight *= career.currentTeam.league === 'nba' || career.currentTeam.league === 'europe' ? 6 : 3;
+    const meetings = career.rivalRecord.wins + career.rivalRecord.losses;
+    weight *= 1 + Math.min(meetings, 10) * 0.15;
+  }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
   if (recencyIndex !== -1) {
