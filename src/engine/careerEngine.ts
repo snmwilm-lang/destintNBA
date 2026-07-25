@@ -19,7 +19,7 @@ import type {
 import { allEvents } from '../data/events';
 import { HIGH_SCHOOL_TEAM_POOL, NBA_TEAM_POOL, EUROPE_TEAM_POOL, allTeamsForLeague } from '../data/teams';
 import { BUILDS, buildIdentity, getBuild } from '../data/builds';
-import { NBA_LIKE_TEAMS, RIVAL_PLAYERS } from '../data/names';
+import { HIGH_SCHOOL_TEAMS, NBA_LIKE_TEAMS, RIVAL_PLAYERS } from '../data/names';
 import { getNationality } from '../data/nationalities';
 import { checkNewTraits } from '../data/traits';
 import { applyEffects, clampStat, initialStats, randFloat, randInt, weightedPick } from './statUtils';
@@ -145,6 +145,12 @@ export function pinRivalTeam(event: GameEvent, rivalTeamName: string): GameEvent
   return pinPlaceholder(event, 'cityRivalry', RIVAL_TEAM_NAMES, rivalTeamName);
 }
 
+/** Same idea again, but for a "schoolRivalry"-tagged card: a rival high school program, the
+ * origin story that can go on to seed the career's legacy. */
+export function pinRivalHighSchool(event: GameEvent, rivalHighSchool: string): GameEvent {
+  return pinPlaceholder(event, 'schoolRivalry', HIGH_SCHOOL_TEAMS, rivalHighSchool);
+}
+
 function leagueForAge(age: number, currentLeague: League, hasBeenDrafted: boolean): League {
   if (currentLeague !== 'lycee') return currentLeague;
   // Stay in high school until the player has actually lived through draft night.
@@ -212,6 +218,8 @@ export function createNewCareer(
     rivalTeamName: RIVAL_TEAM_NAMES[randInt(0, RIVAL_TEAM_NAMES.length - 1)],
     rivalTeamRecord: { wins: 0, losses: 0 },
     rivalryProvoked: false,
+    rivalHighSchool: HIGH_SCHOOL_TEAMS.filter((s) => s !== startingTeam.name)[randInt(0, HIGH_SCHOOL_TEAMS.length - 2)],
+    rivalHighSchoolRecord: { wins: 0, losses: 0 },
     nationality,
     pendingNationalCampaign: null,
     newlyUnlockedAchievements: [],
@@ -885,6 +893,22 @@ function craftCareerNarrative(career: Career, tier: CareerTier): LocalizedText {
     ? { fr: 'Direct dans le grand bain, sans passer par la case lycée.', en: 'Straight into the deep end, skipping high school entirely.' }
     : { fr: 'Parti de zéro sur les playgrounds, saison après saison.', en: 'Built from scratch on the playgrounds, season after season.' };
 
+  // A high-school rivalry that actually got played out becomes the origin story the rest of the
+  // legacy narrative builds on top of.
+  const { wins: hsWins, losses: hsLosses } = career.rivalHighSchoolRecord;
+  const originText =
+    !startedInNba && hsWins + hsLosses > 0
+      ? hsWins > hsLosses
+        ? {
+            fr: `Tout a commencé par une rivalité légendaire face à ${career.rivalHighSchool} au lycée. `,
+            en: `It all started with a legendary high-school rivalry against ${career.rivalHighSchool}. `,
+          }
+        : {
+            fr: `Une rivalité de lycée douloureuse face à ${career.rivalHighSchool} a forgé son mental très tôt. `,
+            en: `A painful high-school rivalry against ${career.rivalHighSchool} forged his mindset early on. `,
+          }
+      : { fr: '', en: '' };
+
   const tierText = TIER_NARRATIVE[tier];
 
   const trophyCount = career.trophies.length;
@@ -896,8 +920,8 @@ function craftCareerNarrative(career: Career, tier: CareerTier): LocalizedText {
         : { fr: 'Une vitrine bien remplie de récompenses.', en: 'A trophy case packed with hardware.' };
 
   return {
-    fr: `${pathText.fr} ${tierText.fr} ${trophyText.fr}`,
-    en: `${pathText.en} ${tierText.en} ${trophyText.en}`,
+    fr: `${originText.fr}${pathText.fr} ${tierText.fr} ${trophyText.fr}`,
+    en: `${originText.en}${pathText.en} ${tierText.en} ${trophyText.en}`,
   };
 }
 

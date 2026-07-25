@@ -31,10 +31,10 @@ export function TopBar({ career, onOpenMenu }: TopBarProps) {
           <div className="flex items-center gap-3 min-w-0">
             <div
               title={t('hudOverall')}
-              className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-full bg-gradient-to-br text-court-950 leading-none ${overallColorClass(overall)}`}
+              className={`flex h-11 w-11 shrink-0 flex-col items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-court-950 leading-none ${overallColorClass(overall)}`}
             >
-              <span className="text-xs font-black tabular-nums">{overall}</span>
-              <span className="text-[6px] font-bold uppercase tracking-wide">{t('hudOverallShort')}</span>
+              <span className="text-sm font-black tabular-nums leading-none">{overall}</span>
+              <span className="mt-0.5 text-[7px] font-bold uppercase tracking-wide leading-none">{t('hudOverallShort')}</span>
             </div>
             <div className="min-w-0 flex-1 text-left">
               <div className="truncate text-sm font-semibold text-slate-100">
@@ -45,9 +45,9 @@ export function TopBar({ career, onOpenMenu }: TopBarProps) {
                   {career.specialty[lang]}
                 </div>
               )}
-              <div className="truncate text-xs text-slate-400">
-                {t('hudTeam', { team: career.currentTeam.name })} · {t('hudSeason', { season: career.season })} ·{' '}
-                {t('hudAge', { age: career.age })}
+              <div className="truncate text-xs text-slate-400">{t('hudTeam', { team: career.currentTeam.name })}</div>
+              <div className="shrink-0 whitespace-nowrap text-xs text-slate-400">
+                {t('hudSeason', { season: career.season })} · {t('hudAge', { age: career.age })}
               </div>
             </div>
           </div>

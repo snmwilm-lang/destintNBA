@@ -143,6 +143,15 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
               })}
             </p>
           )}
+          {(career.rivalHighSchoolRecord.wins > 0 || career.rivalHighSchoolRecord.losses > 0) && (
+            <p className="mt-1 text-sm text-slate-300">
+              {t('endingRivalHighSchoolRecord', {
+                school: career.rivalHighSchool,
+                wins: career.rivalHighSchoolRecord.wins,
+                losses: career.rivalHighSchoolRecord.losses,
+              })}
+            </p>
+          )}
         </div>
       </div>
 

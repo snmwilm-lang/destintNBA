@@ -162,4 +162,55 @@ export const conflitsEvents: EventTemplate[] = [
     ],
     tags: ['cityRivalry'],
   },
+  {
+    id: 'conflit-derby-lycee',
+    category: 'conflits',
+    title: tt('Le derby contre Northview High', 'The derby against Northview High'),
+    description: tt(
+      "Le match le plus attendu de l'année scolaire. Toute la ville s'est déplacée pour ce choc entre les deux meilleurs lycées de la région.",
+      "The most anticipated game of the school year. The whole town has shown up for this clash between the two best high schools in the area.",
+    ),
+    leagues: ['lycee'],
+    minSeason: 1,
+    weight: 3,
+    choices: [
+      {
+        label: tt('Vouloir tout porter sur tes épaules', 'Try to carry the whole team yourself'),
+        successChance: {
+          baseChance: 0.42,
+          statBonus: { technique: 0.012, mental: 0.008 },
+          onSuccess: { reputation: 10, popularite: 8, moral: 8 },
+          onFailure: { moral: -7, reputation: -3 },
+          successText: tt(
+            "Tu portes ton lycée à la victoire à toi seul. Cette rivalité restera dans les mémoires — c'est le début de ta légende.",
+            'You carry your school to victory almost single-handedly. This rivalry will be remembered — the start of your legend.',
+          ),
+          failureText: tt(
+            "Trop de responsabilités pour un seul joueur. Le derby se termine dans la douleur.",
+            'Too much responsibility for one player to carry. The derby ends in heartbreak.',
+          ),
+        },
+      },
+      { label: tt('Faire confiance au collectif', 'Trust the team around you'), effects: { relationCoequipiers: 4, iqBasket: 2, mental: 1 } },
+    ],
+    tags: ['schoolRivalry'],
+  },
+  {
+    id: 'conflit-star-lycee-rival',
+    category: 'conflits',
+    title: tt('La star de Northview High te chambre', "Northview High's star player talks trash"),
+    description: tt(
+      "Le meilleur espoir de leur lycée te promet publiquement une humiliation avant le prochain match entre vos deux écoles.",
+      'Their school\'s top prospect publicly promises to humiliate you before the next game between your two schools.',
+    ),
+    leagues: ['lycee'],
+    minSeason: 2,
+    weight: 2,
+    choices: [
+      { label: tt('Répondre par des actes sur le terrain', 'Answer with your play on the court'), effects: { mental: 3, reputation: 2 }, draftImpact: 1 },
+      { label: tt('Répondre sur les réseaux', 'Fire back on social media'), effects: { popularite: 4, reputation: -2 }, draftImpact: -1 },
+      { label: tt('Ignorer et rester concentré', 'Ignore it and stay focused'), effects: { mental: 2 } },
+    ],
+    tags: ['schoolRivalry'],
+  },
 ];

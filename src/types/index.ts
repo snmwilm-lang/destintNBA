@@ -254,6 +254,9 @@ export interface Career {
   /** Set once the player deliberately provokes the rival fanbase — from then on, cityRivalry
    * moments come up noticeably more often instead of purely at random. */
   rivalryProvoked: boolean;
+  /** A rival high school (ages 15-19 only) — the origin story that can seed the career's legacy. */
+  rivalHighSchool: string;
+  rivalHighSchoolRecord: { wins: number; losses: number };
   /** Country represented in international competition (Olympics, World Cup). */
   nationality: string;
   /** Set the moment the national team is selected; resolved into the matching

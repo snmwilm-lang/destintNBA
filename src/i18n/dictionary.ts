@@ -196,6 +196,10 @@ export const dictionary = {
     fr: 'Ennemi public à {team} : {wins} victoires — {losses} défaites',
     en: 'Public enemy at {team}: {wins} wins — {losses} losses',
   },
+  endingRivalHighSchoolRecord: {
+    fr: 'Derby lycée face à {school} : {wins} victoires — {losses} défaites',
+    en: 'High-school derby against {school}: {wins} wins — {losses} losses',
+  },
   endingNewAchievements: { fr: 'Nouveaux succès débloqués', en: 'New achievements unlocked' },
 
   // Top bar / HUD

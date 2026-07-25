@@ -12,6 +12,7 @@ import {
   generateTransferOffers,
   getEvent,
   pickNextEvent,
+  pinRivalHighSchool,
   pinRivalName,
   pinRivalTeam,
   resolveChoice,
@@ -123,7 +124,7 @@ export const useGameStore = create<GameStore>()(
         if (!career || !career.currentEventId) return;
         const rawEvent = getEvent(career.currentEventId);
         if (!rawEvent) return;
-        const event = pinRivalTeam(pinRivalName(rawEvent, career.rivalName), career.rivalTeamName);
+        const event = pinRivalHighSchool(pinRivalTeam(pinRivalName(rawEvent, career.rivalName), career.rivalTeamName), career.rivalHighSchool);
         const outcome = resolveChoice(career, event, choiceId);
 
         set((s) =>
@@ -162,6 +163,13 @@ export const useGameStore = create<GameStore>()(
                     losses: c.rivalTeamRecord.losses + (outcome.wasSuccess ? 0 : 1),
                   }
                 : c.rivalTeamRecord;
+            const rivalHighSchoolRecord =
+              event.tags?.includes('schoolRivalry') && outcome.wasSuccess !== null
+                ? {
+                    wins: c.rivalHighSchoolRecord.wins + (outcome.wasSuccess ? 1 : 0),
+                    losses: c.rivalHighSchoolRecord.losses + (outcome.wasSuccess ? 0 : 1),
+                  }
+                : c.rivalHighSchoolRecord;
             const rivalryProvoked = c.rivalryProvoked || choice?.triggersRivalry === true;
             // Draft stock only accumulates during the high-school years it's meant to reflect —
             // once drafted, the pick is locked in and further swings would be meaningless.
@@ -206,6 +214,7 @@ export const useGameStore = create<GameStore>()(
               pendingDelayed,
               rivalRecord,
               rivalTeamRecord,
+              rivalHighSchoolRecord,
               rivalryProvoked,
               draftStock,
               draftPick,
