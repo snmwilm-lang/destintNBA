@@ -266,6 +266,10 @@ export interface Career {
   /** Set the moment the national team is selected; resolved into the matching
    * result event (final or an early-exit round), then cleared. */
   pendingNationalCampaign: { competition: 'jeuxOlympiques' | 'coupeDuMonde'; round: 'groupes' | 'quarts' | 'demies' | 'finale' } | null;
+  /** Set the moment the Finals-clinching shot (finale-moment-decisif) resolves; consumed by the
+   * next season simulation so hitting (or missing) that shot always narratively matches whether
+   * the team is actually crowned champion, instead of the two being decided independently. */
+  pendingFinaleResult: boolean | null;
   /** Achievement ids unlocked by THIS career's ending, for a one-time flash on the ending screen. */
   newlyUnlockedAchievements: string[];
   /** Permanent double-edged personality traits earned mid-career (a buff paired with a nerf). */

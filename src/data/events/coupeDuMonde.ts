@@ -4,6 +4,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
   {
     id: 'cdm-qualification',
     category: 'coupeDuMonde',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Qualification pour la Coupe du Monde', 'World Cup qualification'),
     description: tt(
       'Ta sélection nationale se qualifie pour la Coupe du Monde, une compétition majeure dans ta carrière internationale.',
@@ -19,6 +20,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
   {
     id: 'cdm-phase-groupes',
     category: 'coupeDuMonde',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Phase de groupes serrée', 'Tight group stage'),
     description: tt(
       'Ta sélection joue un match crucial de phase de groupes face à une nation coriace.',
@@ -33,6 +35,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
   {
     id: 'cdm-elimination-groupes',
     category: 'coupeDuMonde',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Éliminé dès la phase de groupes', 'Eliminated in the group stage'),
     description: tt(
       "Ta sélection nationale ne survit pas à la phase de groupes de la Coupe du Monde.",
@@ -48,6 +51,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
   {
     id: 'cdm-elimination-quarts',
     category: 'coupeDuMonde',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Éliminé en quart de finale', 'Eliminated in the quarterfinals'),
     description: tt(
       "Ta sélection nationale s'incline en quart de finale de la Coupe du Monde.",
@@ -63,6 +67,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
   {
     id: 'cdm-elimination-demies',
     category: 'coupeDuMonde',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Éliminé en demi-finale mondiale', 'Eliminated in the World Cup semifinal'),
     description: tt(
       "Ta sélection nationale tombe en demi-finale et devra jouer la petite finale pour le bronze.",
@@ -88,6 +93,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
   {
     id: 'cdm-finale-mondiale',
     category: 'coupeDuMonde',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Finale de la Coupe du Monde', 'World Cup final'),
     description: tt(
       "Ta sélection dispute la finale de la Coupe du Monde. C'est l'un des sommets possibles de ta carrière internationale.",

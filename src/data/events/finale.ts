@@ -11,6 +11,7 @@ export const finaleEvents: EventTemplate[] = [
     ),
     unique: true,
     minSeason: 2,
+    leagues: ['nba', 'gLeague'],
     weight: 12,
     choices: [
       {
@@ -52,6 +53,7 @@ export const finaleEvents: EventTemplate[] = [
     ),
     unique: true,
     minSeason: 2,
+    leagues: ['nba', 'gLeague'],
     weight: 12,
     choices: [
       {
@@ -132,6 +134,7 @@ export const finaleEvents: EventTemplate[] = [
       'Demain, tout se joue. Le sommeil se fait attendre, les pensées s\'enchaînent sans fin.',
       "Tomorrow, everything is on the line. Sleep won't come, thoughts keep racing.",
     ),
+    leagues: ['nba', 'gLeague'],
     weight: 2,
     choices: [
       { label: tt('Visualiser le match dans le calme', 'Visualize the game calmly'), effects: { mental: 5, moral: 3 } },
@@ -147,6 +150,7 @@ export const finaleEvents: EventTemplate[] = [
       'Dans le silence du vestiaire, le coach te tend la parole avant d\'entrer sur le terrain.',
       'In the silence of the locker room, the coach hands you the floor before you head out.',
     ),
+    leagues: ['nba', 'gLeague'],
     weight: 2,
     choices: [
       { label: tt('Prendre la parole avec émotion', 'Speak with emotion'), effects: { relationCoequipiers: 5, mental: 3, reputation: 2 } },

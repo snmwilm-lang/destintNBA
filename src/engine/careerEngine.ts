@@ -223,6 +223,7 @@ export function createNewCareer(
     nationality,
     momentum: 50,
     pendingNationalCampaign: null,
+    pendingFinaleResult: null,
     newlyUnlockedAchievements: [],
     traits: [],
     newlyUnlockedTraits: [],
@@ -699,8 +700,13 @@ export function computeMarketValue(stats: PlayerStats, age: number, league: Leag
   return Math.round(min + Math.min(1, value01) * (max - min));
 }
 
-function computeClassement(career: Career, noteMoyenne: number): { rank: number; total: number } {
+function computeClassement(career: Career, noteMoyenne: number, forcedChampion?: boolean): { rank: number; total: number } {
   const total = career.currentTeam.league === 'nba' ? NBA_TEAM_POOL.length : career.currentTeam.league === 'europe' ? EUROPE_TEAM_POOL.length : HIGH_SCHOOL_TEAM_POOL.length;
+  // The Finals-clinching shot (finale-moment-decisif) is that title, not a separate roll of the
+  // dice — hitting it always means the team is champion this season, no exceptions.
+  if (forcedChampion) {
+    return { rank: 1, total };
+  }
   const teamStrength = (career.currentTeam.ambition + career.currentTeam.coachQuality) / 2;
   // An MVP-caliber season (the same 8.7 threshold that awards the trophy) can genuinely carry a
   // so-so roster deep into contention on its own — individual brilliance should count for more
@@ -878,7 +884,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   stats = capTrainableGrowth(statsBeforeTraits, stats);
 
   const statLine = generateStatLine(career, stats, matchesMissed, vintage);
-  const { rank, total } = computeClassement(career, statLine.noteMoyenne);
+  const { rank, total } = computeClassement(career, statLine.noteMoyenne, career.pendingFinaleResult === true);
   const trophies = generateTrophies(career, statLine, rank);
   const valeurMarchande = computeMarketValue(stats, career.age, career.currentTeam.league);
   const nbaServiceYears = career.currentTeam.league === 'nba' ? seasonsPlayedInLeague(career, 'nba') : undefined;
@@ -936,6 +942,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     pressArticles: [...career.pressArticles, ...pressArticles],
     history: [...career.history, result],
     lastSeasonResult: result,
+    pendingFinaleResult: null,
     traits: [...career.traits, ...newTraits.map((t) => t.id)],
     newlyUnlockedTraits: newTraits.map((t) => t.id),
   };

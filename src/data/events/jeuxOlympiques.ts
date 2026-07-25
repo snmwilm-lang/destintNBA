@@ -4,6 +4,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
   {
     id: 'jo-selection-equipe',
     category: 'jeuxOlympiques',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Sélectionné pour les Jeux Olympiques', 'Selected for the Olympic Games'),
     description: tt(
       "Le sélectionneur national t'inclut dans la liste des joueurs retenus pour les Jeux.",
@@ -19,6 +20,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
   {
     id: 'jo-finale-olympique',
     category: 'jeuxOlympiques',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Finale olympique', 'Olympic final'),
     description: tt(
       'Ton équipe nationale dispute la finale devant le monde entier. La pression est à son comble.',
@@ -55,6 +57,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
   {
     id: 'jo-elimination-groupes',
     category: 'jeuxOlympiques',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Éliminé dès la phase de groupes', 'Eliminated in the group stage'),
     description: tt(
       "Ton équipe nationale ne passe pas le premier tour. Le rêve olympique s'arrête net, bien plus tôt que prévu.",
@@ -70,6 +73,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
   {
     id: 'jo-elimination-quarts',
     category: 'jeuxOlympiques',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Éliminé en quart de finale', 'Eliminated in the quarterfinals'),
     description: tt(
       "Ton équipe nationale s'incline en quart de finale, si près du dernier carré.",
@@ -85,6 +89,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
   {
     id: 'jo-elimination-demies',
     category: 'jeuxOlympiques',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Éliminé en demi-finale olympique', 'Eliminated in the Olympic semifinal'),
     description: tt(
       "Ton équipe nationale tombe en demi-finale et devra se contenter de la petite finale pour le bronze.",
@@ -110,6 +115,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
   {
     id: 'jo-village-olympique',
     category: 'jeuxOlympiques',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Le village olympique', 'The Olympic village'),
     description: tt(
       'Tu croises des athlètes de disciplines très différentes venus du monde entier dans le village olympique.',

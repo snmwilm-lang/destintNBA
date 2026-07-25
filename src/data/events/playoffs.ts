@@ -4,6 +4,7 @@ export const playoffsEvents: EventTemplate[] = [
   {
     id: 'playoffs-premiere-qualification',
     category: 'playoffs',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Qualification en playoffs', 'Playoff qualification'),
     description: tt(
       "Ton équipe se qualifie pour les playoffs pour la première fois depuis ton arrivée. La pression monte d'un cran.",
@@ -18,6 +19,7 @@ export const playoffsEvents: EventTemplate[] = [
   {
     id: 'playoffs-serie-decisive',
     category: 'playoffs',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Match décisif de série', 'Decisive game of the series'),
     description: tt(
       'Ta série est à égalité, ce match va décider de la suite de la saison.',
@@ -31,6 +33,7 @@ export const playoffsEvents: EventTemplate[] = [
   {
     id: 'playoffs-blessure-cle',
     category: 'playoffs',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Un cadre de l\'équipe se blesse en playoffs', 'A key player gets hurt in the playoffs'),
     description: tt(
       "Un joueur clé de ton équipe se blesse juste avant une série capitale. On se tourne vers toi.",
@@ -45,6 +48,7 @@ export const playoffsEvents: EventTemplate[] = [
   {
     id: 'playoffs-elimination',
     category: 'playoffs',
+    leagues: ['nba', 'gLeague', 'europe'],
     title: tt('Élimination en playoffs', 'Eliminated in the playoffs'),
     description: tt(
       'La saison se termine plus tôt que prévu. La déception est grande dans le vestiaire.',

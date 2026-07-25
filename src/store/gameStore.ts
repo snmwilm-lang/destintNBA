@@ -58,6 +58,7 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     nationality: c.nationality ?? 'US',
     momentum: c.momentum ?? 50,
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
+    pendingFinaleResult: c.pendingFinaleResult ?? null,
     newlyUnlockedAchievements: c.newlyUnlockedAchievements ?? [],
     traits: c.traits ?? [],
     newlyUnlockedTraits: c.newlyUnlockedTraits ?? [],
@@ -239,6 +240,9 @@ export const useGameStore = create<GameStore>()(
                 };
               }
             }
+            // The Finals-clinching shot is the title, not a separate roll — whether it drops (or
+            // clangs out) is carried forward and directly decides this season's championship.
+            const pendingFinaleResult = event.id === 'finale-moment-decisif' ? outcome.wasSuccess : c.pendingFinaleResult;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -256,6 +260,7 @@ export const useGameStore = create<GameStore>()(
               draftStock,
               draftPick,
               pendingNationalCampaign,
+              pendingFinaleResult,
               phase: linkedNextEventId ? 'event' : 'choiceResult',
               currentEventId: linkedNextEventId ?? c.currentEventId,
               lastChoiceResultText: resultText,
