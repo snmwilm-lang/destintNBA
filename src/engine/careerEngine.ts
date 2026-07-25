@@ -572,20 +572,28 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   // A rare career-year bump — this is a SEASON average, so it stays modest even when it lands,
   // rather than the wild multiplier a single highlight game could get away with.
   if (Math.random() < 0.04) points *= randFloat(1.05, 1.18);
+  // Every box-score number below is a season AVERAGE, not a single game — the build-identity and
+  // choice-factor multipliers can otherwise stack past anything realistic. Hard-cap each one at
+  // a rare, historically-plausible career-high ceiling.
+  points = Math.min(65, points);
 
   const reboundSkill = (stats.physique * 0.7 + stats.iqBasket * 0.3) / 100;
-  const rebonds =
-    reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45 * choiceFactor * (1 + identity.reboundsPct / 100);
+  const rebonds = Math.min(
+    18,
+    reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45 * choiceFactor * (1 + identity.reboundsPct / 100),
+  );
 
   const passSkill = (stats.iqBasket * 0.6 + stats.technique * 0.2 + stats.mental * 0.2) / 100;
-  const passes =
-    passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4 * choiceFactor * (1 + identity.passesPct / 100);
+  const passes = Math.min(
+    14,
+    passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4 * choiceFactor * (1 + identity.passesPct / 100),
+  );
 
   const stealSkill = (stats.iqBasket * 0.5 + stats.physique * 0.3 + stats.mental * 0.2) / 100;
-  const interceptions = stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08 * choiceFactor;
+  const interceptions = Math.min(4, stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08 * choiceFactor);
 
   const blockSkill = (stats.physique * 0.6 + stats.iqBasket * 0.4) / 100;
-  const contres = blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12 * choiceFactor;
+  const contres = Math.min(5, blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12 * choiceFactor);
 
   const adresse3pts = Math.max(15, Math.min(52, 24 + stats.technique * 0.32 - stats.physique * 0.04 + (choiceFactor - 1) * 20 + randFloat(-3, 3)));
 
@@ -643,7 +651,12 @@ function computeClassement(career: Career, noteMoyenne: number): { rank: number;
   const total = career.currentTeam.league === 'nba' ? NBA_TEAM_POOL.length : career.currentTeam.league === 'europe' ? EUROPE_TEAM_POOL.length : HIGH_SCHOOL_TEAM_POOL.length;
   const teamStrength = (career.currentTeam.ambition + career.currentTeam.coachQuality) / 2;
   const playerContribution = noteMoyenne * 6 + career.stats.reputation * 0.2;
-  const score = teamStrength * 0.5 + playerContribution * 0.5 + randFloat(-15, 15);
+  // Solid competition, not a rubber stamp: rival front offices specifically build super-teams to
+  // dethrone a proven champion, so each additional title in the same career gets meaningfully
+  // harder to repeat, on top of the raw team+player quality that was already required.
+  const priorTitles = career.trophies.filter((t) => t.id.includes('-champion')).length;
+  const leagueResistance = Math.min(10, priorTitles * 1.5);
+  const score = teamStrength * 0.5 + playerContribution * 0.5 - leagueResistance + randFloat(-15, 15);
   const rank = Math.max(1, Math.min(total, Math.round(total - (score / 100) * (total - 1))));
   return { rank, total };
 }
