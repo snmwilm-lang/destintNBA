@@ -19,6 +19,39 @@ const TIER_COLOR: Record<string, string> = {
   D: 'text-rose-300',
 };
 
+const TROPHY_ICON: Record<string, string> = {
+  champion: '🏆',
+  mvp: '🌟',
+  royo: '🌱',
+  scoring: '🎯',
+  defense: '🛡️',
+  assists: '🤝',
+  fan: '📣',
+};
+
+function trophyIcon(id: string): string {
+  return TROPHY_ICON[id.split('-').pop() ?? ''] ?? '🏆';
+}
+
+/** A career's trophy case: same award won in seasons 3, 7 and 12 should read as one line with a
+ * count, the way a real career palmarès does — not three separate near-identical rows to scroll
+ * past. */
+function groupTrophies(trophies: { id: string; name: { fr: string; en: string } }[], lang: 'fr' | 'en') {
+  const order: { name: string; icon: string; count: number }[] = [];
+  const index = new Map<string, number>();
+  for (const trophy of trophies) {
+    const name = trophy.name[lang];
+    const existingIndex = index.get(name);
+    if (existingIndex !== undefined) {
+      order[existingIndex].count += 1;
+    } else {
+      index.set(name, order.length);
+      order.push({ name, icon: trophyIcon(trophy.id), count: 1 });
+    }
+  }
+  return order.sort((a, b) => b.count - a.count);
+}
+
 export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenProps) {
   const lang = useLang();
   const t = useT();
@@ -99,12 +132,17 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
           {sheet.trophies.length === 0 ? (
             <p className="text-sm text-slate-400">{t('endingNoTrophyCase')}</p>
           ) : (
-            <ul className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1">
-              {sheet.trophies.map((trophy) => (
-                <li key={trophy.id} className="flex items-center gap-2 text-sm text-gold-300">
-                  <span>🏆</span>
-                  <span className="font-semibold">{trophy.name[lang]}</span>
-                  <span className="text-slate-500 text-xs">S{trophy.season}</span>
+            <ul className="flex flex-col gap-1.5 max-h-52 overflow-y-auto pr-1">
+              {groupTrophies(sheet.trophies, lang).map((entry) => (
+                <li
+                  key={entry.name}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-court-800/50 px-3 py-2 text-sm"
+                >
+                  <span className="flex items-center gap-2 font-semibold text-gold-300">
+                    <span>{entry.icon}</span>
+                    <span>{entry.name}</span>
+                  </span>
+                  <span className="font-bold tabular-nums text-slate-200">{entry.count}</span>
                 </li>
               ))}
             </ul>

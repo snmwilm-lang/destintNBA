@@ -61,7 +61,8 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
     pendingFinaleResult: c.pendingFinaleResult ?? null,
     hasReachedFinale: c.hasReachedFinale ?? false,
-    hadEliteBreakthrough: c.hadEliteBreakthrough ?? false,
+    // Saves from before the diminishing multi-trigger version stored a plain boolean.
+    eliteBreakthroughCount: typeof c.eliteBreakthroughCount === 'number' ? c.eliteBreakthroughCount : c.hadEliteBreakthrough ? 1 : 0,
     newlyUnlockedAchievements: c.newlyUnlockedAchievements ?? [],
     traits: c.traits ?? [],
     newlyUnlockedTraits: c.newlyUnlockedTraits ?? [],

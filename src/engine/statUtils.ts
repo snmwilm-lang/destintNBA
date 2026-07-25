@@ -47,7 +47,10 @@ export function initialStats(archetypeBoost: Partial<Record<StatKey, number>>): 
     relationCoequipiers: 55,
     tempsDeJeu: 20,
     risqueBlessure: 15,
-    potentiel: 55,
+    // A "role player" reads as roughly 70-80 Overall, "really good" as 80-85, "great" around 90,
+    // and 95-100 is reserved for a handful of true legends — a starting ceiling of 55 left even a
+    // fully realized talent stuck well under "really good" for most of a career.
+    potentiel: 62,
   };
   return applyEffects(base, archetypeBoost);
 }

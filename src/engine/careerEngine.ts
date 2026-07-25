@@ -233,7 +233,7 @@ export function createNewCareer(
     pendingNationalCampaign: null,
     pendingFinaleResult: null,
     hasReachedFinale: false,
-    hadEliteBreakthrough: false,
+    eliteBreakthroughCount: 0,
     newlyUnlockedAchievements: [],
     traits: [],
     newlyUnlockedTraits: [],
@@ -878,7 +878,8 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   if (career.age <= 30) {
     const breakthroughChance = career.momentum >= 90 ? 0.5 : career.momentum >= 75 ? 0.3 : career.momentum >= 60 ? 0.12 : 0;
     if (breakthroughChance > 0 && Math.random() < breakthroughChance) {
-      stats = applyEffects(stats, { potentiel: career.momentum >= 90 ? 2 : 1 });
+      const breakthroughGain = career.momentum >= 90 ? 3 : career.momentum >= 75 ? 2 : 1;
+      stats = applyEffects(stats, { potentiel: breakthroughGain });
     }
   }
 
@@ -900,16 +901,18 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   // now — the recognized skill stats (and Overall) shouldn't need years of gradual progression to
   // catch up to what the whole league just watched happen. The bigger the haul, the bigger and
   // more immediate the jump — instead of a trophy case that reads MVP/Champion/Scoring next to a
-  // GEN badge that still looks middling. This is a one-time "the league was underrating you"
-  // correction, not a repeatable engine — an already-recognized star sweeping hardware again
-  // doesn't need to keep re-proving it, or every dominant career would rocket to 100 in a few
-  // seasons flat, right back to the "everyone ends up maxed" problem this was built to avoid.
+  // GEN badge that still looks middling. Each trigger's gain is halved from the last, so a single
+  // signature season delivers a real, decisive jump (role player -> genuinely great in one go),
+  // while sustained, repeated dominance across a whole career can still climb toward true
+  // legend status — without letting any one dominant stretch snowball straight to the max the
+  // way an uncapped repeatable version did.
   const majorTrophyCount = trophies.filter((t) => /-(mvp|champion|scoring|assists|defense)$/.test(t.id)).length;
-  const eliteSeasonBonus = majorTrophyCount >= 3 ? 7 : majorTrophyCount === 2 ? 5 : statLine.noteMoyenne >= 8.7 ? 3 : 0;
-  let hadEliteBreakthrough = career.hadEliteBreakthrough;
-  if (eliteSeasonBonus > 0 && career.age <= 32 && !career.hadEliteBreakthrough) {
-    hadEliteBreakthrough = true;
-    const newPotentiel = clampStat(stats.potentiel + eliteSeasonBonus);
+  const eliteSeasonBonus = majorTrophyCount >= 3 ? 10 : majorTrophyCount === 2 ? 7 : statLine.noteMoyenne >= 8.7 ? 4 : 0;
+  let eliteBreakthroughCount = career.eliteBreakthroughCount;
+  if (eliteSeasonBonus > 0 && career.age <= 32) {
+    const effectiveBonus = Math.max(1, Math.round(eliteSeasonBonus * Math.pow(0.5, eliteBreakthroughCount)));
+    eliteBreakthroughCount += 1;
+    const newPotentiel = clampStat(stats.potentiel + effectiveBonus);
     stats = { ...stats, potentiel: newPotentiel };
     for (const key of TRAINABLE_STATS) {
       if (stats[key] < newPotentiel) {
@@ -975,7 +978,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     history: [...career.history, result],
     lastSeasonResult: result,
     pendingFinaleResult: null,
-    hadEliteBreakthrough,
+    eliteBreakthroughCount,
     traits: [...career.traits, ...newTraits.map((t) => t.id)],
     newlyUnlockedTraits: newTraits.map((t) => t.id),
   };
