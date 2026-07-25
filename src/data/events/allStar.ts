@@ -9,6 +9,7 @@ export const allStarEvents: EventTemplate[] = [
       'Ton nom apparaît parmi les meilleurs joueurs de la ligue pour le grand match des étoiles.',
       "Your name appears among the league's best for the big all-star showcase.",
     ),
+    leagues: ['nba', 'europe', 'gLeague'],
     minAge: 19,
     weight: 2,
     choices: [
@@ -24,6 +25,7 @@ export const allStarEvents: EventTemplate[] = [
       'Tu es invité à participer au concours de dunks devant un public en délire.',
       'You are invited to compete in the dunk contest in front of a roaring crowd.',
     ),
+    leagues: ['nba', 'europe', 'gLeague'],
     minAge: 19,
     choices: [
       {
@@ -48,6 +50,7 @@ export const allStarEvents: EventTemplate[] = [
       "Le week-end des étoiles s'accompagne d'une avalanche d'interviews et d'événements sponsors.",
       'All-Star weekend comes with a flood of interviews and sponsor events.',
     ),
+    leagues: ['nba', 'europe', 'gLeague'],
     minAge: 19,
     choices: [
       { label: tt('Accepter toutes les sollicitations', 'Accept every request'), effects: { popularite: 5, forme: -3 }, moneyDelta: 3000 },

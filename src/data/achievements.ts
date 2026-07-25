@@ -18,7 +18,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'going-pro',
     name: { fr: 'Passage professionnel', en: 'Going pro' },
-    description: { fr: 'Atteins la NBA.', en: 'Reach the NBA.' },
+    description: { fr: 'Atteins la Hooper League.', en: 'Reach the Hooper League.' },
     check: (career) => career.history.some((h) => h.league === 'nba'),
   },
   {

@@ -72,6 +72,16 @@ function instantiateChoice(tpl: Omit<EventChoice, 'id'>, ctx: Record<string, str
   };
 }
 
+function leaguesForVariant(tpl: EventTemplate, ctx: Record<string, string>): GameEvent['leagues'] {
+  if (tpl.leagues) return tpl.leagues;
+  for (const slot of tpl.slots ?? []) {
+    if (!slot.leaguesForValue) continue;
+    const restricted = slot.leaguesForValue(ctx[slot.key]);
+    if (restricted) return restricted;
+  }
+  return undefined;
+}
+
 function instantiate(tpl: EventTemplate, ctx: Record<string, string>, index: number): GameEvent {
   const id = tpl.slots && tpl.slots.length > 0 ? `${tpl.id}-${index}` : tpl.id;
   return {
@@ -85,7 +95,7 @@ function instantiate(tpl: EventTemplate, ctx: Record<string, string>, index: num
     maxSeason: tpl.maxSeason,
     minAge: tpl.minAge,
     maxAge: tpl.maxAge,
-    leagues: tpl.leagues,
+    leagues: leaguesForVariant(tpl, ctx),
     weight: tpl.weight,
     unique: tpl.unique,
     tags: tpl.tags,

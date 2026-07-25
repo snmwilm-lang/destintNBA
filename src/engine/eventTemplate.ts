@@ -3,6 +3,11 @@ import type { EventCategory, EventChoice, League, LocalizedText, StatRequirement
 export interface EventTemplateSlot {
   key: string;
   pool: string[];
+  /** When a pool mixes values that only make sense in some leagues (e.g. a combined pool of
+   * high-school and pro opponents), this restricts each generated variant's eligible leagues
+   * based on which value it actually got — so a high-school name never shows up as an opponent
+   * once the player has turned pro, and vice versa. Ignored if the template already sets `leagues`. */
+  leaguesForValue?: (value: string) => League[] | undefined;
 }
 
 export type EventChoiceTemplate = Omit<EventChoice, 'id'>;

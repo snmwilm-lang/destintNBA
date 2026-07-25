@@ -1,7 +1,19 @@
+import type { League } from '../../types';
 import { tt, type EventTemplate } from '../../engine/eventTemplate';
-import { RIVAL_PLAYERS, HIGH_SCHOOL_TEAMS, NBA_LIKE_TEAMS } from '../names';
+import { RIVAL_PLAYERS, HIGH_SCHOOL_TEAMS, NBA_LIKE_TEAMS, EUROPE_TEAMS } from '../names';
 
-const opponents = HIGH_SCHOOL_TEAMS.concat(NBA_LIKE_TEAMS.map((t) => t.name));
+const europeOpponents = EUROPE_TEAMS.map((t) => t.name);
+const proOpponents = NBA_LIKE_TEAMS.map((t) => t.name).concat(europeOpponents);
+const opponents = HIGH_SCHOOL_TEAMS.concat(proOpponents);
+
+// The opponents pool mixes high-school, NBA-market, and European club names — restrict each
+// generated variant to the league its opponent actually belongs to, so a player never lines up
+// against a pro franchise while still in high school (or the reverse).
+function leaguesForOpponent(name: string): League[] | undefined {
+  if (HIGH_SCHOOL_TEAMS.includes(name)) return ['lycee'];
+  if (europeOpponents.includes(name)) return ['europe'];
+  return ['nba', 'gLeague'];
+}
 
 export const matchEvents: EventTemplate[] = [
   {
@@ -14,7 +26,7 @@ export const matchEvents: EventTemplate[] = [
     ),
     slots: [
       { key: 'rival', pool: RIVAL_PLAYERS },
-      { key: 'opponent', pool: opponents },
+      { key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent },
     ],
     choices: [
       {
@@ -52,7 +64,7 @@ export const matchEvents: EventTemplate[] = [
       "Il reste 40 secondes. Ton équipe mène d'un point face à {opponent}. Le coach te regarde et attend ta décision sur le prochain système.",
       "40 seconds left. Your team is up by one against {opponent}. The coach looks at you, waiting for the call on the next play.",
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Demander le ballon final', 'Call for the final ball'),
@@ -87,7 +99,7 @@ export const matchEvents: EventTemplate[] = [
       "Tu sens que c'est ton soir. Face à {opponent}, tu peux forcer les choix offensifs pour viser un record personnel.",
       "You can feel it's your night. Against {opponent}, you could force the offense to chase a personal record.",
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Chercher le scoring à tout prix', 'Chase points at all costs'),
@@ -117,7 +129,7 @@ export const matchEvents: EventTemplate[] = [
       "Rien ne rentre depuis le début du match contre {opponent}. Tu sens le doute t'envahir.",
       "Nothing has fallen since the start of the game against {opponent}. Doubt starts creeping in.",
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Insister sur le tir', 'Keep firing away'),
@@ -144,7 +156,7 @@ export const matchEvents: EventTemplate[] = [
       "Une gêne à la cheville apparaît après un contact face à {opponent}. Le match continue autour de toi.",
       "A nagging ankle pain appears after contact against {opponent}. The game keeps going around you.",
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Continuer à jouer', 'Keep playing'),
@@ -169,7 +181,7 @@ export const matchEvents: EventTemplate[] = [
       "Les supporters adverses scandent ton nom pour te déconcentrer avant un lancer-franc décisif.",
       'The opposing fans chant your name to throw you off before a decisive free throw.',
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Ignorer et respirer', 'Ignore it and breathe'),
@@ -192,7 +204,7 @@ export const matchEvents: EventTemplate[] = [
       "L'équipe est menée largement à la mi-temps. Le vestiaire attend un mot ou un geste fort.",
       'The team trails heavily at halftime. The locker room is waiting for a word or a strong gesture.',
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Prendre la parole devant le groupe', 'Speak up in front of the team'),
@@ -217,7 +229,7 @@ export const matchEvents: EventTemplate[] = [
       "Le coach ne te fait jouer que quelques minutes face à {opponent}, malgré tes bonnes sensations à l'entraînement.",
       "The coach only plays you a few minutes against {opponent}, despite your strong feel in practice.",
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Aller en parler directement après le match', 'Talk to the coach right after the game'),
@@ -250,7 +262,7 @@ export const matchEvents: EventTemplate[] = [
       "The atmosphere is electric. You and {rival} face off for the third time this season — everyone knows about the rivalry.",
     ),
     slots: [
-      { key: 'opponent', pool: opponents },
+      { key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent },
       { key: 'rival', pool: RIVAL_PLAYERS },
     ],
     choices: [
@@ -279,6 +291,7 @@ export const matchEvents: EventTemplate[] = [
       "La salle entière te hue avant même le coup d'envoi. Toute une ville s'est donné rendez-vous pour te voir craquer ce soir.",
       "The entire building boos you before tip-off even happens. A whole city has shown up hoping to watch you crack tonight.",
     ),
+    leagues: ['nba', 'gLeague'],
     minSeason: 4,
     weight: 2,
     choices: [
@@ -311,7 +324,7 @@ export const matchEvents: EventTemplate[] = [
       "Les jambes sont lourdes après le déplacement de la veille, mais {opponent} arrive au complet et reposé.",
       "Your legs feel heavy after yesterday's road trip, but {opponent} arrives at full strength, well rested.",
     ),
-    slots: [{ key: 'opponent', pool: opponents }],
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
     choices: [
       {
         label: tt('Puiser dans les réserves', 'Dig into the reserves'),

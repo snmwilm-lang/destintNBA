@@ -98,6 +98,7 @@ export const conflitsEvents: EventTemplate[] = [
       "Un micro tendu après le match te donne l'occasion de dire ce que tu penses vraiment de cette franchise et de ses supporters.",
       'A microphone shoved in your face after the game gives you a chance to say what you really think about that franchise and its fans.',
     ),
+    leagues: ['nba', 'gLeague'],
     weight: 2,
     choices: [
       {
@@ -121,6 +122,7 @@ export const conflitsEvents: EventTemplate[] = [
       "Chaque apparition dans cette salle tourne à la chasse à l'homme : sifflets dès l'échauffement, banderoles à ton nom.",
       "Every appearance in that building turns into a manhunt: whistles from warmups, banners with your name on them.",
     ),
+    leagues: ['nba', 'gLeague'],
     minSeason: 3,
     weight: 2,
     choices: [
@@ -153,6 +155,7 @@ export const conflitsEvents: EventTemplate[] = [
       "Une vague de messages hostiles venus de leurs supporters envahit tes réseaux après le dernier match.",
       'A wave of hostile messages from their fanbase floods your social media after the last game.',
     ),
+    leagues: ['nba', 'gLeague'],
     minSeason: 2,
     weight: 1,
     choices: [

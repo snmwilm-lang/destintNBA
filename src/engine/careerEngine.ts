@@ -265,7 +265,7 @@ const QUADRENNIAL_CYCLE: Partial<Record<EventCategory, number>> = {
 // These are the payoff of a national team selection roll — they must never surface through the
 // normal random draw (that would show an elimination before the player was ever picked for the
 // team), only through the forced follow-up once forcedMilestone knows the actual result.
-const NATIONAL_CAMPAIGN_RESULT_IDS = new Set([
+export const NATIONAL_CAMPAIGN_RESULT_IDS = new Set([
   'jo-finale-olympique',
   'jo-elimination-demies',
   'jo-elimination-quarts',
@@ -656,7 +656,11 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
 
   if (rank === 1) {
     const champLabel =
-      league === 'nba' ? tt('Champion NBA', 'NBA Champion') : league === 'europe' ? tt("Champion d'Europe", 'European Champion') : tt('Champion', 'Champion');
+      league === 'nba'
+        ? tt('Champion Hooper League', 'Hooper League Champion')
+        : league === 'europe'
+          ? tt("Champion d'Europe", 'European Champion')
+          : tt('Champion', 'Champion');
     trophies.push({
       id: `${idBase}-champion`,
       season: career.season,
@@ -964,8 +968,8 @@ export function checkEnding(career: Career): CareerEnding | null {
       type: 'echec',
       title: tt('Rêve inachevé', 'Unfinished dream'),
       description: tt(
-        "Malgré tes efforts, aucune franchise ni club professionnel ne t'a fait confiance. Le rêve NBA s'arrête ici, mais le basket reste une passion.",
-        "Despite your efforts, no professional club ever took a chance on you. The NBA dream ends here, but basketball remains a passion.",
+        "Malgré tes efforts, aucune franchise ni club professionnel ne t'a fait confiance. Le rêve Hooper League s'arrête ici, mais le basket reste une passion.",
+        "Despite your efforts, no professional club ever took a chance on you. The Hooper League dream ends here, but basketball remains a passion.",
       ),
     };
   }
@@ -999,8 +1003,8 @@ export function checkEnding(career: Career): CareerEnding | null {
       type: 'europe',
       title: tt('Carrière européenne accomplie', 'A fulfilled European career'),
       description: tt(
-        "Ta carrière s'est épanouie en Europe, loin de la NBA mais pleine de sens.",
-        'Your career flourished in Europe, far from the NBA but full of meaning.',
+        "Ta carrière s'est épanouie en Europe, loin de la Hooper League mais pleine de sens.",
+        'Your career flourished in Europe, far from the Hooper League but full of meaning.',
       ),
     };
   }

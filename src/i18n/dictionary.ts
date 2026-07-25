@@ -3,8 +3,8 @@ import type { Lang } from '../types';
 export const dictionary = {
   appTitle: { fr: 'Hardwood Dreams', en: 'Hardwood Dreams' },
   appTagline: {
-    fr: 'De la cour de quartier aux sommets de la NBA.',
-    en: 'From the neighborhood court to the top of the NBA.',
+    fr: 'De la cour de quartier aux sommets de la Hooper League.',
+    en: 'From the neighborhood court to the top of the Hooper League.',
   },
 
   // Main menu
@@ -36,7 +36,6 @@ export const dictionary = {
   createNameLabel: { fr: 'Nom du joueur', en: "Player's name" },
   createNamePlaceholder: { fr: 'Ex : Jalen Moreau', en: 'e.g. Jalen Moore' },
   createArchetypeLabel: { fr: 'Style de jeu', en: 'Playing style' },
-  createArchetypeFit: { fr: 'Adapté à ta taille', en: 'Fits your height' },
   createIdentityPoints: { fr: 'points', en: 'points' },
   createIdentityPasses: { fr: 'passes', en: 'assists' },
   createIdentityRebounds: { fr: 'rebonds', en: 'rebounds' },
@@ -53,10 +52,10 @@ export const dictionary = {
     fr: 'Dès le lycée à 15 ans : construis ta réputation, vis la draft, façonne ta légende pas à pas.',
     en: 'Starting in high school at 15: build your reputation, live the draft, shape your legend step by step.',
   },
-  createPathSkip: { fr: 'Direct en NBA', en: 'Straight to the NBA' },
+  createPathSkip: { fr: 'Direct en Hooper League', en: 'Straight to the Hooper League' },
   createPathSkipDesc: {
-    fr: "Saute la phase lycée/draft et débarque déjà en NBA à 19 ans, prêt à jouer.",
-    en: 'Skip the high school and draft years and arrive already in the NBA at 19, ready to play.',
+    fr: "Saute la phase lycée/draft et débarque déjà en Hooper League à 19 ans, prêt à jouer.",
+    en: 'Skip the high school and draft years and arrive already in the Hooper League at 19, ready to play.',
   },
 
   archetypeScorer: { fr: 'Scoreur explosif', en: 'Explosive scorer' },
@@ -104,7 +103,7 @@ export const dictionary = {
   catSelectionNationale: { fr: 'Sélection nationale', en: 'National team' },
   catPlayoffs: { fr: 'Playoffs', en: 'Playoffs' },
   catFinale: { fr: 'Finale', en: 'Finals' },
-  catDraft: { fr: 'Draft NBA', en: 'NBA Draft' },
+  catDraft: { fr: 'Draft Hooper League', en: 'Hooper League Draft' },
   catAllStar: { fr: 'All-Star', en: 'All-Star' },
   catJeuxOlympiques: { fr: 'Jeux Olympiques', en: 'Olympic Games' },
   catCoupeDuMonde: { fr: 'Coupe du Monde', en: 'World Cup' },

@@ -11,6 +11,7 @@ import {
   EVENTS_PER_SEASON,
   generateTransferOffers,
   getEvent,
+  NATIONAL_CAMPAIGN_RESULT_IDS,
   pickNextEvent,
   pinRivalHighSchool,
   pinRivalName,
@@ -30,19 +31,35 @@ const NATIONAL_SELECTION_EVENT_IDS: Record<string, 'jeuxOlympiques' | 'coupeDuMo
   'cdm-qualification': 'coupeDuMonde',
 };
 
-const NATIONAL_CAMPAIGN_RESULT_EVENT_IDS = new Set([
-  'jo-finale-olympique',
-  'jo-elimination-demies',
-  'jo-elimination-quarts',
-  'jo-elimination-groupes',
-  'cdm-finale-mondiale',
-  'cdm-elimination-demies',
-  'cdm-elimination-quarts',
-  'cdm-elimination-groupes',
-]);
-
 function uid(): string {
   return `career-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+}
+
+// The Career shape has grown several new required fields over the game's development. A save
+// written before one of those fields existed would otherwise rehydrate with it `undefined` and
+// crash the first time it's read — so every load backfills sane defaults for anything missing,
+// regardless of the save's reported version.
+function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
+  return {
+    ...c,
+    specialty: c.specialty ?? null,
+    highSchool: c.highSchool ?? null,
+    draftStock: c.draftStock ?? 50,
+    draftPick: c.draftPick ?? null,
+    skillPoints: c.skillPoints ?? 0,
+    rivalName: c.rivalName ?? 'Malik Sanders',
+    rivalRecord: c.rivalRecord ?? { wins: 0, losses: 0 },
+    rivalTeamName: c.rivalTeamName ?? 'Chicago Bison',
+    rivalTeamRecord: c.rivalTeamRecord ?? { wins: 0, losses: 0 },
+    rivalryProvoked: c.rivalryProvoked ?? false,
+    rivalHighSchool: c.rivalHighSchool ?? 'Northview High',
+    rivalHighSchoolRecord: c.rivalHighSchoolRecord ?? { wins: 0, losses: 0 },
+    nationality: c.nationality ?? 'US',
+    pendingNationalCampaign: c.pendingNationalCampaign ?? null,
+    newlyUnlockedAchievements: c.newlyUnlockedAchievements ?? [],
+    traits: c.traits ?? [],
+    newlyUnlockedTraits: c.newlyUnlockedTraits ?? [],
+  } as Career;
 }
 
 interface GameStore {
@@ -182,7 +199,7 @@ export const useGameStore = create<GameStore>()(
             const selectionCompetition = NATIONAL_SELECTION_EVENT_IDS[event.id];
             const pendingNationalCampaign = selectionCompetition
               ? { competition: selectionCompetition, round: simulateNationalCampaign(c) }
-              : NATIONAL_CAMPAIGN_RESULT_EVENT_IDS.has(event.id)
+              : NATIONAL_CAMPAIGN_RESULT_IDS.has(event.id)
                 ? null
                 : c.pendingNationalCampaign;
             // A choice can chain straight into a follow-up event (a multi-step moment) instead
@@ -278,7 +295,16 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'hardwood-dreams-save',
-      version: 1,
+      version: 2,
+      migrate: (persisted) => {
+        const state = persisted as { lang?: Lang; careers?: (Partial<Career> & Record<string, unknown>)[]; activeCareerId?: string | null; unlockedAchievements?: string[] };
+        return {
+          lang: state.lang ?? 'fr',
+          careers: (state.careers ?? []).map(reconcileCareer),
+          activeCareerId: state.activeCareerId ?? null,
+          unlockedAchievements: state.unlockedAchievements ?? [],
+        };
+      },
     },
   ),
 );
