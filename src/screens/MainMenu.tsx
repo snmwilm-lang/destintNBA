@@ -2,9 +2,11 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 import { useLang, useT } from '../i18n/useT';
 import { computeCareerSheet } from '../engine/careerEngine';
+import { ACHIEVEMENTS } from '../data/achievements';
 
 interface MainMenuProps {
   onNewCareer: () => void;
+  onOpenAchievements: () => void;
 }
 
 const TIER_COLOR: Record<string, string> = {
@@ -15,13 +17,14 @@ const TIER_COLOR: Record<string, string> = {
   D: 'text-rose-300',
 };
 
-export function MainMenu({ onNewCareer }: MainMenuProps) {
+export function MainMenu({ onNewCareer, onOpenAchievements }: MainMenuProps) {
   const t = useT();
   const lang = useLang();
   const setLang = useGameStore((s) => s.setLang);
   const careers = useGameStore((s) => s.careers);
   const selectCareer = useGameStore((s) => s.selectCareer);
   const deleteCareer = useGameStore((s) => s.deleteCareer);
+  const unlockedAchievements = useGameStore((s) => s.unlockedAchievements);
   const activeCareers = careers.filter((c) => !c.retired);
   const retiredCareers = careers
     .filter((c) => c.retired)
@@ -61,6 +64,20 @@ export function MainMenu({ onNewCareer }: MainMenuProps) {
         className="rounded-full bg-gradient-to-r from-hoop-500 to-gold-500 px-10 py-3.5 text-sm font-bold text-court-950 shadow-lg shadow-hoop-500/20 hover:brightness-110 transition-all"
       >
         {t('menuNewCareer')}
+      </motion.button>
+
+      <motion.button
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        onClick={onOpenAchievements}
+        className="flex items-center gap-2 rounded-full border border-court-600 px-5 py-2 text-xs font-semibold text-slate-300 hover:border-gold-400 hover:text-gold-300 transition-colors"
+      >
+        <span>🏅</span>
+        {t('menuAchievements')}
+        <span className="text-slate-500">
+          {t('achievementsProgress', { unlocked: unlockedAchievements.length, total: ACHIEVEMENTS.length })}
+        </span>
       </motion.button>
 
       <div className="w-full max-w-md">

@@ -3,8 +3,9 @@ import { useGameStore } from './store/gameStore';
 import { MainMenu } from './screens/MainMenu';
 import { CharacterCreation } from './screens/CharacterCreation';
 import { GameScreen } from './screens/GameScreen';
+import { AchievementsScreen } from './screens/AchievementsScreen';
 
-type View = 'menu' | 'create';
+type View = 'menu' | 'create' | 'achievements';
 
 function App() {
   const [view, setView] = useState<View>('menu');
@@ -34,7 +35,11 @@ function App() {
     return <CharacterCreation onCancel={() => setView('menu')} onCreated={() => setView('menu')} />;
   }
 
-  return <MainMenu onNewCareer={() => setView('create')} />;
+  if (view === 'achievements') {
+    return <AchievementsScreen onBack={() => setView('menu')} />;
+  }
+
+  return <MainMenu onNewCareer={() => setView('create')} onOpenAchievements={() => setView('achievements')} />;
 }
 
 export default App;

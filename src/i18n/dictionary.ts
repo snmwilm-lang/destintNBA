@@ -19,6 +19,16 @@ export const dictionary = {
   menuSlotAge: { fr: '{age} ans', en: 'Age {age}' },
   menuBackToMenu: { fr: 'Menu principal', en: 'Main menu' },
   menuLanguage: { fr: 'Langue', en: 'Language' },
+  menuAchievements: { fr: 'Succès', en: 'Achievements' },
+
+  // Achievements screen
+  achievementsTitle: { fr: 'Succès', en: 'Achievements' },
+  achievementsSubtitle: {
+    fr: 'Débloqués sur toutes tes carrières, ils donnent un bonus aux prochaines.',
+    en: 'Unlocked across all your careers, they grant a bonus to future ones.',
+  },
+  achievementsProgress: { fr: '{unlocked}/{total} débloqués', en: '{unlocked}/{total} unlocked' },
+  achievementsLocked: { fr: 'Verrouillé', en: 'Locked' },
 
   // Character creation
   createTitle: { fr: 'Crée ton joueur', en: 'Create your player' },

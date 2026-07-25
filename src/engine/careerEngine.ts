@@ -158,7 +158,7 @@ export function createNewCareer(
     archetype,
     position,
     height,
-    specialty: null,
+    specialty: getBuild(archetype)?.name ?? null,
     skillPoints: bonusSkillPoints,
     rivalName: RIVAL_PLAYERS[randInt(0, RIVAL_PLAYERS.length - 1)],
     rivalRecord: { wins: 0, losses: 0 },
@@ -223,8 +223,6 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
 /** The draft is a scripted three-beat sequence, not a random draw — force it in order once eligible. */
 const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 
-const NBA_SPECIALTY_EVENT_ID = 'nba-arrival-specialty';
-
 const FINALE_EVENT_ID = 'finale-moment-decisif';
 const FINALE_PREQUEL_EVENT_ID = 'finale-prequel-timeout';
 
@@ -239,14 +237,6 @@ function forcedMilestone(career: Career): GameEvent | null {
         return getEvent(id) ?? null;
       }
     }
-  }
-  if (
-    career.currentTeam.league === 'nba' &&
-    career.specialty === null &&
-    !career.seenEventIds.includes(NBA_SPECIALTY_EVENT_ID) &&
-    !career.usedThisSeasonIds.includes(NBA_SPECIALTY_EVENT_ID)
-  ) {
-    return getEvent(NBA_SPECIALTY_EVENT_ID) ?? null;
   }
   // The career-defining Finals moment is otherwise a rare random draw — guarantee it shows up
   // as a season closer by year 3 in the league if luck hasn't brought it up already. It's staged

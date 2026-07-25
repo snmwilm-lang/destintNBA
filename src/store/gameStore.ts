@@ -129,7 +129,6 @@ export const useGameStore = create<GameStore>()(
                 pendingDelayed.push({ effect: d, triggerSeason: c.season + d.delaySeasons });
               }
             }
-            const specialty = event.id === 'nba-arrival-specialty' && choice ? choice.label : c.specialty;
             const rivalRecord =
               event.tags?.includes('rivalDuel') && outcome.wasSuccess !== null
                 ? {
@@ -149,7 +148,6 @@ export const useGameStore = create<GameStore>()(
               recentEventIds,
               choiceLog,
               pendingDelayed,
-              specialty,
               rivalRecord,
               phase: linkedNextEventId ? 'event' : 'choiceResult',
               currentEventId: linkedNextEventId ?? c.currentEventId,
