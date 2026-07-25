@@ -9,9 +9,13 @@ export const finaleEvents: EventTemplate[] = [
       "98-98. Le coach appelle le dernier temps mort de la finale. Dans le rond central, onze visages te regardent attendre ta décision pour la dernière possession.",
       "98-98. The coach calls the final timeout of the finals. In the huddle, eleven faces look to you for the call on the last possession.",
     ),
-    unique: true,
     minSeason: 2,
     leagues: ['nba', 'gLeague'],
+    // Not unique: a genuinely great team should be able to make repeat trips to the finals over a
+    // career, not exactly once ever. The very first trip is guaranteed by year 3 (see
+    // forcedMilestone); every trip after that draws from the normal pool, but the reputation floor
+    // means it only keeps coming back for a player good enough to actually still be a contender.
+    requirements: [{ stat: 'reputation', min: 60 }],
     weight: 12,
     choices: [
       {
@@ -51,9 +55,9 @@ export const finaleEvents: EventTemplate[] = [
       "Finale. 98-98. Il reste 6 secondes. Tu récupères le ballon au milieu du chaos. Le public retient son souffle, la défense adverse se replie sur toi.",
       'Finals. 98-98. 6 seconds left. You grab the ball in the middle of the chaos. The crowd holds its breath, the defense collapses onto you.',
     ),
-    unique: true,
     minSeason: 2,
     leagues: ['nba', 'gLeague'],
+    requirements: [{ stat: 'reputation', min: 60 }],
     weight: 12,
     choices: [
       {

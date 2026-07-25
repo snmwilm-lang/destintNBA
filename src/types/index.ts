@@ -270,6 +270,10 @@ export interface Career {
    * next season simulation so hitting (or missing) that shot always narratively matches whether
    * the team is actually crowned champion, instead of the two being decided independently. */
   pendingFinaleResult: boolean | null;
+  /** True once the player has reached the finals at least once — the first trip is guaranteed by
+   * year 3 in the league; every trip after that is a normal (reputation-gated) random draw, so a
+   * genuinely great player/team can make it back more than once instead of exactly once ever. */
+  hasReachedFinale: boolean;
   /** Achievement ids unlocked by THIS career's ending, for a one-time flash on the ending screen. */
   newlyUnlockedAchievements: string[];
   /** Permanent double-edged personality traits earned mid-career (a buff paired with a nerf). */

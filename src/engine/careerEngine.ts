@@ -224,6 +224,7 @@ export function createNewCareer(
     momentum: 50,
     pendingNationalCampaign: null,
     pendingFinaleResult: null,
+    hasReachedFinale: false,
     newlyUnlockedAchievements: [],
     traits: [],
     newlyUnlockedTraits: [],
@@ -302,7 +303,6 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
 /** The draft is a scripted three-beat sequence, not a random draw — force it in order once eligible. */
 const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 
-const FINALE_EVENT_ID = 'finale-moment-decisif';
 const FINALE_PREQUEL_EVENT_ID = 'finale-prequel-timeout';
 const RIVALRY_PROVOCATION_EVENT_ID = 'conflit-defi-public';
 const HIGH_SCHOOL_RIVALRY_EVENT_ID = 'conflit-derby-lycee';
@@ -360,14 +360,14 @@ function forcedMilestone(career: Career): GameEvent | null {
   ) {
     return getEvent(HIGH_SCHOOL_RIVALRY_EVENT_ID) ?? null;
   }
-  // The career-defining Finals moment is otherwise a rare random draw — guarantee it shows up
-  // as a season closer by year 3 in the league if luck hasn't brought it up already. It's staged
-  // as a two-part moment: this timeout beat chains straight into the actual shot.
+  // The first trip to the Finals is otherwise a rare random draw — guarantee it shows up as a
+  // season closer by year 3 in the league if luck hasn't brought it up already. It's staged as a
+  // two-part moment: this timeout beat chains straight into the actual shot. Every trip AFTER the
+  // first is left to the normal (reputation-gated) draw — a great player/team can make it back
+  // more than once over a career, but it's never forced again.
   if (
     career.currentTeam.league === 'nba' &&
-    !career.seenEventIds.includes(FINALE_EVENT_ID) &&
-    !career.usedThisSeasonIds.includes(FINALE_EVENT_ID) &&
-    !career.seenEventIds.includes(FINALE_PREQUEL_EVENT_ID) &&
+    !career.hasReachedFinale &&
     !career.usedThisSeasonIds.includes(FINALE_PREQUEL_EVENT_ID) &&
     seasonsPlayedInLeague(career, 'nba') >= 2 &&
     career.eventInSeasonIndex === career.eventsPerSeason - 1
