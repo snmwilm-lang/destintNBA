@@ -156,6 +156,11 @@ export const dictionary = {
   choiceDefeatTitle: { fr: 'DÉFAITE', en: 'DEFEAT' },
   recapTraining: { fr: 'Entraînement ciblé', en: 'Targeted training' },
   recapPointsAvailable: { fr: '{count} pts disponibles', en: '{count} pts available' },
+  recapPotentiel: { fr: 'Potentiel {value}', en: 'Potential {value}' },
+  recapPotentielExplain: {
+    fr: "Technique, physique, mental et QI basket ne peuvent pas dépasser ton potentiel ({value}) — c'est pour ça qu'un bouton passe parfois en MAX. Ton potentiel monte tout seul après une saison marquante (bons choix + chance), pas en dépensant des points.",
+    en: "Technique, physique, mental and IQ can't be trained past your potential ({value}) — that's why a button sometimes shows MAX. Your potential rises on its own after a standout season (good choices + luck), not by spending points.",
+  },
   recapPointsEarned: { fr: '+{count} points gagnés cette saison', en: '+{count} points earned this season' },
   recapStatCapped: { fr: 'MAX', en: 'MAX' },
   recapConditioningHint: {

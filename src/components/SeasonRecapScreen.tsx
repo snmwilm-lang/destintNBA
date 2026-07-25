@@ -161,15 +161,21 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
           )}
         </section>
         <section className="col-span-2 sm:col-span-3 text-left">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-xs uppercase tracking-wide text-slate-400">{t('recapTraining')}</h3>
-            <span className="rounded-full bg-gold-400/15 px-2.5 py-0.5 text-xs font-bold text-gold-300 tabular-nums">
-              {t('recapPointsAvailable', { count: career.skillPoints })}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-sky-400/15 px-2.5 py-0.5 text-xs font-bold text-sky-300 tabular-nums">
+                {t('recapPotentiel', { value: career.stats.potentiel })}
+              </span>
+              <span className="rounded-full bg-gold-400/15 px-2.5 py-0.5 text-xs font-bold text-gold-300 tabular-nums">
+                {t('recapPointsAvailable', { count: career.skillPoints })}
+              </span>
+            </div>
           </div>
           {result.skillPointsEarned > 0 && (
             <p className="mb-2 text-xs text-emerald-300">{t('recapPointsEarned', { count: result.skillPointsEarned })}</p>
           )}
+          <p className="mb-2 text-xs text-slate-500">{t('recapPotentielExplain', { value: career.stats.potentiel })}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {TRAINABLE_STATS.map((stat) => {
               const maxed = career.stats[stat] >= career.stats.potentiel;
