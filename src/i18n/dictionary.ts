@@ -174,6 +174,8 @@ export const dictionary = {
 
   // Ending
   endingTitle: { fr: 'Fin de carrière', en: 'Career over' },
+  endingHighSchool: { fr: 'Formé à {school}', en: 'Developed at {school}' },
+  endingDraftPick: { fr: 'Draft en {pick}e position', en: 'Drafted {pick} overall' },
   endingRestart: { fr: 'Nouvelle carrière', en: 'New career' },
   endingBackToMenu: { fr: 'Retour au menu', en: 'Back to menu' },
   endingFinalStats: { fr: 'Fiche de carrière', en: 'Career sheet' },
@@ -190,6 +192,10 @@ export const dictionary = {
   endingNoTrophyCase: { fr: 'Aucun trophée remporté.', en: 'No trophies won.' },
   endingRivalry: { fr: 'Rivalité', en: 'Rivalry' },
   endingRivalryRecord: { fr: 'Face à {rival} : {wins} victoires — {losses} défaites', en: 'Against {rival}: {wins} wins — {losses} losses' },
+  endingRivalTeamRecord: {
+    fr: 'Ennemi public à {team} : {wins} victoires — {losses} défaites',
+    en: 'Public enemy at {team}: {wins} wins — {losses} losses',
+  },
   endingNewAchievements: { fr: 'Nouveaux succès débloqués', en: 'New achievements unlocked' },
 
   // Top bar / HUD

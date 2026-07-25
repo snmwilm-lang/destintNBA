@@ -19,7 +19,7 @@ import type {
 import { allEvents } from '../data/events';
 import { HIGH_SCHOOL_TEAM_POOL, NBA_TEAM_POOL, EUROPE_TEAM_POOL, allTeamsForLeague } from '../data/teams';
 import { BUILDS, buildIdentity, getBuild } from '../data/builds';
-import { RIVAL_PLAYERS } from '../data/names';
+import { NBA_LIKE_TEAMS, RIVAL_PLAYERS } from '../data/names';
 import { getNationality } from '../data/nationalities';
 import { checkNewTraits } from '../data/traits';
 import { applyEffects, clampStat, initialStats, randFloat, randInt, weightedPick } from './statUtils';
@@ -97,17 +97,18 @@ export function getEvent(id: string): GameEvent | undefined {
   return EVENT_MAP.get(id);
 }
 
-/** Swaps whichever generic rival name a "rivalDuel"-tagged card was generated with for this
- * career's own pinned rival, so the same named opponent keeps showing up across seasons. */
-export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
-  if (!event.tags?.includes('rivalDuel')) return event;
+/** Swaps whichever generic placeholder from `pool` a tagged card was generated with for this
+ * career's own pinned value, so the same named opponent (or rival fanbase) keeps showing up
+ * across seasons instead of a different one every time. */
+function pinPlaceholder(event: GameEvent, tag: string, pool: string[], pinned: string): GameEvent {
+  if (!event.tags?.includes(tag)) return event;
   const swap = (text: LocalizedText): LocalizedText => {
     let fr = text.fr;
     let en = text.en;
-    for (const name of RIVAL_PLAYERS) {
-      if (name === rivalName) continue;
-      if (fr.includes(name)) fr = fr.split(name).join(rivalName);
-      if (en.includes(name)) en = en.split(name).join(rivalName);
+    for (const name of pool) {
+      if (name === pinned) continue;
+      if (fr.includes(name)) fr = fr.split(name).join(pinned);
+      if (en.includes(name)) en = en.split(name).join(pinned);
     }
     return { fr, en };
   };
@@ -128,6 +129,20 @@ export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
         : undefined,
     })),
   };
+}
+
+/** Swaps whichever generic rival name a "rivalDuel"-tagged card was generated with for this
+ * career's own pinned rival, so the same named opponent keeps showing up across seasons. */
+export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
+  return pinPlaceholder(event, 'rivalDuel', RIVAL_PLAYERS, rivalName);
+}
+
+const RIVAL_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name);
+
+/** Same idea as pinRivalName, but for a "cityRivalry"-tagged card: an entire fanbase turned
+ * against the player (a la Trae Young vs. New York), not just one named opponent. */
+export function pinRivalTeam(event: GameEvent, rivalTeamName: string): GameEvent {
+  return pinPlaceholder(event, 'cityRivalry', RIVAL_TEAM_NAMES, rivalTeamName);
 }
 
 function leagueForAge(age: number, currentLeague: League, hasBeenDrafted: boolean): League {
@@ -188,9 +203,15 @@ export function createNewCareer(
     position,
     height,
     specialty: getBuild(archetype)?.name ?? null,
+    highSchool: skip ? null : startingTeam.name,
+    draftStock: 50,
+    draftPick: null,
     skillPoints: bonusSkillPoints,
     rivalName: RIVAL_PLAYERS[randInt(0, RIVAL_PLAYERS.length - 1)],
     rivalRecord: { wins: 0, losses: 0 },
+    rivalTeamName: RIVAL_TEAM_NAMES[randInt(0, RIVAL_TEAM_NAMES.length - 1)],
+    rivalTeamRecord: { wins: 0, losses: 0 },
+    rivalryProvoked: false,
     nationality,
     pendingNationalCampaign: null,
     newlyUnlockedAchievements: [],
@@ -355,6 +376,11 @@ function eventWeight(event: GameEvent, career: Career): number {
   let weight = event.weight ?? 1;
   if (career.currentTeam.league === 'nba' && BIG_MOMENT_CATEGORIES.includes(event.category)) {
     weight *= 6;
+  }
+  // Once the player has deliberately provoked the rival fanbase, that storyline comes up
+  // noticeably more often instead of purely at random.
+  if (career.rivalryProvoked && event.tags?.includes('cityRivalry')) {
+    weight *= 5;
   }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
@@ -988,13 +1014,42 @@ export function spendSkillPoint(career: Career, stat: StatKey): Career {
   };
 }
 
+// Bad teams draft first, just like the real lottery/draft order — a proxy sort by ambition
+// (low-ambition teams are the ones rebuilding and picking early).
+function draftOrderPool(): Team[] {
+  return [...NBA_TEAM_POOL].sort((a, b) => a.ambition - b.ambition);
+}
+
+export function teamForDraftPick(pick: number): Team {
+  const order = draftOrderPool();
+  return order[Math.max(0, Math.min(order.length - 1, pick - 1))];
+}
+
+export interface DraftResult {
+  pick: number;
+  team: Team;
+}
+
+// The draft is never pure stats: it blends 4 years of accumulated draft stock (performance +
+// behavior) with the raw stat line, then adds a real luck swing — a great prospect is far more
+// likely to go early, but is never mathematically guaranteed to go first overall.
+export function computeDraftResult(career: Career): DraftResult {
+  const performanceScore = (career.stats.technique + career.stats.physique + career.stats.mental + career.stats.iqBasket + career.stats.reputation) / 5;
+  const combined = career.draftStock * 0.5 + performanceScore * 0.5;
+  const roll = Math.max(0, Math.min(100, combined + randFloat(-25, 25)));
+  const poolSize = NBA_TEAM_POOL.length;
+  const pick = Math.max(1, Math.min(poolSize, Math.round(poolSize - (roll / 100) * (poolSize - 1))));
+  return { pick, team: teamForDraftPick(pick) };
+}
+
 export function startNextSeason(career: Career): Career {
   const nextAge = career.age + 1;
   const nextLeague = leagueForAge(nextAge, career.currentTeam.league, career.seenEventIds.includes('draft-soiree'));
   let currentTeam = career.currentTeam;
   if (nextLeague !== career.currentTeam.league) {
-    const pool = allTeamsForLeague(nextLeague);
-    currentTeam = pool[randInt(0, pool.length - 1)];
+    // Landing in the NBA off the back of an actual draft night uses the pick that was rolled
+    // there, instead of a purely random team assignment.
+    currentTeam = nextLeague === 'nba' && career.draftPick !== null ? teamForDraftPick(career.draftPick) : allTeamsForLeague(nextLeague)[randInt(0, allTeamsForLeague(nextLeague).length - 1)];
   }
   const withDelayed = applyDueDelayedEffects({ ...career, age: nextAge, currentTeam });
   return {

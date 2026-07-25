@@ -4,6 +4,30 @@ import { FAMILY_FRIENDS_EN } from '../namesEn';
 
 export const familleEvents: EventTemplate[] = [
   {
+    id: 'famille-devoirs-lycee',
+    category: 'famille',
+    title: tt('Les cours passent après le basket ?', 'School taking a back seat to basketball?'),
+    description: tt(
+      "Tes profs alertent tes parents : tes notes ont chuté depuis que tu enchaînes les entraînements intensifs.",
+      'Your teachers have flagged it to your parents: your grades have slipped since the intensive training started piling up.',
+    ),
+    maxAge: 18,
+    weight: 2,
+    choices: [
+      {
+        label: tt('Te remettre sérieusement aux devoirs', 'Get serious about your schoolwork again'),
+        effects: { mental: 2, moral: -1 },
+        draftImpact: 2,
+      },
+      { label: tt('Trouver un équilibre raisonnable', 'Find a reasonable balance'), effects: { mental: 1 } },
+      {
+        label: tt('Laisser tomber, le basket est la priorité', "Let it slide — basketball is the priority"),
+        effects: { forme: 2, relationCoach: 1 },
+        draftImpact: -2,
+      },
+    ],
+  },
+  {
     id: 'famille-fierte-parents',
     category: 'famille',
     title: tt('Une visite qui compte', 'A visit that matters'),

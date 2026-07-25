@@ -1,6 +1,6 @@
 import type { Career } from '../types';
 import { useGameStore } from '../store/gameStore';
-import { getEvent, pinRivalName } from '../engine/careerEngine';
+import { getEvent, pinRivalName, pinRivalTeam } from '../engine/careerEngine';
 import { useT } from '../i18n/useT';
 import { TopBar } from '../components/TopBar';
 import { EventCard } from '../components/EventCard';
@@ -24,7 +24,9 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
   const exitToMenu = useGameStore((s) => s.exitToMenu);
 
   const rawCurrentEvent = career.currentEventId ? getEvent(career.currentEventId) : undefined;
-  const currentEvent = rawCurrentEvent ? pinRivalName(rawCurrentEvent, career.rivalName) : undefined;
+  const currentEvent = rawCurrentEvent
+    ? pinRivalTeam(pinRivalName(rawCurrentEvent, career.rivalName), career.rivalTeamName)
+    : undefined;
 
   return (
     <div className="flex min-h-screen flex-col">

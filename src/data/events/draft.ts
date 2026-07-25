@@ -53,8 +53,22 @@ export const draftEvents: EventTemplate[] = [
     unique: true,
     weight: 1,
     choices: [
-      { label: tt('Vivre l\'instant avec ta famille', 'Live the moment with your family'), effects: { moral: 6, reputation: 4 } },
-      { label: tt('Rester concentré et professionnel', 'Stay focused and professional'), effects: { mental: 3, reputation: 2 } },
+      {
+        label: tt('Vivre l\'instant avec ta famille', 'Live the moment with your family'),
+        resultText: tt(
+          "\"Avec le pick numéro {pick}, la franchise sélectionne...\" Ton nom résonne dans la salle. Te voilà chez {team}.",
+          '"With the number {pick} pick, the team selects..." Your name echoes through the arena. You\'re headed to {team}.',
+        ),
+        effects: { moral: 6, reputation: 4 },
+      },
+      {
+        label: tt('Rester concentré et professionnel', 'Stay focused and professional'),
+        resultText: tt(
+          "\"Avec le pick numéro {pick}, la franchise sélectionne...\" Ton nom résonne dans la salle. Te voilà chez {team}.",
+          '"With the number {pick} pick, the team selects..." Your name echoes through the arena. You\'re headed to {team}.',
+        ),
+        effects: { mental: 3, reputation: 2 },
+      },
     ],
   },
 ];

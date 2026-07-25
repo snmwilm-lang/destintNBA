@@ -42,6 +42,14 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
         “{sheet.legacyTitle[lang]}”
       </blockquote>
 
+      {(career.highSchool || career.draftPick !== null) && (
+        <p className="mb-6 text-xs text-slate-400">
+          {career.highSchool && t('endingHighSchool', { school: career.highSchool })}
+          {career.highSchool && career.draftPick !== null && ' · '}
+          {career.draftPick !== null && t('endingDraftPick', { pick: career.draftPick })}
+        </p>
+      )}
+
       <div className="mb-6 rounded-2xl border border-court-600 bg-court-700/40 px-5 py-4 text-left">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-slate-400">{t('endingFinalStats')}</span>
@@ -126,6 +134,15 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
           <p className="text-sm text-slate-300">
             {t('endingRivalryRecord', { rival: career.rivalName, wins: career.rivalRecord.wins, losses: career.rivalRecord.losses })}
           </p>
+          {(career.rivalTeamRecord.wins > 0 || career.rivalTeamRecord.losses > 0) && (
+            <p className="mt-1 text-sm text-slate-300">
+              {t('endingRivalTeamRecord', {
+                team: career.rivalTeamName,
+                wins: career.rivalTeamRecord.wins,
+                losses: career.rivalTeamRecord.losses,
+              })}
+            </p>
+          )}
         </div>
       </div>
 

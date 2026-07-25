@@ -12,9 +12,9 @@ export const entrainementEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'coach', pool: COACHES }],
     choices: [
-      { label: tt('Rester travailler', 'Stay and work'), effects: { technique: 5, forme: -3, relationCoach: 3 } },
-      { label: tt('Rentrer se reposer', 'Go home and rest'), effects: { forme: 3, technique: -1 } },
-      { label: tt('Proposer d\'y aller avec un coéquipier', 'Invite a teammate along'), effects: { technique: 3, relationCoequipiers: 3, forme: -2 } },
+      { label: tt('Rester travailler', 'Stay and work'), effects: { technique: 5, forme: -3, relationCoach: 3 }, draftImpact: 2 },
+      { label: tt('Rentrer se reposer', 'Go home and rest'), effects: { forme: 3, technique: -1 }, draftImpact: -1 },
+      { label: tt('Proposer d\'y aller avec un coéquipier', 'Invite a teammate along'), effects: { technique: 3, relationCoequipiers: 3, forme: -2 }, draftImpact: 2 },
     ],
     weight: 3,
   },
@@ -73,9 +73,9 @@ export const entrainementEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'coach', pool: COACHES }],
     choices: [
-      { label: tt('Accepter la critique et prendre des notes', 'Take the criticism and note it down'), effects: { iqBasket: 4, mental: 2, relationCoach: 3 } },
-      { label: tt('Se justifier devant le groupe', 'Defend yourself in front of the group'), effects: { relationCoach: -3, mental: -1, popularite: 1 } },
-      { label: tt('Demander une séance individuelle après', 'Ask for a one-on-one session afterwards'), effects: { iqBasket: 3, relationCoach: 4, forme: -1 } },
+      { label: tt('Accepter la critique et prendre des notes', 'Take the criticism and note it down'), effects: { iqBasket: 4, mental: 2, relationCoach: 3 }, draftImpact: 2 },
+      { label: tt('Se justifier devant le groupe', 'Defend yourself in front of the group'), effects: { relationCoach: -3, mental: -1, popularite: 1 }, draftImpact: -2 },
+      { label: tt('Demander une séance individuelle après', 'Ask for a one-on-one session afterwards'), effects: { iqBasket: 3, relationCoach: 4, forme: -1 }, draftImpact: 2 },
     ],
   },
   {
@@ -102,9 +102,9 @@ export const entrainementEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'coach', pool: COACHES }],
     choices: [
-      { label: tt('Suivre le programme à la lettre', 'Follow the program to the letter'), effects: { physique: 5, forme: -3, risqueBlessure: 4 } },
+      { label: tt('Suivre le programme à la lettre', 'Follow the program to the letter'), effects: { physique: 5, forme: -3, risqueBlessure: 4 }, draftImpact: 2 },
       { label: tt('Adapter l\'intensité à ses sensations', 'Adjust intensity to how you feel'), effects: { physique: 2, risqueBlessure: -2, forme: 1 } },
-      { label: tt('Ignorer et faire son propre programme', 'Ignore it and do your own program'), effects: { relationCoach: -4, physique: 1 } },
+      { label: tt('Ignorer et faire son propre programme', 'Ignore it and do your own program'), effects: { relationCoach: -4, physique: 1 }, draftImpact: -3 },
     ],
   },
   {

@@ -82,8 +82,11 @@ export const EUROPE_TEAMS = [
 ];
 
 export const HIGH_SCHOOL_TEAMS = [
-  'Lincoln Ridge High', 'Saint Auber Academy', 'Westfall High', 'Grover Prep',
-  'Redwater Central High', 'Ashford Institute', 'Northgate High', 'Bellemont Academy',
+  'Northview High', 'Eastbridge Academy', 'Westlake High', 'Southcrest Institute',
+  'Oakridge High', 'Silver Pine Academy', 'Maple Grove High', 'Cresthill Academy',
+  'Ravenwood High', 'Stonegate High', 'Blue Harbor Academy', 'Kingsford High',
+  'Red Valley High', 'Ironwood Academy', 'Hillcrest High', 'Brookfield Institute',
+  'Cedar Point High', 'Falcon Ridge Academy', 'Evergreen High', 'Horizon Academy',
 ];
 
 export const AGENTS = [

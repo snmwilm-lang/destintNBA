@@ -126,10 +126,12 @@ export const matchEvents: EventTemplate[] = [
       {
         label: tt('Se recentrer sur la défense et les passes', 'Refocus on defense and passing'),
         effects: { iqBasket: 3, relationCoequipiers: 2, mental: 2 },
+        draftImpact: 1,
       },
       {
         label: tt('Demander à sortir du match', 'Ask to be substituted out'),
         effects: { relationCoach: -3, moral: -1, forme: 3 },
+        draftImpact: -2,
       },
     ],
     weight: 2,
@@ -173,10 +175,12 @@ export const matchEvents: EventTemplate[] = [
         label: tt('Ignorer et respirer', 'Ignore it and breathe'),
         effects: { mental: 3 },
         successChance: { baseChance: 0.65, statBonus: { mental: 0.01 }, onSuccess: { reputation: 2, moral: 2 }, onFailure: { moral: -2 } },
+        draftImpact: 1,
       },
       {
         label: tt('Répondre au public avec un geste', 'Answer the crowd with a gesture'),
         effects: { popularite: 3, reputation: -1, mental: -1 },
+        draftImpact: -2,
       },
     ],
   },
@@ -228,10 +232,12 @@ export const matchEvents: EventTemplate[] = [
       {
         label: tt('Rester professionnel et travailler encore plus dur', 'Stay professional and work even harder'),
         effects: { mental: 3, relationCoach: 2, forme: -1 },
+        draftImpact: 2,
       },
       {
         label: tt('Se plaindre publiquement', 'Complain publicly'),
         effects: { popularite: 1, relationCoach: -5, reputation: -2 },
+        draftImpact: -3,
       },
     ],
   },
@@ -264,6 +270,38 @@ export const matchEvents: EventTemplate[] = [
     ],
     weight: 2,
     tags: ['rivalDuel'],
+  },
+  {
+    id: 'match-clameur-ville-rivale',
+    category: 'match',
+    title: tt('Sur la route de Chicago Bison', 'On the road at Chicago Bison'),
+    description: tt(
+      "La salle entière te hue avant même le coup d'envoi. Toute une ville s'est donné rendez-vous pour te voir craquer ce soir.",
+      "The entire building boos you before tip-off even happens. A whole city has shown up hoping to watch you crack tonight.",
+    ),
+    minSeason: 4,
+    weight: 2,
+    choices: [
+      {
+        label: tt('Prendre le match à ton compte devant leur public', 'Take the game over in front of their crowd'),
+        successChance: {
+          baseChance: 0.4,
+          statBonus: { technique: 0.012, mental: 0.008 },
+          onSuccess: { reputation: 16, popularite: 12, moral: 10 },
+          onFailure: { moral: -9, reputation: -4 },
+          successText: tt(
+            'Tu fais taire 20 000 personnes à toi seul. Ce soir devient un moment légendaire dans cette rivalité.',
+            'You silence 20,000 people all by yourself. Tonight becomes a legendary moment in this rivalry.',
+          ),
+          failureText: tt(
+            "La salle explose de joie à chacune de tes erreurs. Une soirée que tu voudrais oublier.",
+            'The building erupts with joy at every mistake you make. A night you wish you could forget.',
+          ),
+        },
+      },
+      { label: tt('Jouer collectif pour faire taire la salle', 'Play team ball to quiet the crowd'), effects: { iqBasket: 3, relationCoequipiers: 3, mental: 2 } },
+    ],
+    tags: ['cityRivalry'],
   },
   {
     id: 'match-back-to-back',

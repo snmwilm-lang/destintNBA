@@ -28,9 +28,9 @@ export const coachEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'coach', pool: COACHES }],
     choices: [
-      { label: tt('Encaisser sans rien dire', 'Take it without saying a word'), effects: { mental: 2, relationCoach: 1, moral: -2 } },
+      { label: tt('Encaisser sans rien dire', 'Take it without saying a word'), effects: { mental: 2, relationCoach: 1, moral: -2 }, draftImpact: 2 },
       { label: tt('Répondre calmement pour se justifier', 'Calmly explain yourself'), effects: { relationCoach: -2, mental: 1 } },
-      { label: tt('Répondre sur le ton de la confrontation', 'Fire back confrontationally'), effects: { relationCoach: -6, popularite: 1, relationCoequipiers: 1 } },
+      { label: tt('Répondre sur le ton de la confrontation', 'Fire back confrontationally'), effects: { relationCoach: -6, popularite: 1, relationCoequipiers: 1 }, draftImpact: -3 },
     ],
   },
   {
@@ -86,9 +86,9 @@ export const coachEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'coach', pool: COACHES }],
     choices: [
-      { label: tt('Défendre publiquement le coach', 'Publicly defend the coach'), effects: { relationCoach: 5, relationCoequipiers: -2 } },
+      { label: tt('Défendre publiquement le coach', 'Publicly defend the coach'), effects: { relationCoach: 5, relationCoequipiers: -2 }, draftImpact: 2 },
       { label: tt('Rester neutre', 'Stay neutral'), effects: { mental: 1 } },
-      { label: tt('Rejoindre la contestation', 'Join the pushback'), effects: { relationCoach: -5, relationCoequipiers: 3, popularite: 1 } },
+      { label: tt('Rejoindre la contestation', 'Join the pushback'), effects: { relationCoach: -5, relationCoequipiers: 3, popularite: 1 }, draftImpact: -2 },
     ],
   },
   {
@@ -101,9 +101,9 @@ export const coachEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'coach', pool: COACHES }],
     choices: [
-      { label: tt('Accepter chaque session', 'Accept every session'), effects: { iqBasket: 4, relationCoach: 4, forme: -2 } },
+      { label: tt('Accepter chaque session', 'Accept every session'), effects: { iqBasket: 4, relationCoach: 4, forme: -2 }, draftImpact: 2 },
       { label: tt('Accepter avec modération', 'Accept in moderation'), effects: { iqBasket: 2, relationCoach: 2 } },
-      { label: tt('Décliner pour préserver ton temps libre', 'Decline to protect your free time'), effects: { moral: 2, relationCoach: -2 } },
+      { label: tt('Décliner pour préserver ton temps libre', 'Decline to protect your free time'), effects: { moral: 2, relationCoach: -2 }, draftImpact: -1 },
     ],
   },
   {
@@ -116,9 +116,9 @@ export const coachEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'coach', pool: COACHES }],
     choices: [
-      { label: tt('Proposer tes idées en privé', 'Offer your ideas privately'), effects: { relationCoach: 2, iqBasket: 3 } },
-      { label: tt('Appliquer le système sans discuter', 'Run the system without arguing'), effects: { relationCoach: 1, iqBasket: -1 } },
-      { label: tt('Improviser sur le terrain malgré les consignes', 'Improvise on court despite instructions'), effects: { relationCoach: -4, reputation: 1, iqBasket: 1 } },
+      { label: tt('Proposer tes idées en privé', 'Offer your ideas privately'), effects: { relationCoach: 2, iqBasket: 3 }, draftImpact: 1 },
+      { label: tt('Appliquer le système sans discuter', 'Run the system without arguing'), effects: { relationCoach: 1, iqBasket: -1 }, draftImpact: 1 },
+      { label: tt('Improviser sur le terrain malgré les consignes', 'Improvise on court despite instructions'), effects: { relationCoach: -4, reputation: 1, iqBasket: 1 }, draftImpact: -2 },
     ],
   },
 ];

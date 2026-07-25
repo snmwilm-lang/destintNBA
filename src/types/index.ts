@@ -91,6 +91,13 @@ export interface EventChoice {
   /** Chains straight into another event as the payoff of a multi-step moment, without
    * consuming an extra season slot or showing the usual choice-result screen in between. */
   linkedNextEventId?: string;
+  /** Marks a choice as the player deliberately kicking off (or escalating) the city/fanbase
+   * rivalry — from then on, cityRivalry moments come up noticeably more often. */
+  triggersRivalry?: boolean;
+  /** How this choice moves the NBA draft stock, accumulated only during the high-school years
+   * (missing practice, arrogance with the press, poor discipline, etc. should be negative;
+   * professionalism and maturity should be positive). */
+  draftImpact?: number;
 }
 
 export interface GameEvent {
@@ -227,11 +234,26 @@ export interface Career {
   height: number;
   /** NBA specialty picked once the player reaches the league — null until then. */
   specialty: LocalizedText | null;
+  /** The high school attended, ages 15-19 only — kept afterward purely as a bio fact, never
+   * shown as the active team again once the player is drafted. Null for the skip-to-NBA path. */
+  highSchool: string | null;
+  /** Draft stock (0-100): built from 4 years of high-school performance and behavior, then
+   * combined with a luck roll on draft night — a great player is more likely to go early, but
+   * never guaranteed to go first. */
+  draftStock: number;
+  /** Set once the player is actually drafted. */
+  draftPick: number | null;
   /** Earned through good seasons; the player spends them to directly train up a skill. */
   skillPoints: number;
   /** Persistent named rival for duel-style events, pinned for this career. */
   rivalName: string;
   rivalRecord: { wins: number; losses: number };
+  /** A whole fanbase can turn into a rival too (a la Trae Young vs. New York), pinned for this career. */
+  rivalTeamName: string;
+  rivalTeamRecord: { wins: number; losses: number };
+  /** Set once the player deliberately provokes the rival fanbase — from then on, cityRivalry
+   * moments come up noticeably more often instead of purely at random. */
+  rivalryProvoked: boolean;
   /** Country represented in international competition (Olympics, World Cup). */
   nationality: string;
   /** Set the moment the national team is selected; resolved into the matching

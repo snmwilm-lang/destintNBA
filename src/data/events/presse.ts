@@ -28,8 +28,8 @@ export const presseEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'journalist', pool: JOURNALISTS }],
     choices: [
-      { label: tt('Répondre avec diplomatie', 'Answer diplomatically'), effects: { reputation: 2, relationCoach: 1 } },
-      { label: tt("Répondre franchement, quitte à créer des remous", 'Answer honestly, even if it stirs things up'), effects: { popularite: 3, relationCoequipiers: -2 } },
+      { label: tt('Répondre avec diplomatie', 'Answer diplomatically'), effects: { reputation: 2, relationCoach: 1 }, draftImpact: 2 },
+      { label: tt("Répondre franchement, quitte à créer des remous", 'Answer honestly, even if it stirs things up'), effects: { popularite: 3, relationCoequipiers: -2 }, draftImpact: -2 },
       { label: tt('Refuser de répondre', 'Refuse to answer'), effects: { reputation: -1 } },
     ],
   },
@@ -43,8 +43,8 @@ export const presseEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'journalist', pool: JOURNALISTS }],
     choices: [
-      { label: tt('Rester humble publiquement', 'Stay humble publicly'), effects: { popularite: 2, relationCoequipiers: 1 } },
-      { label: tt('Assumer et savourer les louanges', 'Own it and enjoy the praise'), effects: { popularite: 3, mental: -1 } },
+      { label: tt('Rester humble publiquement', 'Stay humble publicly'), effects: { popularite: 2, relationCoequipiers: 1 }, draftImpact: 2 },
+      { label: tt('Assumer et savourer les louanges', 'Own it and enjoy the praise'), effects: { popularite: 3, mental: -1 }, draftImpact: -1 },
     ],
   },
   {
@@ -57,8 +57,8 @@ export const presseEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'journalist', pool: JOURNALISTS }],
     choices: [
-      { label: tt('Utiliser la critique comme carburant', 'Use the criticism as fuel'), effects: { mental: 3, technique: 1 } },
-      { label: tt('Répondre publiquement pour te défendre', 'Respond publicly to defend yourself'), effects: { popularite: 2, reputation: -1 } },
+      { label: tt('Utiliser la critique comme carburant', 'Use the criticism as fuel'), effects: { mental: 3, technique: 1 }, draftImpact: 2 },
+      { label: tt('Répondre publiquement pour te défendre', 'Respond publicly to defend yourself'), effects: { popularite: 2, reputation: -1 }, draftImpact: -2 },
       { label: tt('Laisser couler', 'Let it go'), effects: { mental: 1 } },
     ],
   },

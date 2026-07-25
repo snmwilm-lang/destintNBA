@@ -6,12 +6,14 @@ import {
   type CareerPath,
   checkEnding,
   computeCareerSheet,
+  computeDraftResult,
   createNewCareer,
   EVENTS_PER_SEASON,
   generateTransferOffers,
   getEvent,
   pickNextEvent,
   pinRivalName,
+  pinRivalTeam,
   resolveChoice,
   simulateNationalCampaign,
   simulateSeason,
@@ -121,7 +123,7 @@ export const useGameStore = create<GameStore>()(
         if (!career || !career.currentEventId) return;
         const rawEvent = getEvent(career.currentEventId);
         if (!rawEvent) return;
-        const event = pinRivalName(rawEvent, career.rivalName);
+        const event = pinRivalTeam(pinRivalName(rawEvent, career.rivalName), career.rivalTeamName);
         const outcome = resolveChoice(career, event, choiceId);
 
         set((s) =>
@@ -153,6 +155,20 @@ export const useGameStore = create<GameStore>()(
                     losses: c.rivalRecord.losses + (outcome.wasSuccess ? 0 : 1),
                   }
                 : c.rivalRecord;
+            const rivalTeamRecord =
+              event.tags?.includes('cityRivalry') && outcome.wasSuccess !== null
+                ? {
+                    wins: c.rivalTeamRecord.wins + (outcome.wasSuccess ? 1 : 0),
+                    losses: c.rivalTeamRecord.losses + (outcome.wasSuccess ? 0 : 1),
+                  }
+                : c.rivalTeamRecord;
+            const rivalryProvoked = c.rivalryProvoked || choice?.triggersRivalry === true;
+            // Draft stock only accumulates during the high-school years it's meant to reflect —
+            // once drafted, the pick is locked in and further swings would be meaningless.
+            const draftStock =
+              choice?.draftImpact !== undefined && c.currentTeam.league === 'lycee'
+                ? Math.max(0, Math.min(100, c.draftStock + choice.draftImpact))
+                : c.draftStock;
             // Getting picked for the national team rolls the whole tournament run right away, so
             // a guaranteed follow-up event can later reveal exactly how far the country went.
             const selectionCompetition = NATIONAL_SELECTION_EVENT_IDS[event.id];
@@ -164,6 +180,21 @@ export const useGameStore = create<GameStore>()(
             // A choice can chain straight into a follow-up event (a multi-step moment) instead
             // of showing the usual result screen — it doesn't eat an extra slot from the season.
             const linkedNextEventId = choice?.linkedNextEventId;
+            // Draft night: roll the real pick now (stock + performance + luck) and reveal it
+            // right in the result text, since the team assignment itself only takes effect at
+            // the next season boundary (startNextSeason picks it up from career.draftPick).
+            let draftPick = c.draftPick;
+            let resultText = linkedNextEventId ? null : outcome.resultText;
+            if (event.id === 'draft-soiree') {
+              const draftResult = computeDraftResult({ ...c, stats: outcome.stats, draftStock });
+              draftPick = draftResult.pick;
+              if (resultText) {
+                resultText = {
+                  fr: resultText.fr.replace('{pick}', String(draftResult.pick)).replace('{team}', draftResult.team.name),
+                  en: resultText.en.replace('{pick}', String(draftResult.pick)).replace('{team}', draftResult.team.name),
+                };
+              }
+            }
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -174,10 +205,14 @@ export const useGameStore = create<GameStore>()(
               choiceLog,
               pendingDelayed,
               rivalRecord,
+              rivalTeamRecord,
+              rivalryProvoked,
+              draftStock,
+              draftPick,
               pendingNationalCampaign,
               phase: linkedNextEventId ? 'event' : 'choiceResult',
               currentEventId: linkedNextEventId ?? c.currentEventId,
-              lastChoiceResultText: linkedNextEventId ? null : outcome.resultText,
+              lastChoiceResultText: resultText,
               lastChoiceStatDeltas: outcome.statDeltas,
               lastChoiceMoneyDelta: outcome.moneyDelta,
               lastChoiceWasSuccess: outcome.wasSuccess,

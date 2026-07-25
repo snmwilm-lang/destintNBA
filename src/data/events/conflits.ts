@@ -12,9 +12,9 @@ export const conflitsEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'teammate', pool: TEAMMATES }],
     choices: [
-      { label: tt("Aller s'excuser après coup", 'Go apologize afterwards'), effects: { relationCoequipiers: 3, mental: 1 } },
+      { label: tt("Aller s'excuser après coup", 'Go apologize afterwards'), effects: { relationCoequipiers: 3, mental: 1 }, draftImpact: 2 },
       { label: tt('Laisser la tension retomber seule', 'Let the tension die down on its own'), effects: { relationCoequipiers: -1 } },
-      { label: tt('Envenimer la situation', 'Make things worse'), effects: { relationCoequipiers: -5, relationCoach: -2 } },
+      { label: tt('Envenimer la situation', 'Make things worse'), effects: { relationCoequipiers: -5, relationCoach: -2 }, draftImpact: -3 },
     ],
     weight: 2,
   },
@@ -42,8 +42,8 @@ export const conflitsEvents: EventTemplate[] = [
     ),
     slots: [{ key: 'rival', pool: RIVAL_PLAYERS }],
     choices: [
-      { label: tt('Répondre calmement', 'Respond calmly'), effects: { mental: 2, reputation: 1 } },
-      { label: tt('Répondre avec la même agressivité', 'Fire back with the same aggression'), effects: { reputation: -2, popularite: 2, mental: -1 } },
+      { label: tt('Répondre calmement', 'Respond calmly'), effects: { mental: 2, reputation: 1 }, draftImpact: 1 },
+      { label: tt('Répondre avec la même agressivité', 'Fire back with the same aggression'), effects: { reputation: -2, popularite: 2, mental: -1 }, draftImpact: -2 },
       { label: tt('Ignorer complètement', 'Ignore it completely'), effects: { mental: 3 } },
     ],
     tags: ['rivalDuel'],
@@ -57,8 +57,8 @@ export const conflitsEvents: EventTemplate[] = [
       'One of your quotes, taken out of context, is seen as a criticism of the team.',
     ),
     choices: [
-      { label: tt('Clarifier immédiatement en interne', 'Clarify it internally right away'), effects: { relationCoequipiers: 2, relationCoach: 1 } },
-      { label: tt("Laisser la polémique enfler", 'Let the controversy grow'), effects: { reputation: -3, relationCoequipiers: -2 } },
+      { label: tt('Clarifier immédiatement en interne', 'Clarify it internally right away'), effects: { relationCoequipiers: 2, relationCoach: 1 }, draftImpact: 2 },
+      { label: tt("Laisser la polémique enfler", 'Let the controversy grow'), effects: { reputation: -3, relationCoequipiers: -2 }, draftImpact: -2 },
     ],
   },
   {
@@ -89,5 +89,77 @@ export const conflitsEvents: EventTemplate[] = [
       { label: tt("Continuer l'échange publiquement", 'Keep the exchange going publicly'), effects: { popularite: 4, reputation: -3 } },
     ],
     tags: ['rivalDuel'],
+  },
+  {
+    id: 'conflit-defi-public',
+    category: 'conflits',
+    title: tt('Une occasion de lancer les hostilités avec Chicago Bison', 'A chance to start something with Chicago Bison'),
+    description: tt(
+      "Un micro tendu après le match te donne l'occasion de dire ce que tu penses vraiment de cette franchise et de ses supporters.",
+      'A microphone shoved in your face after the game gives you a chance to say what you really think about that franchise and its fans.',
+    ),
+    weight: 2,
+    choices: [
+      {
+        label: tt('Lancer le défi publiquement', 'Call them out publicly'),
+        resultText: tt(
+          "Tes mots font le tour des réseaux en quelques minutes. La rivalité est officiellement lancée.",
+          'Your words are all over social media within minutes. The rivalry is officially on.',
+        ),
+        effects: { popularite: 5, reputation: -1, mental: 2 },
+        triggersRivalry: true,
+      },
+      { label: tt('Rester professionnel et ne rien lâcher', 'Stay professional and give nothing away'), effects: { mental: 2, reputation: 1 } },
+    ],
+    tags: ['cityRivalry'],
+  },
+  {
+    id: 'conflit-foule-hostile',
+    category: 'conflits',
+    title: tt('Chaudron hostile à Chicago Bison', 'Hostile crowd at Chicago Bison'),
+    description: tt(
+      "Chaque apparition dans cette salle tourne à la chasse à l'homme : sifflets dès l'échauffement, banderoles à ton nom.",
+      "Every appearance in that building turns into a manhunt: whistles from warmups, banners with your name on them.",
+    ),
+    minSeason: 3,
+    weight: 2,
+    choices: [
+      {
+        label: tt('Nourrir la tension avec un geste fort', 'Feed the tension with a bold statement'),
+        successChance: {
+          baseChance: 0.45,
+          statBonus: { mental: 0.012 },
+          onSuccess: { popularite: 8, reputation: 5, moral: 6 },
+          onFailure: { moral: -6, reputation: -3 },
+          successText: tt(
+            'Tu fais taire toute la salle. La rivalité devient encore plus légendaire.',
+            'You silence the entire building. The rivalry becomes even more legendary.',
+          ),
+          failureText: tt(
+            "La salle explose de joie à ton échec. L'humiliation est totale.",
+            'The building erupts with joy at your failure. The humiliation is total.',
+          ),
+        },
+      },
+      { label: tt('Rester silencieux et jouer ton jeu', 'Stay silent and play your game'), effects: { mental: 4, forme: -2 } },
+    ],
+    tags: ['cityRivalry'],
+  },
+  {
+    id: 'conflit-provocation-supporters',
+    category: 'conflits',
+    title: tt('Les supporters de Chicago Bison te ciblent sur les réseaux', "Chicago Bison's fans target you online"),
+    description: tt(
+      "Une vague de messages hostiles venus de leurs supporters envahit tes réseaux après le dernier match.",
+      'A wave of hostile messages from their fanbase floods your social media after the last game.',
+    ),
+    minSeason: 2,
+    weight: 1,
+    choices: [
+      { label: tt('Répondre avec humour', 'Respond with humor'), effects: { popularite: 5, reputation: 1 } },
+      { label: tt('Ignorer complètement', 'Ignore it completely'), effects: { mental: 3 } },
+      { label: tt('Riposter frontalement', 'Fire back head-on'), effects: { popularite: 3, reputation: -3, moral: -1 } },
+    ],
+    tags: ['cityRivalry'],
   },
 ];
