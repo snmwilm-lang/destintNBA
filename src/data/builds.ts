@@ -26,7 +26,7 @@ export const BUILDS: BuildDef[] = [
     'PG',
     { fr: 'Meneur scoreur', en: 'Scoring Point Guard' },
     { fr: "Prend le jeu à son compte et n'hésite jamais à tirer.", en: 'Takes the game into his own hands and never hesitates to shoot.' },
-    { technique: 12, mental: 5, popularite: 5 },
+    { technique: 9, iqBasket: 6, mental: 5, popularite: 5 },
   ),
   b(
     'pg-defender',
@@ -234,7 +234,10 @@ export function buildIdentity(build: BuildDef): BuildIdentity {
   const relationCoequipiers = b.relationCoequipiers ?? 0;
   const mental = b.mental ?? 0;
 
-  const pointsPct = clamp(Math.round(technique * 1.9 + physique * 0.5), -10, 35);
+  // Capped tighter than before (was up to +35%) — stacked with everything else that already
+  // pushes scoring up in a season, a 35% build bonus alone was enough to turn a good-not-perfect
+  // player into a 50+ point-per-game scorer, well past anything realistic.
+  const pointsPct = clamp(Math.round(technique * 1.9 + physique * 0.5), -8, 20);
   const passesPct = clamp(Math.round(iqBasket * 1.1 + relationCoequipiers * 1.5), -10, 25);
   const reboundsPct = clamp(Math.round(physique * 1.7), -10, 30);
 

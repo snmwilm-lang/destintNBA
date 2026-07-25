@@ -644,14 +644,17 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   const identity = buildIdentity(getBuild(career.archetype) ?? BUILDS[0]);
 
   const scoringSkill = (stats.technique * 0.6 + stats.iqBasket * 0.2 + stats.physique * 0.2) / 100;
-  let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 1.45 * choiceFactor * (1 + identity.pointsPct / 100);
+  // 30 ppg is already a rare, MVP-caliber scoring season in real basketball — the multiplier
+  // stack here used to compound past that for any merely very good (not maxed-out) player, so a
+  // normal great season was landing in the 50s instead of the 25-35 range it should.
+  let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 0.95 * choiceFactor * (1 + identity.pointsPct / 100);
   // A rare career-year bump — this is a SEASON average, so it stays modest even when it lands,
   // rather than the wild multiplier a single highlight game could get away with.
   if (Math.random() < 0.04) points *= randFloat(1.05, 1.18);
   // Every box-score number below is a season AVERAGE, not a single game — the build-identity and
   // choice-factor multipliers can otherwise stack past anything realistic. Hard-cap each one at
-  // a rare, historically-plausible career-high ceiling.
-  points = Math.min(65, points);
+  // a rare, historically-plausible career-high ceiling (the real all-time record is 50.4).
+  points = Math.min(42, points);
 
   const reboundSkill = (stats.physique * 0.7 + stats.iqBasket * 0.3) / 100;
   const rebonds = Math.min(
@@ -1202,13 +1205,19 @@ export function spendSkillPoint(career: Career, stat: StatKey): Career {
     // Training can't push a stat past the player's own talent ceiling — potentiel has to rise
     // first, through real seasons of good decisions, not just spent points.
     if (career.stats[stat] >= career.stats.potentiel) return career;
-  } else if (!CONDITIONING_STATS.includes(stat)) {
+  } else if (CONDITIONING_STATS.includes(stat)) {
+    if (career.stats[stat] >= 100) return career;
+  } else {
     return career;
   }
+  // A deliberately spent point is a real, limited resource, not a passive drip — it always moves
+  // the stat by a full point. Routing it through applyEffects' near-100 diminishing-returns
+  // resistance (meant for the many small automatic gains from events) could round down to zero
+  // and silently burn the point with no visible change at all.
   return {
     ...career,
     skillPoints: career.skillPoints - 1,
-    stats: applyEffects(career.stats, { [stat]: 1 }),
+    stats: { ...career.stats, [stat]: clampStat(career.stats[stat] + 1) },
   };
 }
 
