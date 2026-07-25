@@ -13,9 +13,13 @@ export const finaleEvents: EventTemplate[] = [
     leagues: ['nba', 'gLeague'],
     // Not unique: a genuinely great team should be able to make repeat trips to the finals over a
     // career, not exactly once ever. The very first trip is guaranteed by year 3 (see
-    // forcedMilestone); every trip after that draws from the normal pool, but the reputation floor
-    // means it only keeps coming back for a player good enough to actually still be a contender.
-    requirements: [{ stat: 'reputation', min: 60 }],
+    // forcedMilestone); every trip after that draws from the normal pool, gated on the two things
+    // that actually get a team through a grueling playoff run — being in real playing shape and a
+    // locker room that's pulling together — instead of just individual fame.
+    requirements: [
+      { stat: 'forme', min: 65 },
+      { stat: 'relationCoequipiers', min: 65 },
+    ],
     weight: 12,
     choices: [
       {
@@ -57,7 +61,12 @@ export const finaleEvents: EventTemplate[] = [
     ),
     minSeason: 2,
     leagues: ['nba', 'gLeague'],
-    requirements: [{ stat: 'reputation', min: 60 }],
+    // Defensive gate in case this is ever drawn directly instead of via the prequel's
+    // linkedNextEventId chain — same standard as the timeout beat above.
+    requirements: [
+      { stat: 'forme', min: 65 },
+      { stat: 'relationCoequipiers', min: 65 },
+    ],
     weight: 12,
     choices: [
       {
