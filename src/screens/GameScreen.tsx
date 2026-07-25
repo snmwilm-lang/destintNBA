@@ -4,7 +4,7 @@ import { getEvent, pinRivalHighSchool, pinRivalName, pinRivalTeam } from '../eng
 import { useT } from '../i18n/useT';
 import { TopBar } from '../components/TopBar';
 import { EventCard } from '../components/EventCard';
-import { ChoiceResultCard } from '../components/ChoiceResultCard';
+import { ChoiceResultCard, type CareerDefiningVariant } from '../components/ChoiceResultCard';
 import { SeasonRecapScreen } from '../components/SeasonRecapScreen';
 import { TransferOffersScreen } from '../components/TransferOffersScreen';
 import { EndingScreen } from '../components/EndingScreen';
@@ -29,9 +29,17 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
     : undefined;
 
   // The finals-clinching shot and Olympic/World Cup finals are the career's biggest single
-  // moments — their payoff gets a dedicated victory/defeat slide instead of the standard pill.
+  // moments — their payoff gets a dedicated victory/defeat slide instead of the standard pill,
+  // themed per competition (a Finals ring, an Olympic medal, a World Cup title).
   const lastResolvedEventId = career.choiceLog[career.choiceLog.length - 1]?.eventId;
-  const isCareerDefining = ['finale-moment-decisif', 'jo-finale-olympique', 'cdm-finale-mondiale'].includes(lastResolvedEventId ?? '');
+  const careerDefiningVariant: CareerDefiningVariant | null =
+    lastResolvedEventId === 'finale-moment-decisif'
+      ? 'finale'
+      : lastResolvedEventId === 'jo-finale-olympique'
+        ? 'jo'
+        : lastResolvedEventId === 'cdm-finale-mondiale'
+          ? 'cdm'
+          : null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -50,7 +58,7 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
             statDeltas={career.lastChoiceStatDeltas}
             moneyDelta={career.lastChoiceMoneyDelta}
             wasSuccess={career.lastChoiceWasSuccess}
-            isCareerDefining={isCareerDefining}
+            careerDefiningVariant={careerDefiningVariant}
             onContinue={acknowledgeChoiceResult}
           />
         )}

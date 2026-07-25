@@ -82,6 +82,77 @@ export const TRAITS: Trait[] = [
     buff: { mental: 4, iqBasket: 3 },
     nerf: { physique: -4 },
   },
+  // Rare, unique traits earned from a genuine pattern of choices over time (not just a stat
+  // snapshot) — a deliberate storyline the player built, not a threshold they crossed by chance.
+  {
+    id: 'viral-sensation',
+    name: tt('Phénomène viral', 'Viral Sensation'),
+    description: tt(
+      "Chaque moment devient du contenu — ton feed explose, mais le repos, lui, se fait rare.",
+      'Every moment becomes content — your feed explodes, but rest becomes a rare commodity.',
+    ),
+    check: (career) =>
+      career.choiceLog.filter((l) => l.eventId.startsWith('reseaux-video-virale') && l.choiceId.endsWith('-c0')).length >= 3 &&
+      career.stats.popularite >= 80,
+    buff: { popularite: 5, reputation: 2 },
+    nerf: { forme: -4 },
+  },
+  {
+    id: 'rival-nemesis',
+    name: tt('Bourreau de son rival', "Rival's Nemesis"),
+    description: tt(
+      'Chaque duel devient une démonstration — ce rival ne dort plus tranquille avant de te croiser.',
+      'Every duel turns into a statement — that rival stops sleeping easy before facing you.',
+    ),
+    check: (career) => career.rivalRecord.wins >= 8 && career.rivalRecord.wins >= career.rivalRecord.losses * 2,
+    buff: { mental: 4, reputation: 3 },
+    nerf: { relationCoequipiers: -2 },
+  },
+  {
+    id: 'public-enemy',
+    name: tt("Ennemi public d'une ville", "A City's Public Enemy"),
+    description: tt(
+      "Toute une ville te déteste et le lui rend bien — et ça ne fait qu'ajouter à la légende.",
+      'A whole city hates you, and you thrive on it — it only adds to the legend.',
+    ),
+    check: (career) =>
+      career.rivalryProvoked && career.rivalTeamRecord.wins >= 5 && career.stats.popularite >= 80,
+    buff: { popularite: 5, mental: 3 },
+    nerf: { reputation: -3 },
+  },
+  {
+    id: 'finals-legend',
+    name: tt('Légende de la finale', 'Finals Legend'),
+    description: tt(
+      "Le grand moment ne t'a jamais fait peur — la ligue entière sait désormais ton nom.",
+      'The big moment never scared you off — the whole league knows your name now.',
+    ),
+    check: (career) => career.hasReachedFinale && career.eliteBreakthroughCount >= 1,
+    buff: { reputation: 4, mental: 2 },
+    nerf: { forme: -3 },
+  },
+  {
+    id: 'legendary-loyalty',
+    name: tt('Loyauté légendaire', 'Legendary Loyalty'),
+    description: tt(
+      "Jamais parti voir ailleurs — le même maillot depuis le premier jour, année après année.",
+      'Never once looked elsewhere — the same jersey since day one, year after year.',
+    ),
+    check: (career) => career.history.length >= 8 && new Set(career.history.map((h) => h.team)).size === 1,
+    buff: { relationCoequipiers: 5, popularite: 3 },
+    nerf: { reputation: -3 },
+  },
+  {
+    id: 'world-traveler',
+    name: tt('Globe-trotteur', 'World Traveler'),
+    description: tt(
+      "Lycée, ligue pro, aventure à l'étranger — tu as vu du basket sous toutes les latitudes.",
+      'High school, the pros, a stint abroad — you\'ve seen basketball on every continent.',
+    ),
+    check: (career) => new Set(career.history.map((h) => h.league)).size >= 3,
+    buff: { iqBasket: 3, mental: 3 },
+    nerf: { relationCoequipiers: -3 },
+  },
 ];
 
 export function getTrait(id: string): Trait | undefined {

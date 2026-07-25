@@ -1,22 +1,33 @@
 import { motion } from 'framer-motion';
 import type { LocalizedText, StatKey } from '../types';
 import { useLang, useT } from '../i18n/useT';
+import type { DictionaryKey } from '../i18n/dictionary';
 import { isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLabels';
 import { computeOverallDelta } from '../engine/careerEngine';
+
+export type CareerDefiningVariant = 'finale' | 'jo' | 'cdm';
+
+const VICTORY_CONTENT: Record<CareerDefiningVariant, { winIcon: string; loseIcon: string; winTitleKey: DictionaryKey; loseTitleKey: DictionaryKey }> = {
+  finale: { winIcon: '🏆', loseIcon: '💔', winTitleKey: 'choiceVictoryTitle', loseTitleKey: 'choiceDefeatTitle' },
+  jo: { winIcon: '🥇', loseIcon: '🥈', winTitleKey: 'choiceVictoryTitleJo', loseTitleKey: 'choiceDefeatTitleJo' },
+  cdm: { winIcon: '🌍', loseIcon: '🥈', winTitleKey: 'choiceVictoryTitleCdm', loseTitleKey: 'choiceDefeatTitleCdm' },
+};
 
 interface ChoiceResultCardProps {
   text: LocalizedText | null;
   statDeltas: Partial<Record<StatKey, number>> | null;
   moneyDelta: number;
   wasSuccess: boolean | null;
-  /** Marks the payoff of a career-defining moment (the finals-clinching shot, an
-   * Olympic/World Cup final) — shown as a full dramatic win/loss slide instead of the small
-   * standard outcome pill, since this is the one beat in the game the player should never miss. */
-  isCareerDefining?: boolean;
+  /** Marks the payoff of a career-defining moment (the finals-clinching shot, an Olympic final,
+   * a World Cup final) — shown as a full dramatic win/loss slide instead of the small standard
+   * outcome pill, since this is the one beat in the game the player should never miss. Each
+   * competition gets its own icon and headline (gold medal, world champion, etc.) instead of one
+   * generic "victory" screen for all three. */
+  careerDefiningVariant?: CareerDefiningVariant | null;
   onContinue: () => void;
 }
 
-export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, isCareerDefining, onContinue }: ChoiceResultCardProps) {
+export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, careerDefiningVariant, onContinue }: ChoiceResultCardProps) {
   const lang = useLang();
   const t = useT();
   const currency = lang === 'fr' ? 'fr-FR' : 'en-US';
@@ -30,7 +41,8 @@ export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, isC
         ? entries.reduce((acc, [key, delta]) => acc + (isGoodDelta(key, delta) ? 1 : -1) * Math.abs(delta), 0) >= 0
         : null;
 
-  const showVictorySlide = isCareerDefining && wasSuccess !== null;
+  const showVictorySlide = !!careerDefiningVariant && wasSuccess !== null;
+  const variantContent = careerDefiningVariant ? VICTORY_CONTENT[careerDefiningVariant] : null;
 
   return (
     <motion.div
@@ -44,16 +56,16 @@ export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, isC
           : 'border-gold-500/40 bg-court-800/90'
       }`}
     >
-      {showVictorySlide ? (
+      {showVictorySlide && variantContent ? (
         <motion.div
           initial={{ opacity: 0, y: -10, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
           className="mb-3"
         >
-          <div className="text-5xl">{wasSuccess ? '🏆' : '💔'}</div>
+          <div className="text-5xl">{wasSuccess ? variantContent.winIcon : variantContent.loseIcon}</div>
           <div className={`mt-2 text-2xl font-black tracking-wide ${wasSuccess ? 'text-gold-300' : 'text-rose-300'}`}>
-            {wasSuccess ? t('choiceVictoryTitle') : t('choiceDefeatTitle')}
+            {wasSuccess ? t(variantContent.winTitleKey) : t(variantContent.loseTitleKey)}
           </div>
         </motion.div>
       ) : (
