@@ -30,6 +30,11 @@ export const dictionary = {
   },
   achievementsProgress: { fr: '{unlocked}/{total} débloqués', en: '{unlocked}/{total} unlocked' },
   achievementsLocked: { fr: 'Verrouillé', en: 'Locked' },
+  dailyChallengesTitle: { fr: 'Défis quotidiens', en: 'Daily challenges' },
+  dailyChallengesSubtitle: {
+    fr: 'Trois nouveaux défis chaque jour — chaque défi réussi te donne 1 point de compétence.',
+    en: 'Three new challenges every day — each one completed earns 1 skill point.',
+  },
 
   // Character creation
   createTitle: { fr: 'Crée ton joueur', en: 'Create your player' },

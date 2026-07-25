@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Archetype, Career, Lang, Position, StatKey, Team } from '../types';
+import type { Archetype, Career, Lang, Position, SeasonResult, StatKey, Team } from '../types';
 import { isGoodDelta } from '../i18n/statLabels';
 import {
   baseEventId,
@@ -24,6 +24,7 @@ import {
   startNextSeason,
 } from '../engine/careerEngine';
 import { ACHIEVEMENTS, MAX_ACHIEVEMENT_BONUS_POINTS } from '../data/achievements';
+import { type DailyChallengeMetric, pickDailyChallenges, todayKey } from '../data/dailyChallenges';
 
 const RECENT_EVENTS_MEMORY = 40;
 
@@ -74,6 +75,13 @@ interface GameStore {
   activeCareerId: string | null;
   unlockedAchievements: string[];
 
+  // Daily challenges: a fresh set of 3 is picked every real-world day (see dailyChallenges.ts),
+  // shared account-wide (not per career) since they're about "today's session", not one career.
+  dailyChallengeDate: string;
+  dailyProgress: Partial<Record<DailyChallengeMetric, number>>;
+  dailyClaimedIds: string[];
+  checkDailyReset: () => void;
+
   createCareer: (playerName: string, archetype: Archetype, position: Position, path?: CareerPath, height?: number, nationality?: string) => void;
   selectCareer: (id: string) => void;
   deleteCareer: (id: string) => void;
@@ -92,22 +100,52 @@ function updateActiveCareer(state: GameStore, updater: (c: Career) => Career): P
   return { careers };
 }
 
-/** Moves past the "choice result" beat: either the next event card, or the season simulation. */
-function advancePastChoice(c: Career): Career {
+/** Moves past the "choice result" beat: either the next event card, or the season simulation —
+ * returning the fresh SeasonResult too, so daily-challenge progress (seasons/trophies/salary) can
+ * be credited without re-deriving whether a season actually just completed. */
+function advancePastChoice(c: Career): { career: Career; seasonResult: SeasonResult | null } {
   if (c.eventInSeasonIndex >= c.eventsPerSeason) {
-    const { career: simulated } = simulateSeason(c);
-    return { ...simulated, phase: 'seasonRecap' };
+    const { career: simulated, result } = simulateSeason(c);
+    return { career: { ...simulated, phase: 'seasonRecap' }, seasonResult: result };
   }
   const next = pickNextEvent(c);
   return {
-    ...c,
-    phase: 'event',
-    currentEventId: next?.id ?? null,
-    lastChoiceResultText: null,
-    lastChoiceStatDeltas: null,
-    lastChoiceMoneyDelta: 0,
-    lastChoiceWasSuccess: null,
+    career: {
+      ...c,
+      phase: 'event',
+      currentEventId: next?.id ?? null,
+      lastChoiceResultText: null,
+      lastChoiceStatDeltas: null,
+      lastChoiceMoneyDelta: 0,
+      lastChoiceWasSuccess: null,
+    },
+    seasonResult: null,
   };
+}
+
+/** Rolls forward to a fresh daily set (if the local day has changed) and credits progress toward
+ * the active set's targets, auto-claiming (and rewarding a skill point for) anything newly
+ * completed. Multiple metrics can be credited in one pass so a single game action — like a season
+ * completing — can move several challenges at once without one call clobbering another's update. */
+function applyDailyProgress(state: GameStore, deltas: Partial<Record<DailyChallengeMetric, number>>): Partial<GameStore> {
+  const dateKey = todayKey();
+  const isFreshDay = state.dailyChallengeDate !== dateKey;
+  const baseProgress = isFreshDay ? {} : state.dailyProgress;
+  const baseClaimed = isFreshDay ? [] : state.dailyClaimedIds;
+  const dailyProgress = { ...baseProgress };
+  for (const [metric, amount] of Object.entries(deltas) as [DailyChallengeMetric, number][]) {
+    if (!amount) continue;
+    dailyProgress[metric] = (dailyProgress[metric] ?? 0) + amount;
+  }
+  const activeSet = pickDailyChallenges(dateKey);
+  const newlyCompleted = activeSet.filter((ch) => (dailyProgress[ch.metric] ?? 0) >= ch.target && !baseClaimed.includes(ch.id));
+  const dailyClaimedIds = newlyCompleted.length > 0 ? [...baseClaimed, ...newlyCompleted.map((ch) => ch.id)] : baseClaimed;
+  const bonusPoints = newlyCompleted.length;
+  const careers =
+    bonusPoints > 0 && state.activeCareerId
+      ? state.careers.map((c) => (c.id === state.activeCareerId ? { ...c, skillPoints: c.skillPoints + bonusPoints } : c))
+      : state.careers;
+  return { dailyChallengeDate: dateKey, dailyProgress, dailyClaimedIds, careers };
 }
 
 export const useGameStore = create<GameStore>()(
@@ -119,6 +157,11 @@ export const useGameStore = create<GameStore>()(
       careers: [],
       activeCareerId: null,
       unlockedAchievements: [],
+
+      dailyChallengeDate: '',
+      dailyProgress: {},
+      dailyClaimedIds: [],
+      checkDailyReset: () => set((state) => applyDailyProgress(state, {})),
 
       createCareer: (playerName, archetype, position, path = 'full', height, nationality) => {
         const id = uid();
@@ -148,8 +191,8 @@ export const useGameStore = create<GameStore>()(
         const event = pinRivalHighSchool(pinRivalTeam(pinRivalName(rawEvent, career.rivalName), career.rivalTeamName), career.rivalHighSchool);
         const outcome = resolveChoice(career, event, choiceId);
 
-        set((s) =>
-          updateActiveCareer(s, (c) => {
+        set((s) => {
+          const afterChoice = updateActiveCareer(s, (c) => {
             const seenEventIds = event.unique ? [...c.seenEventIds, event.id] : c.seenEventIds;
             const usedThisSeasonIds = [...c.usedThisSeasonIds, event.id];
             const recentEventIds = [...c.recentEventIds, baseEventId(event.id)].slice(-RECENT_EVENTS_MEMORY);
@@ -274,12 +317,33 @@ export const useGameStore = create<GameStore>()(
               eventInSeasonIndex: linkedNextEventId ? c.eventInSeasonIndex : c.eventInSeasonIndex + 1,
             };
             return withChoice;
-          }),
-        );
+          });
+          const stateAfterChoice = { ...s, ...afterChoice };
+          const daily = applyDailyProgress(stateAfterChoice, {
+            choicesMade: 1,
+            successfulRisks: outcome.wasSuccess === true ? 1 : 0,
+          });
+          return { ...afterChoice, ...daily };
+        });
       },
 
       acknowledgeChoiceResult: () => {
-        set((s) => updateActiveCareer(s, advancePastChoice));
+        set((s) => {
+          if (!s.activeCareerId) return {};
+          const career = s.careers.find((c) => c.id === s.activeCareerId);
+          if (!career) return {};
+          const { career: advanced, seasonResult } = advancePastChoice(career);
+          const careers = s.careers.map((c) => (c.id === s.activeCareerId ? { ...advanced, updatedAt: Date.now() } : c));
+          const afterAdvance = { careers };
+          if (!seasonResult) return afterAdvance;
+          const stateAfterAdvance = { ...s, ...afterAdvance };
+          const daily = applyDailyProgress(stateAfterAdvance, {
+            seasonsCompleted: 1,
+            trophiesWon: seasonResult.trophies.length,
+            moneyEarned: seasonResult.salaire,
+          });
+          return { ...afterAdvance, ...daily };
+        });
       },
 
       acknowledgeSeasonRecap: () => {
