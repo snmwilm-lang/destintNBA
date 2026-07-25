@@ -1137,14 +1137,24 @@ export function checkEnding(career: Career): CareerEnding | null {
   };
 }
 
-/** Stats the player can directly train up by spending earned skill points. */
+/** Stats the player can directly train up by spending earned skill points — gated by potentiel. */
 export const TRAINABLE_STATS: StatKey[] = ['technique', 'physique', 'mental', 'iqBasket'];
 
+/** Once every trainable stat is pinned at the talent ceiling, points don't just pile up unused —
+ * they can still buy real, ongoing value in conditioning and team chemistry, neither of which has
+ * (or needs) a talent ceiling of its own, and both of which directly move the season stat line
+ * (see generateStatLine's formFactor/moralFactor and progressStats' minutesTarget). */
+export const CONDITIONING_STATS: StatKey[] = ['forme', 'moral', 'relationCoach', 'relationCoequipiers'];
+
 export function spendSkillPoint(career: Career, stat: StatKey): Career {
-  if (career.skillPoints <= 0 || !TRAINABLE_STATS.includes(stat)) return career;
-  // Training can't push a stat past the player's own talent ceiling — potentiel has to rise
-  // first, through real seasons of good decisions, not just spent points.
-  if (career.stats[stat] >= career.stats.potentiel) return career;
+  if (career.skillPoints <= 0) return career;
+  if (TRAINABLE_STATS.includes(stat)) {
+    // Training can't push a stat past the player's own talent ceiling — potentiel has to rise
+    // first, through real seasons of good decisions, not just spent points.
+    if (career.stats[stat] >= career.stats.potentiel) return career;
+  } else if (!CONDITIONING_STATS.includes(stat)) {
+    return career;
+  }
   return {
     ...career,
     skillPoints: career.skillPoints - 1,

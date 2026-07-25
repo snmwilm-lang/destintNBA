@@ -3,7 +3,7 @@ import type { Career, SeasonResult, StatKey } from '../types';
 import { useLang, useT } from '../i18n/useT';
 import type { DictionaryKey } from '../i18n/dictionary';
 import { INJURY_LABEL_KEYS, isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLabels';
-import { TRAINABLE_STATS } from '../engine/careerEngine';
+import { CONDITIONING_STATS, TRAINABLE_STATS } from '../engine/careerEngine';
 import { useGameStore } from '../store/gameStore';
 import { getTrait } from '../data/traits';
 
@@ -171,12 +171,34 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
             <p className="mb-2 text-xs text-emerald-300">{t('recapPointsEarned', { count: result.skillPointsEarned })}</p>
           )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {TRAINABLE_STATS.map((stat) => (
+            {TRAINABLE_STATS.map((stat) => {
+              const maxed = career.stats[stat] >= career.stats.potentiel;
+              return (
+                <button
+                  key={stat}
+                  onClick={() => spendPoint(stat)}
+                  disabled={career.skillPoints <= 0 || maxed}
+                  className="rounded-lg border border-court-600 bg-court-700/50 px-3 py-2 text-left transition-colors enabled:hover:border-gold-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <div className="text-[10px] uppercase text-slate-400">{t(STAT_LABEL_KEYS[stat])}</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-100 tabular-nums">{career.stats[stat]}</span>
+                    <span className={`text-xs font-bold ${maxed ? 'text-slate-500' : 'text-emerald-400'}`}>
+                      {maxed ? t('recapStatCapped') : '+1'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 mb-2 text-[11px] text-slate-500">{t('recapConditioningHint')}</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {CONDITIONING_STATS.map((stat) => (
               <button
                 key={stat}
                 onClick={() => spendPoint(stat)}
-                disabled={career.skillPoints <= 0}
-                className="rounded-lg border border-court-600 bg-court-700/50 px-3 py-2 text-left transition-colors enabled:hover:border-gold-400 disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={career.skillPoints <= 0 || career.stats[stat] >= 100}
+                className="rounded-lg border border-court-600 bg-court-700/30 px-3 py-2 text-left transition-colors enabled:hover:border-gold-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <div className="text-[10px] uppercase text-slate-400">{t(STAT_LABEL_KEYS[stat])}</div>
                 <div className="flex items-center justify-between">

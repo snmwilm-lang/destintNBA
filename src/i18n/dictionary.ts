@@ -152,6 +152,11 @@ export const dictionary = {
   recapTraining: { fr: 'Entraînement ciblé', en: 'Targeted training' },
   recapPointsAvailable: { fr: '{count} pts disponibles', en: '{count} pts available' },
   recapPointsEarned: { fr: '+{count} points gagnés cette saison', en: '+{count} points earned this season' },
+  recapStatCapped: { fr: 'MAX', en: 'MAX' },
+  recapConditioningHint: {
+    fr: "Plafonné en talent ? Investis plutôt dans la préparation et la relation d'équipe — ça se voit direct sur le terrain.",
+    en: "Capped on talent? Invest in conditioning and team chemistry instead — it shows up directly on the court.",
+  },
   recapSeeOffers: { fr: 'Voir les offres', en: 'See offers' },
 
   injuryCheville: { fr: 'Entorse à la cheville', en: 'Ankle sprain' },
