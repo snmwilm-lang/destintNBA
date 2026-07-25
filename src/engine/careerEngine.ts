@@ -7,6 +7,7 @@ import type {
   InjuryKey,
   InjuryRecord,
   League,
+  LocalizedText,
   PlayerStats,
   Position,
   SeasonResult,
@@ -378,28 +379,37 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   const minutesFactor = stats.tempsDeJeu / 100;
   const minutes = 6 + minutesFactor * (maxMinutes(league) - 6);
 
+  // forme/moral are what a season's worth of choices moves the most directly — let them swing
+  // the actual output on top of the slower-building core skills, not just sit there unused.
+  const formFactor = 0.82 + (stats.forme / 100) * 0.36;
+  const moralFactor = 0.88 + (stats.moral / 100) * 0.24;
+  const choiceFactor = formFactor * moralFactor;
+
   const scoringSkill = (stats.technique * 0.6 + stats.iqBasket * 0.2 + stats.physique * 0.2) / 100;
-  let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 1.45;
+  let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 1.45 * choiceFactor;
   // A rare career-year bump — this is a SEASON average, so it stays modest even when it lands,
   // rather than the wild multiplier a single highlight game could get away with.
   if (Math.random() < 0.04) points *= randFloat(1.05, 1.18);
 
   const reboundSkill = (stats.physique * 0.7 + stats.iqBasket * 0.3) / 100;
-  const rebonds = reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45;
+  const rebonds = reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45 * choiceFactor;
 
   const passSkill = (stats.iqBasket * 0.6 + stats.technique * 0.2 + stats.mental * 0.2) / 100;
-  const passes = passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4;
+  const passes = passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4 * choiceFactor;
 
   const stealSkill = (stats.iqBasket * 0.5 + stats.physique * 0.3 + stats.mental * 0.2) / 100;
-  const interceptions = stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08;
+  const interceptions = stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08 * choiceFactor;
 
   const blockSkill = (stats.physique * 0.6 + stats.iqBasket * 0.4) / 100;
-  const contres = blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12;
+  const contres = blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12 * choiceFactor;
 
-  const adresse3pts = Math.max(15, Math.min(52, 24 + stats.technique * 0.32 - stats.physique * 0.04 + randFloat(-3, 3)));
+  const adresse3pts = Math.max(15, Math.min(52, 24 + stats.technique * 0.32 - stats.physique * 0.04 + (choiceFactor - 1) * 20 + randFloat(-3, 3)));
 
   const composite = (stats.technique + stats.physique + stats.mental + stats.iqBasket) / 4;
-  const noteMoyenne = Math.max(2, Math.min(10, 3.2 + (composite / 100) * 5.5 + (minutes / maxMinutes(league)) * 1.3 + randFloat(-0.4, 0.4)));
+  const noteMoyenne = Math.max(
+    2,
+    Math.min(10, 3.2 + (composite / 100) * 5.5 + (minutes / maxMinutes(league)) * 1.3 + (choiceFactor - 1) * 4 + randFloat(-0.4, 0.4)),
+  );
 
   return {
     matchs,
@@ -628,6 +638,109 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   };
 
   return { career: updatedCareer, result };
+}
+
+export type CareerTier = 'S' | 'A' | 'B' | 'C' | 'D';
+
+export interface CareerSheet {
+  totalGames: number;
+  totalPoints: number;
+  totalRebounds: number;
+  totalPasses: number;
+  careerAvgRating: number;
+  peakValeurMarchande: number;
+  trophies: Trophy[];
+  score: number;
+  tier: CareerTier;
+  legacyTitle: LocalizedText;
+  narrative: LocalizedText;
+}
+
+const TIER_NOUN: Record<CareerTier, LocalizedText> = {
+  S: { fr: 'Légende', en: 'Legend' },
+  A: { fr: 'Grand nom', en: 'Big name' },
+  B: { fr: 'Valeur sûre', en: 'Steady hand' },
+  C: { fr: 'Second rôle', en: 'Bit player' },
+  D: { fr: 'Souvenir vite oublié', en: 'Forgotten name' },
+};
+
+function craftLegacyTitle(career: Career, tier: CareerTier): LocalizedText {
+  const style = career.specialty ?? getBuild(career.archetype)?.name ?? { fr: 'Joueur', en: 'Player' };
+  const tierNoun = TIER_NOUN[tier];
+  const city = career.currentTeam.city;
+  return {
+    fr: `${style.fr} — ${tierNoun.fr} de ${city}`,
+    en: `${style.en} — ${tierNoun.en} of ${city}`,
+  };
+}
+
+const TIER_NARRATIVE: Record<CareerTier, LocalizedText> = {
+  S: {
+    fr: 'Une trajectoire hors normes qui restera dans les mémoires.',
+    en: 'An extraordinary trajectory that will be remembered.',
+  },
+  A: { fr: 'Une carrière brillante, portée par un talent rare.', en: 'A brilliant career, carried by rare talent.' },
+  B: { fr: 'Une carrière solide, faite de constance et de travail.', en: 'A solid career built on consistency and hard work.' },
+  C: { fr: 'Une carrière discrète, loin des projecteurs.', en: 'A quiet career, far from the spotlight.' },
+  D: {
+    fr: 'Une carrière compliquée, plus faite de doutes que de lumière.',
+    en: 'A difficult career, more shadows than spotlight.',
+  },
+};
+
+function craftCareerNarrative(career: Career, tier: CareerTier): LocalizedText {
+  const startedInNba = career.history[0]?.league === 'nba';
+  const pathText = startedInNba
+    ? { fr: 'Direct dans le grand bain, sans passer par la case lycée.', en: 'Straight into the deep end, skipping high school entirely.' }
+    : { fr: 'Parti de zéro sur les playgrounds, saison après saison.', en: 'Built from scratch on the playgrounds, season after season.' };
+
+  const tierText = TIER_NARRATIVE[tier];
+
+  const trophyCount = career.trophies.length;
+  const trophyText =
+    trophyCount === 0
+      ? { fr: "Aucun trophée à son actif, mais l'aventure a eu lieu.", en: 'No hardware to show for it, but the journey happened.' }
+      : trophyCount <= 3
+        ? { fr: 'Quelques trophées glanés en chemin.', en: 'A handful of trophies picked up along the way.' }
+        : { fr: 'Une vitrine bien remplie de récompenses.', en: 'A trophy case packed with hardware.' };
+
+  return {
+    fr: `${pathText.fr} ${tierText.fr} ${trophyText.fr}`,
+    en: `${pathText.en} ${tierText.en} ${trophyText.en}`,
+  };
+}
+
+export function computeCareerSheet(career: Career): CareerSheet {
+  const totalGames = career.history.reduce((sum, h) => sum + h.statLine.matchs, 0);
+  const totalPoints = Math.round(career.history.reduce((sum, h) => sum + h.statLine.matchs * h.statLine.points, 0));
+  const totalRebounds = Math.round(career.history.reduce((sum, h) => sum + h.statLine.matchs * h.statLine.rebonds, 0));
+  const totalPasses = Math.round(career.history.reduce((sum, h) => sum + h.statLine.matchs * h.statLine.passes, 0));
+  const careerAvgRating = career.history.length
+    ? career.history.reduce((sum, h) => sum + h.statLine.noteMoyenne, 0) / career.history.length
+    : 0;
+  const peakValeurMarchande = career.history.reduce((max, h) => Math.max(max, h.valeurMarchande), 0);
+
+  const score = Math.max(
+    0,
+    Math.min(100, Math.round(careerAvgRating * 7 + career.trophies.length * 2.5 + (peakValeurMarchande / 1_000_000) * 0.15)),
+  );
+  const tier: CareerTier = score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 55 ? 'B' : score >= 35 ? 'C' : 'D';
+  const legacyTitle = craftLegacyTitle(career, tier);
+  const narrative = craftCareerNarrative(career, tier);
+
+  return {
+    totalGames,
+    totalPoints,
+    totalRebounds,
+    totalPasses,
+    careerAvgRating,
+    peakValeurMarchande,
+    trophies: career.trophies,
+    score,
+    tier,
+    legacyTitle,
+    narrative,
+  };
 }
 
 export function checkEnding(career: Career): CareerEnding | null {
