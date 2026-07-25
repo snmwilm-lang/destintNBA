@@ -276,7 +276,10 @@ const QUADRENNIAL_CYCLE: Partial<Record<EventCategory, number>> = {
 
 // These are the payoff of a national team selection roll — they must never surface through the
 // normal random draw (that would show an elimination before the player was ever picked for the
-// team), only through the forced follow-up once forcedMilestone knows the actual result.
+// team), only through the forced follow-up once forcedMilestone knows the actual result. This is
+// also what tells the store to clear pendingNationalCampaign once resolved — the prequel beats
+// below are deliberately NOT in this set, since resolving the eve-of-the-final beat isn't the
+// actual result yet (it chains straight into the real one via linkedNextEventId).
 export const NATIONAL_CAMPAIGN_RESULT_IDS = new Set([
   'jo-finale-olympique',
   'jo-elimination-demies',
@@ -288,8 +291,13 @@ export const NATIONAL_CAMPAIGN_RESULT_IDS = new Set([
   'cdm-elimination-groupes',
 ]);
 
+// Same "forced-path only" idea as NATIONAL_CAMPAIGN_RESULT_IDS, but for the prequel beats that
+// build up to a finale — they'd be incoherent showing up on a random draw with no real campaign
+// backing them, but they're not themselves a "result" the store should react to.
+const NATIONAL_CAMPAIGN_PREQUEL_IDS = new Set(['jo-prequel-finale', 'cdm-prequel-finale']);
+
 function meetsRequirements(event: GameEvent, career: Career): boolean {
-  if (NATIONAL_CAMPAIGN_RESULT_IDS.has(event.id)) return false;
+  if (NATIONAL_CAMPAIGN_RESULT_IDS.has(event.id) || NATIONAL_CAMPAIGN_PREQUEL_IDS.has(event.id)) return false;
   if (event.minAge !== undefined && career.age < event.minAge) return false;
   if (event.maxAge !== undefined && career.age > event.maxAge) return false;
   if (event.minSeason !== undefined && career.season < event.minSeason) return false;
@@ -333,13 +341,15 @@ export function simulateNationalCampaign(career: Career): NationalCampaignRound 
 
 const NATIONAL_CAMPAIGN_EVENT_ID: Record<'jeuxOlympiques' | 'coupeDuMonde', Record<NationalCampaignRound, string>> = {
   jeuxOlympiques: {
-    finale: 'jo-finale-olympique',
+    // A finale run gets the same two-beat treatment as the NBA Finals — the eve-of-the-final
+    // prequel chains straight into the actual final via linkedNextEventId.
+    finale: 'jo-prequel-finale',
     demies: 'jo-elimination-demies',
     quarts: 'jo-elimination-quarts',
     groupes: 'jo-elimination-groupes',
   },
   coupeDuMonde: {
-    finale: 'cdm-finale-mondiale',
+    finale: 'cdm-prequel-finale',
     demies: 'cdm-elimination-demies',
     quarts: 'cdm-elimination-quarts',
     groupes: 'cdm-elimination-groupes',
@@ -441,7 +451,9 @@ export function pickNextEvent(career: Career): GameEvent | null {
   const candidates = allEvents.filter((e) => meetsRequirements(e, career));
   if (candidates.length === 0) {
     // fall back: allow season repeats if the pool is exhausted, but never re-show unique events
-    const fallback = allEvents.filter((e) => !NATIONAL_CAMPAIGN_RESULT_IDS.has(e.id) && (!e.unique || !career.seenEventIds.includes(e.id)));
+    const fallback = allEvents.filter(
+      (e) => !NATIONAL_CAMPAIGN_RESULT_IDS.has(e.id) && !NATIONAL_CAMPAIGN_PREQUEL_IDS.has(e.id) && (!e.unique || !career.seenEventIds.includes(e.id)),
+    );
     return weightedPick(fallback, (e) => eventWeight(e, career));
   }
   return weightedPick(candidates, (e) => eventWeight(e, career));

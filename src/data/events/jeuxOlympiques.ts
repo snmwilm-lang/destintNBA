@@ -18,6 +18,47 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
     ],
   },
   {
+    id: 'jo-prequel-finale',
+    category: 'jeuxOlympiques',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('La veille de la finale olympique', 'The eve of the Olympic final'),
+    description: tt(
+      "Demain, une nation entière retient son souffle. Le sélectionneur rassemble le groupe une dernière fois avant le sommet du basket mondial.",
+      'Tomorrow, an entire nation holds its breath. The coach gathers the group one last time before the summit of world basketball.',
+    ),
+    minAge: 20,
+    weight: 10,
+    choices: [
+      {
+        label: tt('Prendre la parole devant le groupe', 'Speak up in front of the group'),
+        resultText: tt(
+          "Tu regardes tes coéquipiers dans les yeux : \"On est venu ici pour l'or.\" Le silence qui suit est chargé.",
+          'You look your teammates in the eye: "We came here for gold." The silence that follows is heavy.',
+        ),
+        effects: { mental: 3, reputation: 1 },
+        linkedNextEventId: 'jo-finale-olympique',
+      },
+      {
+        label: tt('Rassurer les plus jeunes du groupe', 'Reassure the younger players in the group'),
+        resultText: tt(
+          "Tu prends le temps de parler individuellement à ceux qui vivent leur première grande finale.",
+          'You take the time to talk one-on-one with the ones living through their first big final.',
+        ),
+        effects: { relationCoequipiers: 3, iqBasket: 2 },
+        linkedNextEventId: 'jo-finale-olympique',
+      },
+      {
+        label: tt('Rester seul avec tes pensées', 'Stay alone with your thoughts'),
+        resultText: tt(
+          "Tu n'as pas besoin de mots. Demain, tout se joue — tu le sais depuis toujours.",
+          "You don't need words. Tomorrow, everything is on the line — you've always known that.",
+        ),
+        effects: { mental: 5, moral: 1 },
+        linkedNextEventId: 'jo-finale-olympique',
+      },
+    ],
+  },
+  {
     id: 'jo-finale-olympique',
     category: 'jeuxOlympiques',
     leagues: ['nba', 'gLeague', 'europe'],

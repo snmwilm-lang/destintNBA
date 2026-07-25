@@ -91,6 +91,47 @@ export const coupeDuMondeEvents: EventTemplate[] = [
     ],
   },
   {
+    id: 'cdm-prequel-finale',
+    category: 'coupeDuMonde',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('La veille de la finale mondiale', 'The eve of the World Cup final'),
+    description: tt(
+      "Demain, tout un pays sera scotché à son écran. Le sélectionneur rassemble le groupe une dernière fois avant la finale de la Coupe du Monde.",
+      'Tomorrow, an entire country will be glued to its screen. The coach gathers the group one last time before the World Cup final.',
+    ),
+    minAge: 19,
+    weight: 10,
+    choices: [
+      {
+        label: tt('Prendre la parole devant le groupe', 'Speak up in front of the group'),
+        resultText: tt(
+          "Tu regardes tes coéquipiers dans les yeux : \"On est venu ici pour être champions du monde.\" Le silence qui suit est chargé.",
+          'You look your teammates in the eye: "We came here to become world champions." The silence that follows is heavy.',
+        ),
+        effects: { mental: 3, reputation: 1 },
+        linkedNextEventId: 'cdm-finale-mondiale',
+      },
+      {
+        label: tt('Rassurer les plus jeunes du groupe', 'Reassure the younger players in the group'),
+        resultText: tt(
+          "Tu prends le temps de parler individuellement à ceux qui vivent leur première grande finale.",
+          'You take the time to talk one-on-one with the ones living through their first big final.',
+        ),
+        effects: { relationCoequipiers: 3, iqBasket: 2 },
+        linkedNextEventId: 'cdm-finale-mondiale',
+      },
+      {
+        label: tt('Rester seul avec tes pensées', 'Stay alone with your thoughts'),
+        resultText: tt(
+          "Tu n'as pas besoin de mots. Demain, tout se joue — tu le sais depuis toujours.",
+          "You don't need words. Tomorrow, everything is on the line — you've always known that.",
+        ),
+        effects: { mental: 5, moral: 1 },
+        linkedNextEventId: 'cdm-finale-mondiale',
+      },
+    ],
+  },
+  {
     id: 'cdm-finale-mondiale',
     category: 'coupeDuMonde',
     leagues: ['nba', 'gLeague', 'europe'],
