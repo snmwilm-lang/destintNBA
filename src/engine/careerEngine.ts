@@ -468,14 +468,19 @@ export function resolveChoice(career: Career, event: GameEvent, choiceId: string
 
   if (choice.successChance) {
     const sc = choice.successChance;
-    let chance = sc.baseChance;
+    let statBonusTotal = 0;
     if (sc.statBonus) {
       for (const key of Object.keys(sc.statBonus) as StatKey[]) {
         const weight = sc.statBonus[key] ?? 0;
-        chance += (career.stats[key] - 50) * weight;
+        statBonusTotal += (career.stats[key] - 50) * weight;
       }
     }
-    chance = Math.max(0.05, Math.min(0.95, chance));
+    // A skilled player should have real odds, but never so much that the "risky" choice stops
+    // being risky — even a maxed-out stat differential can only swing the base odds by so much,
+    // so the harder, lower-baseChance calls (a step-back, a contested step-in three) always keep
+    // a real chance of missing, no matter how good the player has become.
+    statBonusTotal = Math.max(-0.3, Math.min(0.3, statBonusTotal));
+    const chance = Math.max(0.05, Math.min(0.85, sc.baseChance + statBonusTotal));
     wasSuccess = Math.random() < chance;
     stats = applyEffects(stats, wasSuccess ? sc.onSuccess : sc.onFailure);
     resultText = (wasSuccess ? sc.successText : sc.failureText) ?? resultText;

@@ -79,6 +79,21 @@ export const matchEvents: EventTemplate[] = [
         },
       },
       {
+        // The hardest, lowest-percentage look on the floor — a contested one-on-one jumper with
+        // no dribble to set it up. Unlike the Finals-clinching shot (a rare once-per-career beat),
+        // this keeps the same high-risk shot type showing up as a real, recurring choice.
+        label: tt('Tenter le step-back au buzzer', 'Pull up for a step-back at the buzzer'),
+        resultText: tt('Tu crées ton propre espace au prix du risque maximum.', 'You create your own space at maximum risk.'),
+        successChance: {
+          baseChance: 0.35,
+          statBonus: { technique: 0.01, mental: 0.006 },
+          onSuccess: { reputation: 9, popularite: 7, moral: 6 },
+          onFailure: { moral: -6, reputation: -2 },
+          successText: tt('Geste de pur génie individuel : le tir rentre au buzzer.', 'A moment of pure individual genius — the shot drops at the buzzer.'),
+          failureText: tt('Le tir sort complètement. Un silence glacial tombe sur le banc.', 'The shot misses badly. An icy silence falls over the bench.'),
+        },
+      },
+      {
         label: tt('Faire jouer un coéquipier plus démarqué', 'Find your open teammate'),
         resultText: tt('Tu fais confiance au collectif.', 'You trust the team.'),
         effects: { iqBasket: 4, relationCoequipiers: 4, relationCoach: 2, reputation: 1 },
