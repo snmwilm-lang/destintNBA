@@ -27,6 +27,14 @@ import { generatePressArticles } from './pressGenerator';
 import { tt } from './eventTemplate';
 
 export const EVENTS_PER_SEASON = 7;
+const MIN_EVENTS_PER_SEASON = 4;
+const MAX_EVENTS_PER_SEASON = EVENTS_PER_SEASON;
+
+// A quieter season (fewer beats to click through) or a busier one — varying the pace season to
+// season keeps the rhythm from feeling identical every single year, instead of always the same 7.
+function randomEventsPerSeason(): number {
+  return randInt(MIN_EVENTS_PER_SEASON, MAX_EVENTS_PER_SEASON);
+}
 
 // A single "general" rating players can watch move up or down after almost any choice,
 // instead of only seeing the individual attribute bars shift.
@@ -230,7 +238,7 @@ export function createNewCareer(
     newlyUnlockedTraits: [],
     season: 1,
     eventInSeasonIndex: 0,
-    eventsPerSeason: EVENTS_PER_SEASON,
+    eventsPerSeason: randomEventsPerSeason(),
     stats,
     argent: skip ? 50000 : 200,
     valeurMarchande: computeMarketValue(stats, age, skip ? 'nba' : 'lycee'),
@@ -1200,13 +1208,16 @@ export function startNextSeason(career: Career): Career {
     currentTeam = nextLeague === 'nba' && career.draftPick !== null ? teamForDraftPick(career.draftPick) : allTeamsForLeague(nextLeague)[randInt(0, allTeamsForLeague(nextLeague).length - 1)];
   }
   const withDelayed = applyDueDelayedEffects({ ...career, age: nextAge, currentTeam });
+  // Vary the pace season to season instead of always the same fixed count.
+  const eventsPerSeason = randomEventsPerSeason();
   return {
     ...withDelayed,
     season: career.season + 1,
     eventInSeasonIndex: 0,
+    eventsPerSeason,
     usedThisSeasonIds: [],
     phase: 'event',
-    currentEventId: pickNextEvent({ ...withDelayed, usedThisSeasonIds: [] })?.id ?? null,
+    currentEventId: pickNextEvent({ ...withDelayed, usedThisSeasonIds: [], eventsPerSeason })?.id ?? null,
     lastSeasonResult: null,
     pendingTransferOffers: null,
     newlyUnlockedTraits: [],
