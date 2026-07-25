@@ -18,13 +18,41 @@ import type {
 } from '../types';
 import { allEvents } from '../data/events';
 import { HIGH_SCHOOL_TEAM_POOL, NBA_TEAM_POOL, EUROPE_TEAM_POOL, allTeamsForLeague } from '../data/teams';
-import { getBuild } from '../data/builds';
+import { BUILDS, buildIdentity, getBuild } from '../data/builds';
 import { RIVAL_PLAYERS } from '../data/names';
+import { getNationality } from '../data/nationalities';
+import { checkNewTraits } from '../data/traits';
 import { applyEffects, clampStat, initialStats, randFloat, randInt, weightedPick } from './statUtils';
 import { generatePressArticles } from './pressGenerator';
 import { tt } from './eventTemplate';
 
 export const EVENTS_PER_SEASON = 7;
+
+// A single "general" rating players can watch move up or down after almost any choice,
+// instead of only seeing the individual attribute bars shift.
+const OVERALL_WEIGHTS: Partial<Record<StatKey, number>> = {
+  technique: 0.28,
+  physique: 0.2,
+  mental: 0.18,
+  iqBasket: 0.24,
+  reputation: 0.1,
+};
+
+export function computeOverall(stats: PlayerStats): number {
+  let total = 0;
+  for (const key of Object.keys(OVERALL_WEIGHTS) as StatKey[]) {
+    total += stats[key] * (OVERALL_WEIGHTS[key] ?? 0);
+  }
+  return Math.round(total);
+}
+
+export function computeOverallDelta(statDeltas: Partial<Record<StatKey, number>>): number {
+  let total = 0;
+  for (const key of Object.keys(OVERALL_WEIGHTS) as StatKey[]) {
+    total += (statDeltas[key] ?? 0) * (OVERALL_WEIGHTS[key] ?? 0);
+  }
+  return Math.round(total * 10) / 10;
+}
 
 const POSITION_PROFILE: Record<Position, { score: number; rebound: number; pass: number; steal: number; block: number }> = {
   PG: { score: 0.85, rebound: 0.25, pass: 1.0, steal: 1.1, block: 0.15 },
@@ -119,6 +147,7 @@ export function createNewCareer(
   path: CareerPath = 'full',
   height: number = defaultHeightForPosition(position),
   bonusSkillPoints = 0,
+  nationality: string = 'US',
 ): Career {
   const now = Date.now();
   const skip = path === 'skipToNba';
@@ -162,7 +191,11 @@ export function createNewCareer(
     skillPoints: bonusSkillPoints,
     rivalName: RIVAL_PLAYERS[randInt(0, RIVAL_PLAYERS.length - 1)],
     rivalRecord: { wins: 0, losses: 0 },
+    nationality,
+    pendingNationalCampaign: null,
     newlyUnlockedAchievements: [],
+    traits: [],
+    newlyUnlockedTraits: [],
     season: 1,
     eventInSeasonIndex: 0,
     eventsPerSeason: EVENTS_PER_SEASON,
@@ -200,7 +233,22 @@ const QUADRENNIAL_CYCLE: Partial<Record<EventCategory, number>> = {
   coupeDuMonde: 2,
 };
 
+// These are the payoff of a national team selection roll — they must never surface through the
+// normal random draw (that would show an elimination before the player was ever picked for the
+// team), only through the forced follow-up once forcedMilestone knows the actual result.
+const NATIONAL_CAMPAIGN_RESULT_IDS = new Set([
+  'jo-finale-olympique',
+  'jo-elimination-demies',
+  'jo-elimination-quarts',
+  'jo-elimination-groupes',
+  'cdm-finale-mondiale',
+  'cdm-elimination-demies',
+  'cdm-elimination-quarts',
+  'cdm-elimination-groupes',
+]);
+
 function meetsRequirements(event: GameEvent, career: Career): boolean {
+  if (NATIONAL_CAMPAIGN_RESULT_IDS.has(event.id)) return false;
   if (event.minAge !== undefined && career.age < event.minAge) return false;
   if (event.maxAge !== undefined && career.age > event.maxAge) return false;
   if (event.minSeason !== undefined && career.season < event.minSeason) return false;
@@ -225,6 +273,36 @@ const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 
 const FINALE_EVENT_ID = 'finale-moment-decisif';
 const FINALE_PREQUEL_EVENT_ID = 'finale-prequel-timeout';
+
+export type NationalCampaignRound = 'groupes' | 'quarts' | 'demies' | 'finale';
+
+/** How far the player's national team goes this tournament — driven by the country's basketball
+ * pedigree plus the player's own standing, with enough randomness that even a weak nation can
+ * pull off a run and a favorite can crash out early. */
+export function simulateNationalCampaign(career: Career): NationalCampaignRound {
+  const strength = getNationality(career.nationality)?.strength ?? 50;
+  const contribution = (career.stats.reputation * 0.5 + career.stats.mental * 0.3 + career.stats.iqBasket * 0.2) / 100;
+  const score = strength * 0.7 + contribution * 100 * 0.3 + randFloat(-18, 18);
+  if (score >= 78) return 'finale';
+  if (score >= 60) return 'demies';
+  if (score >= 40) return 'quarts';
+  return 'groupes';
+}
+
+const NATIONAL_CAMPAIGN_EVENT_ID: Record<'jeuxOlympiques' | 'coupeDuMonde', Record<NationalCampaignRound, string>> = {
+  jeuxOlympiques: {
+    finale: 'jo-finale-olympique',
+    demies: 'jo-elimination-demies',
+    quarts: 'jo-elimination-quarts',
+    groupes: 'jo-elimination-groupes',
+  },
+  coupeDuMonde: {
+    finale: 'cdm-finale-mondiale',
+    demies: 'cdm-elimination-demies',
+    quarts: 'cdm-elimination-quarts',
+    groupes: 'cdm-elimination-groupes',
+  },
+};
 
 export function seasonsPlayedInLeague(career: Career, league: League): number {
   return career.history.filter((h) => h.league === league).length;
@@ -251,6 +329,16 @@ function forcedMilestone(career: Career): GameEvent | null {
     career.eventInSeasonIndex === career.eventsPerSeason - 1
   ) {
     return getEvent(FINALE_PREQUEL_EVENT_ID) ?? null;
+  }
+  // A national team call-up rolls the tournament run once, then the matching result event
+  // (the final, or an early-exit round) is guaranteed to follow — so the player always sees
+  // exactly how far their country went, not just a chance of it coming up.
+  if (career.pendingNationalCampaign) {
+    const { competition, round } = career.pendingNationalCampaign;
+    const targetId = NATIONAL_CAMPAIGN_EVENT_ID[competition][round];
+    if (!career.seenEventIds.includes(targetId) && !career.usedThisSeasonIds.includes(targetId)) {
+      return getEvent(targetId) ?? null;
+    }
   }
   return null;
 }
@@ -284,7 +372,7 @@ export function pickNextEvent(career: Career): GameEvent | null {
   const candidates = allEvents.filter((e) => meetsRequirements(e, career));
   if (candidates.length === 0) {
     // fall back: allow season repeats if the pool is exhausted, but never re-show unique events
-    const fallback = allEvents.filter((e) => !e.unique || !career.seenEventIds.includes(e.id));
+    const fallback = allEvents.filter((e) => !NATIONAL_CAMPAIGN_RESULT_IDS.has(e.id) && (!e.unique || !career.seenEventIds.includes(e.id)));
     return weightedPick(fallback, (e) => eventWeight(e, career));
   }
   return weightedPick(candidates, (e) => eventWeight(e, career));
@@ -334,33 +422,54 @@ export function resolveChoice(career: Career, event: GameEvent, choiceId: string
     resultText = (wasSuccess ? sc.successText : sc.failureText) ?? resultText;
   }
 
-  return { stats, argent, resultText, wasSuccess, statDeltas: diffStats(career.stats, stats), moneyDelta: argent - career.argent };
+  // A choice can combine flat effects with a successChance branch, and each piece is already
+  // capped on its own at generation time — but stacked together they could still exceed the
+  // single-choice max. Clamp the final combined swing per stat here, once, as the source of truth.
+  const rawDeltas = diffStats(career.stats, stats);
+  const clampedDeltas: Partial<Record<StatKey, number>> = {};
+  for (const key of Object.keys(rawDeltas) as StatKey[]) {
+    const value = rawDeltas[key] ?? 0;
+    clampedDeltas[key] = Math.max(-7, Math.min(7, value));
+  }
+  const finalStats = applyEffects(career.stats, clampedDeltas);
+
+  return { stats: finalStats, argent, resultText, wasSuccess, statDeltas: diffStats(career.stats, finalStats), moneyDelta: argent - career.argent };
 }
 
 // --- Season progression -----------------------------------------------
 
-function ageGrowthFactor(age: number): number {
+function ageGrowthFactor(age: number, vintage: boolean): number {
   if (age <= 20) return 1.3;
   if (age <= 24) return 1.0;
   if (age <= 28) return 0.6;
   if (age <= 32) return 0.1;
-  return -0.6;
+  // Almost everyone declines past 32 — but a rare, truly elite talent can occasionally defy
+  // that curve for a season and still look like a legend deep into their 30s.
+  return vintage ? 0.2 : -0.6;
 }
 
-function growTowardPotential(current: number, potentiel: number, driver: number, age: number): number {
-  const factor = ageGrowthFactor(age);
+// Extremely elite, well-rounded veterans get a small, rare (~12%) chance each season past 33
+// to post a "vintage" season that resists the usual age-driven decline.
+function isEligibleForVintageSeason(career: Career): boolean {
+  if (career.age < 33) return false;
+  const composite = (career.stats.technique + career.stats.physique + career.stats.mental + career.stats.iqBasket) / 4;
+  return composite >= 82 && career.stats.reputation >= 75 && career.stats.potentiel >= 85;
+}
+
+function growTowardPotential(current: number, potentiel: number, driver: number, age: number, vintage: boolean): number {
+  const factor = ageGrowthFactor(age, vintage);
   const headroom = potentiel - current;
   const growth = factor * driver * Math.max(0, headroom) * 0.02;
   const decay = factor < 0 ? factor * 1.5 : 0;
   return clampStat(current + growth + decay);
 }
 
-function progressStats(career: Career): PlayerStats {
+function progressStats(career: Career, vintage: boolean): PlayerStats {
   const s = { ...career.stats };
   const driver = (s.tempsDeJeu * 0.5 + s.relationCoach * 0.3 + s.forme * 0.2) / 100;
-  s.technique = growTowardPotential(s.technique, s.potentiel, driver, career.age);
-  s.physique = growTowardPotential(s.physique, Math.min(100, s.potentiel + 10), driver, career.age);
-  s.iqBasket = growTowardPotential(s.iqBasket, s.potentiel, driver * 0.9 + 0.1, career.age);
+  s.technique = growTowardPotential(s.technique, s.potentiel, driver, career.age, vintage);
+  s.physique = growTowardPotential(s.physique, Math.min(100, s.potentiel + 10), driver, career.age, vintage);
+  s.iqBasket = growTowardPotential(s.iqBasket, s.potentiel, driver * 0.9 + 0.1, career.age, vintage);
   s.mental = clampStat(s.mental + (career.age <= 26 ? 1 : 0));
   s.forme = clampStat(s.forme + (100 - s.forme) * 0.15);
   s.moral = clampStat(s.moral + (60 - s.moral) * 0.1);
@@ -402,7 +511,7 @@ function maxMinutes(league: League): number {
   return 34;
 }
 
-function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: number): SeasonStatLine {
+function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: number, vintage: boolean): SeasonStatLine {
   const league = career.currentTeam.league;
   const profile = POSITION_PROFILE[career.position];
   const tilt = heightTilt(career.position, career.height);
@@ -415,19 +524,28 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   // the actual output on top of the slower-building core skills, not just sit there unused.
   const formFactor = 0.82 + (stats.forme / 100) * 0.36;
   const moralFactor = 0.88 + (stats.moral / 100) * 0.24;
-  const choiceFactor = formFactor * moralFactor;
+  // A vintage season (see isEligibleForVintageSeason) also shows up as a small on-court surge,
+  // not just a stat line that quietly stops declining.
+  const choiceFactor = formFactor * moralFactor * (vintage ? 1.1 : 1);
+
+  // The chosen build isn't just flat attribute boosts — it gives the player a distinct
+  // statistical signature (a scorer build puts up more points, a playmaking build racks up
+  // more assists), at the cost of a bit of well-roundedness in the average rating.
+  const identity = buildIdentity(getBuild(career.archetype) ?? BUILDS[0]);
 
   const scoringSkill = (stats.technique * 0.6 + stats.iqBasket * 0.2 + stats.physique * 0.2) / 100;
-  let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 1.45 * choiceFactor;
+  let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 1.45 * choiceFactor * (1 + identity.pointsPct / 100);
   // A rare career-year bump — this is a SEASON average, so it stays modest even when it lands,
   // rather than the wild multiplier a single highlight game could get away with.
   if (Math.random() < 0.04) points *= randFloat(1.05, 1.18);
 
   const reboundSkill = (stats.physique * 0.7 + stats.iqBasket * 0.3) / 100;
-  const rebonds = reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45 * choiceFactor;
+  const rebonds =
+    reboundSkill * minutes * profile.rebound * (1 + tilt * 0.35) * randFloat(0.85, 1.15) * 0.45 * choiceFactor * (1 + identity.reboundsPct / 100);
 
   const passSkill = (stats.iqBasket * 0.6 + stats.technique * 0.2 + stats.mental * 0.2) / 100;
-  const passes = passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4 * choiceFactor;
+  const passes =
+    passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4 * choiceFactor * (1 + identity.passesPct / 100);
 
   const stealSkill = (stats.iqBasket * 0.5 + stats.physique * 0.3 + stats.mental * 0.2) / 100;
   const interceptions = stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08 * choiceFactor;
@@ -440,7 +558,10 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   const composite = (stats.technique + stats.physique + stats.mental + stats.iqBasket) / 4;
   const noteMoyenne = Math.max(
     2,
-    Math.min(10, 3.2 + (composite / 100) * 5.5 + (minutes / maxMinutes(league)) * 1.3 + (choiceFactor - 1) * 4 + randFloat(-0.4, 0.4)),
+    Math.min(
+      10,
+      3.2 + (composite / 100) * 5.5 + (minutes / maxMinutes(league)) * 1.3 + (choiceFactor - 1) * 4 + identity.noteDelta + randFloat(-0.4, 0.4),
+    ),
   );
 
   return {
@@ -605,11 +726,20 @@ export function estimateSalary(valeurMarchande: number, team: Team, nbaServiceYe
 }
 
 export function simulateSeason(career: Career): { career: Career; result: SeasonResult } {
-  let stats = progressStats(career);
+  const vintage = isEligibleForVintageSeason(career) && Math.random() < 0.12;
+  let stats = progressStats(career, vintage);
   const { blessures, matchesMissed, statsAfter } = rollInjuries(career, stats);
   stats = statsAfter;
 
-  const statLine = generateStatLine(career, stats, matchesMissed);
+  // Traits are earned from how the player has actually developed this season — each one is a
+  // permanent, double-edged personality trait: a real buff paired with a real nerf.
+  const newTraits = checkNewTraits({ ...career, stats });
+  for (const trait of newTraits) {
+    stats = applyEffects(stats, trait.buff);
+    stats = applyEffects(stats, trait.nerf);
+  }
+
+  const statLine = generateStatLine(career, stats, matchesMissed, vintage);
   const { rank, total } = computeClassement(career, statLine.noteMoyenne);
   const trophies = generateTrophies(career, statLine, rank);
   const valeurMarchande = computeMarketValue(stats, career.age, career.currentTeam.league);
@@ -655,6 +785,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     blessures,
     transferOffers: [],
     skillPointsEarned: earnedSkillPoints,
+    vintageSeason: vintage,
   };
 
   const updatedCareer: Career = {
@@ -667,6 +798,8 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     pressArticles: [...career.pressArticles, ...pressArticles],
     history: [...career.history, result],
     lastSeasonResult: result,
+    traits: [...career.traits, ...newTraits.map((t) => t.id)],
+    newlyUnlockedTraits: newTraits.map((t) => t.id),
   };
 
   return { career: updatedCareer, result };
@@ -873,6 +1006,7 @@ export function startNextSeason(career: Career): Career {
     currentEventId: pickNextEvent({ ...withDelayed, usedThisSeasonIds: [] })?.id ?? null,
     lastSeasonResult: null,
     pendingTransferOffers: null,
+    newlyUnlockedTraits: [],
     updatedAt: Date.now(),
   };
 }

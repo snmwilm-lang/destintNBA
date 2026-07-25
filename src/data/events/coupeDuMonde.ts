@@ -31,6 +31,64 @@ export const coupeDuMondeEvents: EventTemplate[] = [
     ],
   },
   {
+    id: 'cdm-elimination-groupes',
+    category: 'coupeDuMonde',
+    title: tt('Éliminé dès la phase de groupes', 'Eliminated in the group stage'),
+    description: tt(
+      "Ta sélection nationale ne survit pas à la phase de groupes de la Coupe du Monde.",
+      'Your national team does not survive the World Cup group stage.',
+    ),
+    minAge: 19,
+    unique: true,
+    weight: 1,
+    choices: [
+      { label: tt('Analyser les erreurs sans complaisance', 'Break down the mistakes honestly'), effects: { iqBasket: 3, mental: 2, moral: -2 } },
+      { label: tt('Tourner la page rapidement', 'Move on quickly'), effects: { moral: 2, forme: 2 } },
+    ],
+  },
+  {
+    id: 'cdm-elimination-quarts',
+    category: 'coupeDuMonde',
+    title: tt('Éliminé en quart de finale', 'Eliminated in the quarterfinals'),
+    description: tt(
+      "Ta sélection nationale s'incline en quart de finale de la Coupe du Monde.",
+      'Your national team falls in the World Cup quarterfinals.',
+    ),
+    minAge: 19,
+    unique: true,
+    weight: 1,
+    choices: [
+      { label: tt('Retenir les points positifs du tournoi', "Focus on the tournament's positives"), effects: { moral: 3, reputation: 2 } },
+      { label: tt("Ressasser l'occasion manquée", 'Dwell on the missed opportunity'), effects: { mental: 2, moral: -3 } },
+    ],
+  },
+  {
+    id: 'cdm-elimination-demies',
+    category: 'coupeDuMonde',
+    title: tt('Éliminé en demi-finale mondiale', 'Eliminated in the World Cup semifinal'),
+    description: tt(
+      "Ta sélection nationale tombe en demi-finale et devra jouer la petite finale pour le bronze.",
+      'Your national team falls in the semifinal and will have to play for bronze.',
+    ),
+    minAge: 19,
+    unique: true,
+    weight: 1,
+    choices: [
+      {
+        label: tt('Se battre pour le bronze', 'Fight for the bronze'),
+        successChance: {
+          baseChance: 0.55,
+          statBonus: { mental: 0.01 },
+          onSuccess: { reputation: 8, popularite: 6, moral: 5 },
+          onFailure: { moral: -3 },
+          successText: tt('La médaille de bronze a un goût de fierté retrouvée.', 'The bronze medal tastes like pride regained.'),
+          failureText: tt('Quatrième place, la pire des désillusions dans le sport.', 'Fourth place — the cruelest finish in sports.'),
+        },
+      },
+      { label: tt('Digérer la déception en silence', 'Process the disappointment quietly'), effects: { mental: 2, moral: -2 } },
+    ],
+  },
+  {
     id: 'cdm-finale-mondiale',
     category: 'coupeDuMonde',
     title: tt('Finale de la Coupe du Monde', 'World Cup final'),

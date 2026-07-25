@@ -5,6 +5,7 @@ import type { DictionaryKey } from '../i18n/dictionary';
 import { INJURY_LABEL_KEYS, isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLabels';
 import { TRAINABLE_STATS } from '../engine/careerEngine';
 import { useGameStore } from '../store/gameStore';
+import { getTrait } from '../data/traits';
 
 interface SeasonRecapScreenProps {
   career: Career;
@@ -45,6 +46,22 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
       </div>
 
       <div className="px-6 py-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+        {result.vintageSeason && (
+          <div className="col-span-2 sm:col-span-3 rounded-xl border border-gold-400/40 bg-gold-400/10 px-4 py-2.5 text-left">
+            <span className="text-sm font-bold text-gold-300">🌟 {t('recapVintageSeason')}</span>
+          </div>
+        )}
+        {career.newlyUnlockedTraits.map((id) => {
+          const trait = getTrait(id);
+          if (!trait) return null;
+          return (
+            <div key={id} className="col-span-2 sm:col-span-3 rounded-xl border border-sky-400/40 bg-sky-400/10 px-4 py-2.5 text-left">
+              <div className="text-xs uppercase tracking-wide text-sky-300">{t('recapNewTraits')}</div>
+              <div className="text-sm font-bold text-sky-200">🧬 {trait.name[lang]}</div>
+              <div className="text-xs text-slate-300">{trait.description[lang]}</div>
+            </div>
+          );
+        })}
         <section className="col-span-2 sm:col-span-3">
           <h3 className="text-xs uppercase tracking-wide text-slate-400 mb-2">{t('recapStatLine')}</h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Archetype, Position } from '../types';
 import { type CareerPath, defaultHeightForPosition, POSITION_HEIGHT_RANGE } from '../engine/careerEngine';
-import { buildsForPosition, defaultBuildForPosition } from '../data/builds';
+import { type BuildDef, buildIdentity, buildsForPosition, defaultBuildForPosition } from '../data/builds';
+import { NATIONALITIES } from '../data/nationalities';
 import { useGameStore } from '../store/gameStore';
 import { useLang, useT } from '../i18n/useT';
 import type { DictionaryKey } from '../i18n/dictionary';
@@ -10,6 +11,22 @@ import type { DictionaryKey } from '../i18n/dictionary';
 function formatHeight(cm: number, lang: 'fr' | 'en'): string {
   const meters = (cm / 100).toFixed(2);
   return lang === 'fr' ? `${meters.replace('.', ',')} m` : `${meters} m`;
+}
+
+function formatIdentityBadge(build: BuildDef, t: (key: DictionaryKey) => string): string {
+  const identity = buildIdentity(build);
+  const stats: { pct: number; label: string }[] = [
+    { pct: identity.pointsPct, label: t('createIdentityPoints') },
+    { pct: identity.passesPct, label: t('createIdentityPasses') },
+    { pct: identity.reboundsPct, label: t('createIdentityRebounds') },
+  ];
+  const top = stats
+    .filter((s) => s.pct !== 0)
+    .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
+    .slice(0, 2)
+    .map((s) => `${s.pct >= 0 ? '+' : ''}${s.pct}% ${s.label}`);
+  const noteText = `${t('createIdentityNote')} ${identity.noteDelta >= 0 ? '+' : ''}${identity.noteDelta.toFixed(2)}`;
+  return `🧬 ${[...top, noteText].join(' · ')}`;
 }
 
 interface CharacterCreationProps {
@@ -39,6 +56,7 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
   const [archetype, setArchetype] = useState<Archetype>(() => defaultBuildForPosition('SG'));
   const [path, setPath] = useState<CareerPath>('full');
   const [height, setHeight] = useState(() => defaultHeightForPosition('SG'));
+  const [nationality, setNationality] = useState('US');
 
   const [heightMin, heightMax] = POSITION_HEIGHT_RANGE[position];
   const builds = useMemo(() => buildsForPosition(position), [position]);
@@ -49,7 +67,7 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
   }, [position]);
 
   const handleStart = () => {
-    createCareer(name.trim(), archetype, position, path, height);
+    createCareer(name.trim(), archetype, position, path, height, nationality);
     onCreated();
   };
 
@@ -89,6 +107,19 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
           ))}
         </div>
 
+        <label className="mb-2 block text-xs uppercase tracking-wide text-slate-400">{t('createNationalityLabel')}</label>
+        <select
+          value={nationality}
+          onChange={(e) => setNationality(e.target.value)}
+          className="mb-5 w-full rounded-xl border border-court-600 bg-court-700/60 px-4 py-2.5 text-sm text-slate-100 focus:border-gold-400 focus:outline-none"
+        >
+          {NATIONALITIES.map((n) => (
+            <option key={n.code} value={n.code}>
+              {n.flag} {n.name[lang]}
+            </option>
+          ))}
+        </select>
+
         <div className="mb-5">
           <div className="mb-2 flex items-baseline justify-between">
             <label className="text-xs uppercase tracking-wide text-slate-400">{t('createHeightLabel')}</label>
@@ -123,6 +154,7 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
             >
               <div className={`text-sm font-semibold ${archetype === build.id ? 'text-gold-300' : 'text-slate-200'}`}>{build.name[lang]}</div>
               <div className="text-xs text-slate-400">{build.description[lang]}</div>
+              <div className="mt-1 text-[11px] font-semibold text-gold-400/90">{formatIdentityBadge(build, t)}</div>
             </button>
           ))}
         </div>

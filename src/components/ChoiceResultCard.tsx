@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import type { LocalizedText, StatKey } from '../types';
 import { useLang, useT } from '../i18n/useT';
 import { isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLabels';
+import { computeOverallDelta } from '../engine/careerEngine';
 
 interface ChoiceResultCardProps {
   text: LocalizedText | null;
@@ -17,6 +18,7 @@ export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, onC
   const currency = lang === 'fr' ? 'fr-FR' : 'en-US';
 
   const entries = Object.entries(statDeltas ?? {}) as [StatKey, number][];
+  const overallDelta = statDeltas ? computeOverallDelta(statDeltas) : 0;
   const overallGood =
     wasSuccess !== null
       ? wasSuccess
@@ -41,6 +43,16 @@ export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, onC
       )}
       <div className="mb-4 text-3xl">{overallGood === null ? '🏀' : overallGood ? '📈' : '📉'}</div>
       {text && <p className="mb-5 text-sm leading-relaxed text-slate-200">{text[lang]}</p>}
+
+      {overallDelta !== 0 && (
+        <div
+          className={`mb-3 inline-block rounded-full px-4 py-1 text-sm font-black tabular-nums ${
+            overallDelta > 0 ? 'bg-gold-400/15 text-gold-300' : 'bg-rose-500/15 text-rose-300'
+          }`}
+        >
+          {t('choiceOverallDelta', { sign: overallDelta >= 0 ? '+' : '', delta: overallDelta })}
+        </div>
+      )}
 
       {(entries.length > 0 || moneyDelta !== 0) && (
         <div className="mb-6 flex flex-wrap items-center justify-center gap-2">

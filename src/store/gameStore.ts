@@ -13,6 +13,7 @@ import {
   pickNextEvent,
   pinRivalName,
   resolveChoice,
+  simulateNationalCampaign,
   simulateSeason,
   spendSkillPoint,
   startNextSeason,
@@ -20,6 +21,22 @@ import {
 import { ACHIEVEMENTS, MAX_ACHIEVEMENT_BONUS_POINTS } from '../data/achievements';
 
 const RECENT_EVENTS_MEMORY = 40;
+
+const NATIONAL_SELECTION_EVENT_IDS: Record<string, 'jeuxOlympiques' | 'coupeDuMonde'> = {
+  'jo-selection-equipe': 'jeuxOlympiques',
+  'cdm-qualification': 'coupeDuMonde',
+};
+
+const NATIONAL_CAMPAIGN_RESULT_EVENT_IDS = new Set([
+  'jo-finale-olympique',
+  'jo-elimination-demies',
+  'jo-elimination-quarts',
+  'jo-elimination-groupes',
+  'cdm-finale-mondiale',
+  'cdm-elimination-demies',
+  'cdm-elimination-quarts',
+  'cdm-elimination-groupes',
+]);
 
 function uid(): string {
   return `career-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -33,7 +50,7 @@ interface GameStore {
   activeCareerId: string | null;
   unlockedAchievements: string[];
 
-  createCareer: (playerName: string, archetype: Archetype, position: Position, path?: CareerPath, height?: number) => void;
+  createCareer: (playerName: string, archetype: Archetype, position: Position, path?: CareerPath, height?: number, nationality?: string) => void;
   selectCareer: (id: string) => void;
   deleteCareer: (id: string) => void;
   exitToMenu: () => void;
@@ -79,11 +96,11 @@ export const useGameStore = create<GameStore>()(
       activeCareerId: null,
       unlockedAchievements: [],
 
-      createCareer: (playerName, archetype, position, path = 'full', height) => {
+      createCareer: (playerName, archetype, position, path = 'full', height, nationality) => {
         const id = uid();
         set((state) => {
           const bonusSkillPoints = Math.min(MAX_ACHIEVEMENT_BONUS_POINTS, state.unlockedAchievements.length);
-          const career = createNewCareer(id, playerName || 'Rookie', archetype, position, path, height, bonusSkillPoints);
+          const career = createNewCareer(id, playerName || 'Rookie', archetype, position, path, height, bonusSkillPoints, nationality);
           return { careers: [...state.careers, career], activeCareerId: id };
         });
       },
@@ -136,6 +153,14 @@ export const useGameStore = create<GameStore>()(
                     losses: c.rivalRecord.losses + (outcome.wasSuccess ? 0 : 1),
                   }
                 : c.rivalRecord;
+            // Getting picked for the national team rolls the whole tournament run right away, so
+            // a guaranteed follow-up event can later reveal exactly how far the country went.
+            const selectionCompetition = NATIONAL_SELECTION_EVENT_IDS[event.id];
+            const pendingNationalCampaign = selectionCompetition
+              ? { competition: selectionCompetition, round: simulateNationalCampaign(c) }
+              : NATIONAL_CAMPAIGN_RESULT_EVENT_IDS.has(event.id)
+                ? null
+                : c.pendingNationalCampaign;
             // A choice can chain straight into a follow-up event (a multi-step moment) instead
             // of showing the usual result screen — it doesn't eat an extra slot from the season.
             const linkedNextEventId = choice?.linkedNextEventId;
@@ -149,6 +174,7 @@ export const useGameStore = create<GameStore>()(
               choiceLog,
               pendingDelayed,
               rivalRecord,
+              pendingNationalCampaign,
               phase: linkedNextEventId ? 'event' : 'choiceResult',
               currentEventId: linkedNextEventId ?? c.currentEventId,
               lastChoiceResultText: linkedNextEventId ? null : outcome.resultText,

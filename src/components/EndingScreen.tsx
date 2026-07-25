@@ -3,6 +3,7 @@ import type { Career } from '../types';
 import { useLang, useT } from '../i18n/useT';
 import { computeCareerSheet } from '../engine/careerEngine';
 import { ACHIEVEMENTS } from '../data/achievements';
+import { getTrait } from '../data/traits';
 
 interface EndingScreenProps {
   career: Career;
@@ -101,6 +102,24 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
             </ul>
           )}
         </div>
+
+        {career.traits.length > 0 && (
+          <div className="mt-4">
+            <div className="mb-2 text-xs uppercase tracking-wide text-slate-400">{t('endingTraits')}</div>
+            <ul className="flex flex-col gap-1">
+              {career.traits.map((id) => {
+                const trait = getTrait(id);
+                if (!trait) return null;
+                return (
+                  <li key={id} className="text-sm text-sky-300">
+                    <span className="font-semibold">🧬 {trait.name[lang]}</span>
+                    <span className="text-slate-500 text-xs"> — {trait.description[lang]}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         <div className="mt-4">
           <div className="mb-2 text-xs uppercase tracking-wide text-slate-400">{t('endingRivalry')}</div>

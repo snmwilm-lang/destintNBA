@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '../store/gameStore';
 import { useLang, useT } from '../i18n/useT';
@@ -17,6 +18,43 @@ const TIER_COLOR: Record<string, string> = {
   D: 'text-rose-300',
 };
 
+// A native window.confirm() can be silently blocked in sandboxed preview iframes and some
+// mobile browsers, which would make delete look broken with no error at all — so the
+// confirmation lives entirely in-app: tap once to arm, tap again to confirm.
+interface DeleteButtonProps {
+  armed: boolean;
+  onArm: () => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function DeleteButton({ armed, onArm, onConfirm, onCancel }: DeleteButtonProps) {
+  const t = useT();
+  if (armed) {
+    return (
+      <div className="ml-3 flex shrink-0 items-center gap-1.5">
+        <button
+          onClick={onConfirm}
+          className="rounded-full border border-rose-500 bg-rose-500/15 px-3 py-1 text-xs font-bold text-rose-300"
+        >
+          {t('menuConfirmDelete')}
+        </button>
+        <button onClick={onCancel} className="rounded-full border border-court-600 px-3 py-1 text-xs text-slate-400">
+          {t('menuCancelDelete')}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={onArm}
+      className="ml-3 shrink-0 rounded-full border border-court-600 px-3 py-1 text-xs text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
+    >
+      {t('menuDelete')}
+    </button>
+  );
+}
+
 export function MainMenu({ onNewCareer, onOpenAchievements }: MainMenuProps) {
   const t = useT();
   const lang = useLang();
@@ -25,6 +63,7 @@ export function MainMenu({ onNewCareer, onOpenAchievements }: MainMenuProps) {
   const selectCareer = useGameStore((s) => s.selectCareer);
   const deleteCareer = useGameStore((s) => s.deleteCareer);
   const unlockedAchievements = useGameStore((s) => s.unlockedAchievements);
+  const [armedDeleteId, setArmedDeleteId] = useState<string | null>(null);
   const activeCareers = careers.filter((c) => !c.retired);
   const retiredCareers = careers
     .filter((c) => c.retired)
@@ -102,14 +141,15 @@ export function MainMenu({ onNewCareer, onOpenAchievements }: MainMenuProps) {
                       {t('menuSlotSeason', { season: c.season })} · {t('menuSlotAge', { age: c.age })} · {c.currentTeam.name}
                     </div>
                   </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(t('menuDeleteConfirm'))) deleteCareer(c.id);
+                  <DeleteButton
+                    armed={armedDeleteId === c.id}
+                    onArm={() => setArmedDeleteId(c.id)}
+                    onConfirm={() => {
+                      deleteCareer(c.id);
+                      setArmedDeleteId(null);
                     }}
-                    className="ml-3 shrink-0 rounded-full border border-court-600 px-3 py-1 text-xs text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
-                  >
-                    {t('menuDelete')}
-                  </button>
+                    onCancel={() => setArmedDeleteId(null)}
+                  />
                 </motion.div>
               ))}
           </div>
@@ -134,14 +174,15 @@ export function MainMenu({ onNewCareer, onOpenAchievements }: MainMenuProps) {
                   </div>
                   <div className="text-xs italic text-slate-400">“{sheet.legacyTitle[lang]}”</div>
                 </div>
-                <button
-                  onClick={() => {
-                    if (window.confirm(t('menuDeleteConfirm'))) deleteCareer(c.id);
+                <DeleteButton
+                  armed={armedDeleteId === c.id}
+                  onArm={() => setArmedDeleteId(c.id)}
+                  onConfirm={() => {
+                    deleteCareer(c.id);
+                    setArmedDeleteId(null);
                   }}
-                  className="ml-3 shrink-0 rounded-full border border-court-600 px-3 py-1 text-xs text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
-                >
-                  {t('menuDelete')}
-                </button>
+                  onCancel={() => setArmedDeleteId(null)}
+                />
               </motion.div>
             ))}
           </div>

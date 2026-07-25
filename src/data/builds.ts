@@ -210,3 +210,38 @@ export function getBuild(id: string): BuildDef | undefined {
 export function defaultBuildForPosition(position: Position): string {
   return buildsForPosition(position)[0].id;
 }
+
+export interface BuildIdentity {
+  pointsPct: number;
+  passesPct: number;
+  reboundsPct: number;
+  noteDelta: number;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+/** A build's boosts translate into a distinct on-court statistical signature — scorer builds
+ * put up more points, playmaking builds rack up more assists, and so on — instead of only
+ * nudging the underlying 0-100 attributes. Specializing this hard also costs a touch of
+ * well-roundedness, reflected as a small rating penalty. */
+export function buildIdentity(build: BuildDef): BuildIdentity {
+  const b = build.boosts;
+  const technique = b.technique ?? 0;
+  const physique = b.physique ?? 0;
+  const iqBasket = b.iqBasket ?? 0;
+  const relationCoequipiers = b.relationCoequipiers ?? 0;
+  const mental = b.mental ?? 0;
+
+  const pointsPct = clamp(Math.round(technique * 1.9 + physique * 0.5), -10, 35);
+  const passesPct = clamp(Math.round(iqBasket * 1.1 + relationCoequipiers * 1.5), -10, 25);
+  const reboundsPct = clamp(Math.round(physique * 1.7), -10, 30);
+
+  const total = technique + physique + iqBasket + relationCoequipiers + mental;
+  const maxSingle = Math.max(technique, physique, iqBasket, relationCoequipiers, mental);
+  const specialization = total > 0 ? maxSingle / total : 0;
+  const noteDelta = Math.round((0.55 - specialization) * 0.2 * 100) / 100;
+
+  return { pointsPct, passesPct, reboundsPct, noteDelta };
+}

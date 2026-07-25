@@ -10,6 +10,21 @@ function fillText(text: LocalizedText, ctx: Record<string, string>): LocalizedTe
 // uniformly at generation time so choices feel consequential without hand-editing every event.
 const EFFECT_AMPLIFIER = 1.6;
 
+// A single choice should never swing a stat by more than this in one go — keeps the visible
+// per-choice impact readable and varied (2 to 7) instead of the amplifier occasionally
+// blowing a hand-authored value out to 15-20+.
+const MAX_EFFECT_MAGNITUDE = 7;
+
+function clampMagnitude(effects?: Partial<Record<StatKey, number>>): Partial<Record<StatKey, number>> | undefined {
+  if (!effects) return effects;
+  const clamped: Partial<Record<StatKey, number>> = {};
+  for (const key of Object.keys(effects) as StatKey[]) {
+    const value = effects[key] ?? 0;
+    clamped[key] = Math.max(-MAX_EFFECT_MAGNITUDE, Math.min(MAX_EFFECT_MAGNITUDE, value));
+  }
+  return clamped;
+}
+
 function amplifyEffects(effects?: Partial<Record<StatKey, number>>): Partial<Record<StatKey, number>> | undefined {
   if (!effects) return effects;
   const scaled: Partial<Record<StatKey, number>> = {};
@@ -18,7 +33,7 @@ function amplifyEffects(effects?: Partial<Record<StatKey, number>>): Partial<Rec
     const amplified = Math.round(value * EFFECT_AMPLIFIER);
     scaled[key] = amplified === 0 && value !== 0 ? Math.sign(value) : amplified;
   }
-  return scaled;
+  return clampMagnitude(scaled);
 }
 
 // The riskier the play (lower baseChance), the bigger BOTH the upside and the downside should
@@ -34,7 +49,7 @@ function riskScale(effects: Partial<Record<StatKey, number>> | undefined, baseCh
     const result = Math.round(value * Math.max(0.4, multiplier));
     scaled[key] = result === 0 && value !== 0 ? Math.sign(value) : result;
   }
-  return scaled;
+  return clampMagnitude(scaled);
 }
 
 function instantiateChoice(tpl: Omit<EventChoice, 'id'>, ctx: Record<string, string>, idPrefix: string, index: number): EventChoice {

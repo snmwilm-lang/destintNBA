@@ -186,6 +186,8 @@ export interface SeasonResult {
   blessures: InjuryRecord[];
   transferOffers: TransferOffer[];
   skillPointsEarned: number;
+  /** A rare late-career season where an elite veteran defies the usual age-driven decline. */
+  vintageSeason: boolean;
 }
 
 export type EndingType =
@@ -230,8 +232,17 @@ export interface Career {
   /** Persistent named rival for duel-style events, pinned for this career. */
   rivalName: string;
   rivalRecord: { wins: number; losses: number };
+  /** Country represented in international competition (Olympics, World Cup). */
+  nationality: string;
+  /** Set the moment the national team is selected; resolved into the matching
+   * result event (final or an early-exit round), then cleared. */
+  pendingNationalCampaign: { competition: 'jeuxOlympiques' | 'coupeDuMonde'; round: 'groupes' | 'quarts' | 'demies' | 'finale' } | null;
   /** Achievement ids unlocked by THIS career's ending, for a one-time flash on the ending screen. */
   newlyUnlockedAchievements: string[];
+  /** Permanent double-edged personality traits earned mid-career (a buff paired with a nerf). */
+  traits: string[];
+  /** Trait ids unlocked THIS season, for a one-time flash on the season recap. */
+  newlyUnlockedTraits: string[];
   season: number;
   eventInSeasonIndex: number;
   eventsPerSeason: number;
