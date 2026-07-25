@@ -56,7 +56,7 @@ export const BUILDS: BuildDef[] = [
     'SG',
     { fr: 'Scoreur explosif', en: 'Explosive Scorer' },
     { fr: 'Un volume de tirs impressionnant et beaucoup de confiance.', en: 'High shot volume and no shortage of confidence.' },
-    { technique: 14, physique: 4, popularite: 5 },
+    { technique: 12, physique: 10, popularite: 5 },
   ),
   b(
     'sg-sharpshooter',
@@ -167,21 +167,21 @@ export const BUILDS: BuildDef[] = [
     'C',
     { fr: 'Rempart défensif', en: 'Rim Protector' },
     { fr: 'Une tour de contrôle sous son propre cercle.', en: 'A control tower under his own rim.' },
-    { physique: 14, mental: 8 },
+    { physique: 15, mental: 8 },
   ),
   b(
     'c-post-scorer',
     'C',
     { fr: 'Pivot scoreur', en: 'Post Scorer' },
     { fr: "Un jeu au poste ancien école, dévastateur en un-contre-un.", en: 'An old-school post game, devastating in one-on-one.' },
-    { technique: 10, physique: 10, popularite: 2 },
+    { technique: 14, physique: 6, popularite: 2 },
   ),
   b(
     'c-stretch-five',
     'C',
     { fr: 'Pivot mobile', en: 'Stretch Five' },
     { fr: 'Un pivot moderne, capable de s\'écarter et de tirer à 3 points.', en: 'A modern center, able to step out and shoot from deep.' },
-    { technique: 12, physique: 8, mental: 2 },
+    { technique: 12, physique: 2, mental: 2 },
   ),
   b(
     'c-point-center',
@@ -195,7 +195,7 @@ export const BUILDS: BuildDef[] = [
     'C',
     { fr: 'Athlète explosif', en: 'Athletic Lob Threat' },
     { fr: 'Un athlète hors norme, terreur des alley-oops.', en: 'A freak athlete — a terror above the rim.' },
-    { physique: 16, mental: 2, popularite: 4 },
+    { physique: 12, technique: 4, mental: 2, popularite: 4 },
   ),
 ];
 
