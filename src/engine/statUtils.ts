@@ -47,10 +47,11 @@ export function initialStats(archetypeBoost: Partial<Record<StatKey, number>>): 
     relationCoequipiers: 55,
     tempsDeJeu: 20,
     risqueBlessure: 15,
-    // A "role player" reads as roughly 70-80 Overall, "really good" as 80-85, "great" around 90,
-    // and 95-100 is reserved for a handful of true legends — a starting ceiling of 55 left even a
-    // fully realized talent stuck well under "really good" for most of a career.
-    potentiel: 62,
+    // Reaching the league at all means real talent — a player who puts in a normal prime (24-29)
+    // should be closing in on "really good"/"great" territory by default, not needing exceptional
+    // luck just to clear "role player". Good choices and lifestyle push further toward 95-100;
+    // bad ones (and age, past the prime) are what actually drag a player back down.
+    potentiel: 72,
   };
   return applyEffects(base, archetypeBoost);
 }

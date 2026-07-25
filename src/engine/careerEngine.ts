@@ -515,12 +515,14 @@ export function resolveChoice(career: Career, event: GameEvent, choiceId: string
 // --- Season progression -----------------------------------------------
 
 function ageGrowthFactor(age: number, vintage: boolean): number {
-  if (age <= 20) return 1.3;
-  if (age <= 24) return 1.0;
-  if (age <= 28) return 0.6;
-  if (age <= 32) return 0.1;
-  // Almost everyone declines past 32 — but a rare, truly elite talent can occasionally defy
-  // that curve for a season and still look like a legend deep into their 30s.
+  if (age <= 24) return 1.3;
+  // The athletic prime (roughly 24-29): still developing at close to full speed, not coasting —
+  // a player who reaches the league and puts the seasons in should be closing in on their real
+  // ceiling by the end of it, not still stuck catching up.
+  if (age <= 29) return 1.0;
+  if (age <= 32) return 0.4;
+  // The prime is over — from here it's real decline, unless a rare, truly elite talent defies
+  // the curve for a season and still looks like a legend deep into their 30s.
   return vintage ? 0.2 : -0.6;
 }
 
