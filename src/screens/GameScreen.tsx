@@ -28,6 +28,11 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
     ? pinRivalHighSchool(pinRivalTeam(pinRivalName(rawCurrentEvent, career.rivalName), career.rivalTeamName), career.rivalHighSchool)
     : undefined;
 
+  // The finals-clinching shot and Olympic/World Cup finals are the career's biggest single
+  // moments — their payoff gets a dedicated victory/defeat slide instead of the standard pill.
+  const lastResolvedEventId = career.choiceLog[career.choiceLog.length - 1]?.eventId;
+  const isCareerDefining = ['finale-moment-decisif', 'jo-finale-olympique', 'cdm-finale-mondiale'].includes(lastResolvedEventId ?? '');
+
   return (
     <div className="flex min-h-screen flex-col">
       {career.phase !== 'ended' && <TopBar career={career} onOpenMenu={onOpenMenu} />}
@@ -45,6 +50,7 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
             statDeltas={career.lastChoiceStatDeltas}
             moneyDelta={career.lastChoiceMoneyDelta}
             wasSuccess={career.lastChoiceWasSuccess}
+            isCareerDefining={isCareerDefining}
             onContinue={acknowledgeChoiceResult}
           />
         )}

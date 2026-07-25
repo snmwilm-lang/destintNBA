@@ -39,7 +39,6 @@ export const coupeDuMondeEvents: EventTemplate[] = [
       'Your national team does not survive the World Cup group stage.',
     ),
     minAge: 19,
-    unique: true,
     weight: 1,
     choices: [
       { label: tt('Analyser les erreurs sans complaisance', 'Break down the mistakes honestly'), effects: { iqBasket: 3, mental: 2, moral: -2 } },
@@ -55,7 +54,6 @@ export const coupeDuMondeEvents: EventTemplate[] = [
       'Your national team falls in the World Cup quarterfinals.',
     ),
     minAge: 19,
-    unique: true,
     weight: 1,
     choices: [
       { label: tt('Retenir les points positifs du tournoi', "Focus on the tournament's positives"), effects: { moral: 3, reputation: 2 } },
@@ -71,7 +69,6 @@ export const coupeDuMondeEvents: EventTemplate[] = [
       'Your national team falls in the semifinal and will have to play for bronze.',
     ),
     minAge: 19,
-    unique: true,
     weight: 1,
     choices: [
       {
@@ -97,7 +94,6 @@ export const coupeDuMondeEvents: EventTemplate[] = [
       "Your national team plays the World Cup final — one of the peaks your international career can reach.",
     ),
     minAge: 19,
-    unique: true,
     weight: 10,
     choices: [
       {
@@ -111,7 +107,18 @@ export const coupeDuMondeEvents: EventTemplate[] = [
           failureText: tt('La défaite en finale restera une immense frustration.', 'Losing the final will remain a deep source of frustration.'),
         },
       },
-      { label: tt('Porter le collectif national', 'Carry the national team'), effects: { relationCoequipiers: 6, iqBasket: 3 } },
+      {
+        label: tt('Porter le collectif national', 'Carry the national team'),
+        effects: { relationCoequipiers: 6, iqBasket: 3 },
+        successChance: {
+          baseChance: 0.46,
+          statBonus: { iqBasket: 0.01, relationCoequipiers: 0.01 },
+          onSuccess: { reputation: 11, popularite: 9 },
+          onFailure: { moral: -6 },
+          successText: tt('Champion du monde, porté par le collectif ! Ton nom entre dans l\'histoire de ta nation.', 'World champion, carried by the team! Your name enters your nation\'s history.'),
+          failureText: tt('La défaite en finale restera une immense frustration.', 'Losing the final will remain a deep source of frustration.'),
+        },
+      },
     ],
   },
 ];

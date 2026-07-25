@@ -25,7 +25,6 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
       'Your national team plays the final in front of the whole world. The pressure is at its peak.',
     ),
     minAge: 20,
-    unique: true,
     weight: 10,
     choices: [
       {
@@ -39,7 +38,18 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
           failureText: tt("La médaille d'argent a un goût amer malgré tes efforts.", 'The silver medal tastes bitter despite your efforts.'),
         },
       },
-      { label: tt("Jouer collectif jusqu'au bout", 'Play team basketball until the end'), effects: { relationCoequipiers: 6, iqBasket: 3 } },
+      {
+        label: tt("Jouer collectif jusqu'au bout", 'Play team basketball until the end'),
+        effects: { relationCoequipiers: 6, iqBasket: 3 },
+        successChance: {
+          baseChance: 0.48,
+          statBonus: { iqBasket: 0.01, relationCoequipiers: 0.01 },
+          onSuccess: { reputation: 10, popularite: 8 },
+          onFailure: { moral: -6 },
+          successText: tt("L'or olympique, en équipe. Le collectif l'a emporté.", 'Olympic gold, as a team. The collective effort paid off.'),
+          failureText: tt("La médaille d'argent a un goût amer malgré tes efforts.", 'The silver medal tastes bitter despite your efforts.'),
+        },
+      },
     ],
   },
   {
@@ -51,7 +61,6 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
       'Your national team fails to get out of the first round. The Olympic dream ends abruptly, far earlier than hoped.',
     ),
     minAge: 20,
-    unique: true,
     weight: 1,
     choices: [
       { label: tt('Analyser les erreurs sans complaisance', 'Break down the mistakes honestly'), effects: { iqBasket: 3, mental: 2, moral: -2 } },
@@ -67,7 +76,6 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
       'Your national team falls in the quarterfinals, agonizingly close to the final four.',
     ),
     minAge: 20,
-    unique: true,
     weight: 1,
     choices: [
       { label: tt('Retenir les points positifs du tournoi', 'Focus on the tournament\'s positives'), effects: { moral: 3, reputation: 2 } },
@@ -83,7 +91,6 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
       'Your national team falls in the semifinal and will have to settle for the bronze-medal game.',
     ),
     minAge: 20,
-    unique: true,
     weight: 1,
     choices: [
       {

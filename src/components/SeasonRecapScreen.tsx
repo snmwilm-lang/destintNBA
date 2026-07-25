@@ -46,6 +46,13 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
       </div>
 
       <div className="px-6 py-5 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+        {result.classementRank === 1 && (
+          <div className="col-span-2 sm:col-span-3 rounded-xl border border-gold-400/60 bg-gold-400/15 px-4 py-3 text-left">
+            <span className="text-base font-bold text-gold-300">
+              {t('recapChampionBanner', { team: career.currentTeam.name })}
+            </span>
+          </div>
+        )}
         {result.vintageSeason && (
           <div className="col-span-2 sm:col-span-3 rounded-xl border border-gold-400/40 bg-gold-400/10 px-4 py-2.5 text-left">
             <span className="text-sm font-bold text-gold-300">🌟 {t('recapVintageSeason')}</span>

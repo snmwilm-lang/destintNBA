@@ -99,6 +99,7 @@ export const conflitsEvents: EventTemplate[] = [
       'A microphone shoved in your face after the game gives you a chance to say what you really think about that franchise and its fans.',
     ),
     leagues: ['nba', 'gLeague'],
+    unique: true,
     weight: 2,
     choices: [
       {
@@ -175,6 +176,7 @@ export const conflitsEvents: EventTemplate[] = [
     ),
     leagues: ['lycee'],
     minSeason: 1,
+    unique: true,
     weight: 3,
     choices: [
       {

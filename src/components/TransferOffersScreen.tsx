@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import type { Career, Team } from '../types';
 import { useLang, useT } from '../i18n/useT';
 import { computeMarketValue, estimateSalary, seasonsPlayedInLeague } from '../engine/careerEngine';
+import { leagueBadge } from '../i18n/statLabels';
 
 interface TransferOffersScreenProps {
   career: Career;
@@ -47,7 +48,7 @@ export function TransferOffersScreen({ career, offers, onChoose }: TransferOffer
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-bold text-slate-100">{label}</span>
-                <span className="text-[10px] uppercase text-slate-400">{displayTeam.league}</span>
+                <span className="text-[10px] uppercase text-slate-400">{leagueBadge(displayTeam.league, lang)}</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 sm:grid-cols-4">
                 <div>

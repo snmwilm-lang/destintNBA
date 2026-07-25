@@ -182,27 +182,30 @@ export const useGameStore = create<GameStore>()(
               momentumDelta = netGood > 0 ? 2 : netGood < 0 ? -2 : 0;
             }
             const momentum = Math.max(0, Math.min(100, c.momentum + momentumDelta));
-            const rivalRecord =
-              event.tags?.includes('rivalDuel') && outcome.wasSuccess !== null
-                ? {
-                    wins: c.rivalRecord.wins + (outcome.wasSuccess ? 1 : 0),
-                    losses: c.rivalRecord.losses + (outcome.wasSuccess ? 0 : 1),
-                  }
-                : c.rivalRecord;
-            const rivalTeamRecord =
-              event.tags?.includes('cityRivalry') && outcome.wasSuccess !== null
-                ? {
-                    wins: c.rivalTeamRecord.wins + (outcome.wasSuccess ? 1 : 0),
-                    losses: c.rivalTeamRecord.losses + (outcome.wasSuccess ? 0 : 1),
-                  }
-                : c.rivalTeamRecord;
-            const rivalHighSchoolRecord =
-              event.tags?.includes('schoolRivalry') && outcome.wasSuccess !== null
-                ? {
-                    wins: c.rivalHighSchoolRecord.wins + (outcome.wasSuccess ? 1 : 0),
-                    losses: c.rivalHighSchoolRecord.losses + (outcome.wasSuccess ? 0 : 1),
-                  }
-                : c.rivalHighSchoolRecord;
+            // A rival showdown is still a real game even when the picked choice was a flavor/dialogue
+            // option with no successChance of its own (e.g. "stay silent and play") — the record
+            // must reflect that a game actually happened, so it falls back to a stat-weighted roll
+            // instead of silently staying untouched.
+            const resolveRivalGame = (): boolean => {
+              if (outcome.wasSuccess !== null) return outcome.wasSuccess;
+              const composite = (c.stats.technique + c.stats.mental + c.stats.iqBasket) / 3;
+              return Math.random() < Math.max(0.3, Math.min(0.8, 0.45 + (composite - 50) / 150));
+            };
+            const rivalRecord = event.tags?.includes('rivalDuel')
+              ? resolveRivalGame()
+                ? { wins: c.rivalRecord.wins + 1, losses: c.rivalRecord.losses }
+                : { wins: c.rivalRecord.wins, losses: c.rivalRecord.losses + 1 }
+              : c.rivalRecord;
+            const rivalTeamRecord = event.tags?.includes('cityRivalry')
+              ? resolveRivalGame()
+                ? { wins: c.rivalTeamRecord.wins + 1, losses: c.rivalTeamRecord.losses }
+                : { wins: c.rivalTeamRecord.wins, losses: c.rivalTeamRecord.losses + 1 }
+              : c.rivalTeamRecord;
+            const rivalHighSchoolRecord = event.tags?.includes('schoolRivalry')
+              ? resolveRivalGame()
+                ? { wins: c.rivalHighSchoolRecord.wins + 1, losses: c.rivalHighSchoolRecord.losses }
+                : { wins: c.rivalHighSchoolRecord.wins, losses: c.rivalHighSchoolRecord.losses + 1 }
+              : c.rivalHighSchoolRecord;
             const rivalryProvoked = c.rivalryProvoked || choice?.triggersRivalry === true;
             // Draft stock only accumulates during the high-school years it's meant to reflect —
             // once drafted, the pick is locked in and further swings would be meaningless.

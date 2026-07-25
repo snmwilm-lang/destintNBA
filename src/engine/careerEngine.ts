@@ -303,6 +303,8 @@ const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 
 const FINALE_EVENT_ID = 'finale-moment-decisif';
 const FINALE_PREQUEL_EVENT_ID = 'finale-prequel-timeout';
+const RIVALRY_PROVOCATION_EVENT_ID = 'conflit-defi-public';
+const HIGH_SCHOOL_RIVALRY_EVENT_ID = 'conflit-derby-lycee';
 
 export type NationalCampaignRound = 'groupes' | 'quarts' | 'demies' | 'finale';
 
@@ -346,6 +348,17 @@ function forcedMilestone(career: Career): GameEvent | null {
       }
     }
   }
+  // The high-school rivalry is meant to seed the whole career's legacy narrative — guarantee it's
+  // lived through by the player's 2nd year of high school instead of leaving it to a near-invisible
+  // random draw across a pool of well over a thousand event variants.
+  if (
+    career.currentTeam.league === 'lycee' &&
+    career.season >= 2 &&
+    !career.seenEventIds.includes(HIGH_SCHOOL_RIVALRY_EVENT_ID) &&
+    !career.usedThisSeasonIds.includes(HIGH_SCHOOL_RIVALRY_EVENT_ID)
+  ) {
+    return getEvent(HIGH_SCHOOL_RIVALRY_EVENT_ID) ?? null;
+  }
   // The career-defining Finals moment is otherwise a rare random draw — guarantee it shows up
   // as a season closer by year 3 in the league if luck hasn't brought it up already. It's staged
   // as a two-part moment: this timeout beat chains straight into the actual shot.
@@ -359,6 +372,17 @@ function forcedMilestone(career: Career): GameEvent | null {
     career.eventInSeasonIndex === career.eventsPerSeason - 1
   ) {
     return getEvent(FINALE_PREQUEL_EVENT_ID) ?? null;
+  }
+  // The deliberate "start a rivalry" choice is meant to be a real, discoverable decision — not a
+  // needle buried in a pool of well over a thousand event variants. Guarantee it's offered once,
+  // early in the player's NBA career, instead of leaving it to a near-invisible random draw.
+  if (
+    career.currentTeam.league === 'nba' &&
+    !career.seenEventIds.includes(RIVALRY_PROVOCATION_EVENT_ID) &&
+    !career.usedThisSeasonIds.includes(RIVALRY_PROVOCATION_EVENT_ID) &&
+    seasonsPlayedInLeague(career, 'nba') >= 1
+  ) {
+    return getEvent(RIVALRY_PROVOCATION_EVENT_ID) ?? null;
   }
   // A national team call-up rolls the tournament run once, then the matching result event
   // (the final, or an early-exit round) is guaranteed to follow — so the player always sees
@@ -386,10 +410,10 @@ function eventWeight(event: GameEvent, career: Career): number {
   if (career.currentTeam.league === 'nba' && BIG_MOMENT_CATEGORIES.includes(event.category)) {
     weight *= 6;
   }
-  // Once the player has deliberately provoked the rival fanbase, that storyline comes up
-  // noticeably more often instead of purely at random.
+  // Once the player has deliberately provoked the rival fanbase, that storyline becomes a real,
+  // recurring presence for the rest of the career instead of a random long-shot.
   if (career.rivalryProvoked && event.tags?.includes('cityRivalry')) {
-    weight *= 5;
+    weight *= 14;
   }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
@@ -466,7 +490,9 @@ export function resolveChoice(career: Career, event: GameEvent, choiceId: string
     const value = rawDeltas[key] ?? 0;
     clampedDeltas[key] = Math.max(-7, Math.min(7, value));
   }
-  const finalStats = applyEffects(career.stats, clampedDeltas);
+  // No single event, however flattering, can train a stat past the player's own talent ceiling —
+  // that only happens through real seasons of good play (see capTrainableGrowth).
+  const finalStats = capTrainableGrowth(career.stats, applyEffects(career.stats, clampedDeltas));
 
   return { stats: finalStats, argent, resultText, wasSuccess, statDeltas: diffStats(career.stats, finalStats), moneyDelta: argent - career.argent };
 }
@@ -499,13 +525,33 @@ function growTowardPotential(current: number, potentiel: number, driver: number,
   return clampStat(current + growth + decay);
 }
 
+// Technique/physique/mental/iqBasket are the four "trainable" stats that feed Overall — every
+// path that can raise them (season progression, choice effects, delayed effects, trait buffs,
+// skill points) must respect the same talent ceiling, or the ceiling means nothing. This caps an
+// *increase* at whichever is higher: the player's value before this operation (never claws back
+// stats a one-time creation boost — e.g. skip-to-NBA — already put above potentiel), or the
+// current potentiel headroom (physique keeps its small +10 athletic allowance).
+function capTrainableGrowth(before: PlayerStats, after: PlayerStats): PlayerStats {
+  const capped = { ...after };
+  const cap = after.potentiel;
+  for (const key of ['technique', 'iqBasket', 'mental'] as const) {
+    capped[key] = Math.min(after[key], Math.max(before[key], cap));
+  }
+  const physiqueCeiling = Math.max(before.physique, Math.min(100, cap + 10));
+  capped.physique = Math.min(after.physique, physiqueCeiling);
+  return capped;
+}
+
 function progressStats(career: Career, vintage: boolean): PlayerStats {
   const s = { ...career.stats };
   const driver = (s.tempsDeJeu * 0.5 + s.relationCoach * 0.3 + s.forme * 0.2) / 100;
   s.technique = growTowardPotential(s.technique, s.potentiel, driver, career.age, vintage);
   s.physique = growTowardPotential(s.physique, Math.min(100, s.potentiel + 10), driver, career.age, vintage);
   s.iqBasket = growTowardPotential(s.iqBasket, s.potentiel, driver * 0.9 + 0.1, career.age, vintage);
-  s.mental = clampStat(s.mental + (career.age <= 26 ? 1 : 0));
+  // Mental toughness now grows the same headroom-gated way as the other trainable stats, instead
+  // of a flat +1/season that used to creep to the max regardless of potentiel or how the player
+  // was actually developing.
+  s.mental = growTowardPotential(s.mental, s.potentiel, driver * 0.7 + 0.2, career.age, vintage);
   s.forme = clampStat(s.forme + (100 - s.forme) * 0.15);
   s.moral = clampStat(s.moral + (60 - s.moral) * 0.1);
   // A coach can only ignore genuine quality for so long — minutes drift toward what the
@@ -651,14 +697,28 @@ export function computeMarketValue(stats: PlayerStats, age: number, league: Leag
 function computeClassement(career: Career, noteMoyenne: number): { rank: number; total: number } {
   const total = career.currentTeam.league === 'nba' ? NBA_TEAM_POOL.length : career.currentTeam.league === 'europe' ? EUROPE_TEAM_POOL.length : HIGH_SCHOOL_TEAM_POOL.length;
   const teamStrength = (career.currentTeam.ambition + career.currentTeam.coachQuality) / 2;
-  const playerContribution = noteMoyenne * 6 + career.stats.reputation * 0.2;
+  // An MVP-caliber season (the same 8.7 threshold that awards the trophy) can genuinely carry a
+  // so-so roster deep into contention on its own — individual brilliance should count for more
+  // than just a minor nudge on top of what the roster already brings.
+  const carryBonus = noteMoyenne >= 8.7 ? (noteMoyenne - 8.7) * 6 : 0;
+  const playerContribution = noteMoyenne * 6 + career.stats.reputation * 0.2 + carryBonus;
   // Solid competition, not a rubber stamp: rival front offices specifically build super-teams to
   // dethrone a proven champion, so each additional title in the same career gets meaningfully
   // harder to repeat, on top of the raw team+player quality that was already required.
   const priorTitles = career.trophies.filter((t) => t.id.includes('-champion')).length;
-  const leagueResistance = Math.min(10, priorTitles * 1.5);
-  const score = teamStrength * 0.5 + playerContribution * 0.5 - leagueResistance + randFloat(-15, 15);
-  const rank = Math.max(1, Math.min(total, Math.round(total - (score / 100) * (total - 1))));
+  const leagueResistance = Math.min(28, priorTitles * 8);
+  const contention = teamStrength * 0.4 + playerContribution * 0.6 - leagueResistance;
+  // Winning the title is resolved as its own direct roll rather than spreading every team across
+  // a continuous 1..total scale — with a large league, "exactly rank 1" is a razor-thin sliver of
+  // that scale, so mapping it that way made a title all but impossible even for a flawless
+  // season. A real MVP-level year on a good roster now has a genuine, meaningful shot; an average
+  // year on an average team still essentially never wins it.
+  const winChance = Math.max(0, Math.min(0.35, (contention - 60) / 130));
+  if (Math.random() < winChance) {
+    return { rank: 1, total };
+  }
+  const score = contention + randFloat(-15, 15);
+  const rank = Math.max(2, Math.min(total, Math.round(total - (score / 100) * (total - 1))));
   return { rank, total };
 }
 
@@ -751,14 +811,23 @@ export function generateTransferOffers(career: Career): Team[] {
   const leaguePools = career.currentTeam.league === 'lycee' ? [...NBA_TEAM_POOL] : [...NBA_TEAM_POOL, ...EUROPE_TEAM_POOL];
   const scale = CONTRACT_SCALE[career.currentTeam.league];
   const normalizedValue = scale.max > scale.min ? ((career.valeurMarchande - scale.min) / (scale.max - scale.min)) * 100 : 50;
-  const sorted = leaguePools
-    .filter((t) => t.id !== career.currentTeam.id)
-    .sort((a, b) => Math.abs(a.salaryBudget - normalizedValue) - Math.abs(b.salaryBudget - normalizedValue));
+  const eligible = leaguePools.filter((t) => t.id !== career.currentTeam.id);
+  const sorted = eligible.sort((a, b) => Math.abs(a.salaryBudget - normalizedValue) - Math.abs(b.salaryBudget - normalizedValue));
   const count = career.currentTeam.league === 'lycee' ? 3 : 2 + randInt(0, 2);
   const offers: Team[] = [];
+  // A bad team drafting a great prospect is realistic — but a proven, in-demand player should be
+  // able to eventually maneuver onto an actual contender, not stay stuck on a rebuilding roster
+  // for an entire career just because that's who happened to hold the pick. Once a player has
+  // real standing, a genuine contender fights for their signature among the offers.
+  const isElite = career.stats.reputation >= 65 && career.currentTeam.league !== 'lycee';
+  if (isElite) {
+    const contender = [...eligible].sort((a, b) => b.ambition - a.ambition)[0];
+    if (contender) offers.push(contender);
+  }
   const shuffled = sorted.sort(() => Math.random() - 0.5);
   for (const team of shuffled) {
     if (offers.length >= count) break;
+    if (offers.some((o) => o.id === team.id)) continue;
     offers.push(team);
   }
   return offers;
@@ -796,10 +865,12 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   // Traits are earned from how the player has actually developed this season — each one is a
   // permanent, double-edged personality trait: a real buff paired with a real nerf.
   const newTraits = checkNewTraits({ ...career, stats });
+  const statsBeforeTraits = stats;
   for (const trait of newTraits) {
     stats = applyEffects(stats, trait.buff);
     stats = applyEffects(stats, trait.nerf);
   }
+  stats = capTrainableGrowth(statsBeforeTraits, stats);
 
   const statLine = generateStatLine(career, stats, matchesMissed, vintage);
   const { rank, total } = computeClassement(career, statLine.noteMoyenne);
@@ -1129,5 +1200,6 @@ function applyDueDelayedEffects(career: Career): Career {
   const remaining = career.pendingDelayed.filter((d) => d.triggerSeason > career.season);
   let stats = career.stats;
   for (const d of due) stats = applyEffects(stats, d.effect.effects);
+  stats = capTrainableGrowth(career.stats, stats);
   return { ...career, stats, pendingDelayed: remaining };
 }

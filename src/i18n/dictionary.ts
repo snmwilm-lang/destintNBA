@@ -143,6 +143,12 @@ export const dictionary = {
     fr: 'Saison vintage — ton corps a défié le temps cette année.',
     en: 'Vintage season — your body defied the years this time around.',
   },
+  recapChampionBanner: {
+    fr: '🏆 Champion de la ligue ! {team} termine 1er cette saison.',
+    en: "🏆 League champion! {team} finishes 1st this season.",
+  },
+  choiceVictoryTitle: { fr: 'VICTOIRE !', en: 'VICTORY!' },
+  choiceDefeatTitle: { fr: 'DÉFAITE', en: 'DEFEAT' },
   recapTraining: { fr: 'Entraînement ciblé', en: 'Targeted training' },
   recapPointsAvailable: { fr: '{count} pts disponibles', en: '{count} pts available' },
   recapPointsEarned: { fr: '+{count} points gagnés cette saison', en: '+{count} points earned this season' },

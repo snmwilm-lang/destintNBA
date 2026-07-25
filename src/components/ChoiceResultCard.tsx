@@ -9,10 +9,14 @@ interface ChoiceResultCardProps {
   statDeltas: Partial<Record<StatKey, number>> | null;
   moneyDelta: number;
   wasSuccess: boolean | null;
+  /** Marks the payoff of a career-defining moment (the finals-clinching shot, an
+   * Olympic/World Cup final) — shown as a full dramatic win/loss slide instead of the small
+   * standard outcome pill, since this is the one beat in the game the player should never miss. */
+  isCareerDefining?: boolean;
   onContinue: () => void;
 }
 
-export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, onContinue }: ChoiceResultCardProps) {
+export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, isCareerDefining, onContinue }: ChoiceResultCardProps) {
   const lang = useLang();
   const t = useT();
   const currency = lang === 'fr' ? 'fr-FR' : 'en-US';
@@ -26,22 +30,46 @@ export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, onC
         ? entries.reduce((acc, [key, delta]) => acc + (isGoodDelta(key, delta) ? 1 : -1) * Math.abs(delta), 0) >= 0
         : null;
 
+  const showVictorySlide = isCareerDefining && wasSuccess !== null;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="w-full max-w-lg rounded-3xl border border-gold-500/40 bg-court-800/90 px-6 py-8 text-center shadow-2xl shadow-black/40"
+      className={`w-full max-w-lg rounded-3xl border px-6 py-8 text-center shadow-2xl shadow-black/40 ${
+        showVictorySlide
+          ? wasSuccess
+            ? 'border-gold-400/70 bg-gradient-to-b from-gold-500/20 via-court-800/95 to-court-800/95'
+            : 'border-rose-500/50 bg-gradient-to-b from-rose-500/15 via-court-800/95 to-court-800/95'
+          : 'border-gold-500/40 bg-court-800/90'
+      }`}
     >
-      {wasSuccess !== null && (
-        <div
-          className={`mb-4 inline-block rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wide ${
-            wasSuccess ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'
-          }`}
+      {showVictorySlide ? (
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
+          className="mb-3"
         >
-          {wasSuccess ? t('choiceOutcomeSuccess') : t('choiceOutcomeFailure')}
-        </div>
+          <div className="text-5xl">{wasSuccess ? '🏆' : '💔'}</div>
+          <div className={`mt-2 text-2xl font-black tracking-wide ${wasSuccess ? 'text-gold-300' : 'text-rose-300'}`}>
+            {wasSuccess ? t('choiceVictoryTitle') : t('choiceDefeatTitle')}
+          </div>
+        </motion.div>
+      ) : (
+        <>
+          {wasSuccess !== null && (
+            <div
+              className={`mb-4 inline-block rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wide ${
+                wasSuccess ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'
+              }`}
+            >
+              {wasSuccess ? t('choiceOutcomeSuccess') : t('choiceOutcomeFailure')}
+            </div>
+          )}
+          <div className="mb-4 text-3xl">{overallGood === null ? '🏀' : overallGood ? '📈' : '📉'}</div>
+        </>
       )}
-      <div className="mb-4 text-3xl">{overallGood === null ? '🏀' : overallGood ? '📈' : '📉'}</div>
       {text && <p className="mb-5 text-sm leading-relaxed text-slate-200">{text[lang]}</p>}
 
       {overallDelta !== 0 && (
