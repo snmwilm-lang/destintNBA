@@ -16,6 +16,7 @@ import {
   pickNextEvent,
   pinRivalHighSchool,
   pinRivalName,
+  pinRivalPlayerTeam,
   pinRivalTeam,
   resolveChoice,
   simulateNationalCampaign,
@@ -205,7 +206,10 @@ export const useGameStore = create<GameStore>()(
         if (!career || !career.currentEventId) return;
         const rawEvent = getEvent(career.currentEventId);
         if (!rawEvent) return;
-        const event = pinRivalHighSchool(pinRivalTeam(pinRivalName(rawEvent, career.rivalName), career.rivalTeamName), career.rivalHighSchool);
+        const event = pinRivalHighSchool(
+          pinRivalTeam(pinRivalPlayerTeam(pinRivalName(rawEvent, career.rivalName), career.rivalName, career.currentTeam.league), career.rivalTeamName),
+          career.rivalHighSchool,
+        );
         const outcome = resolveChoice(career, event, choiceId);
 
         set((s) => {
