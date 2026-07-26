@@ -145,15 +145,31 @@ export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
   return pinPlaceholder(event, 'rivalDuel', RIVAL_PLAYERS, rivalName);
 }
 
-export const PRO_OPPONENT_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name).concat(EUROPE_TEAMS.map((t) => t.name));
+const NBA_LIKE_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name);
+const EUROPE_TEAM_NAME_LIST = EUROPE_TEAMS.map((t) => t.name);
+export const PRO_OPPONENT_TEAM_NAMES = NBA_LIKE_TEAM_NAMES.concat(EUROPE_TEAM_NAME_LIST);
 
-/** Pins the named rival to a single team for the whole pro career — without this, the generic
- * "{opponent}" slot in rival-duel cards was drawn independently of the rival's identity, so the
- * same rival appeared to change franchise every time the two crossed paths. Only rewrites text
- * that actually names a pro team, so the high-school-era version of the rivalry (a different
- * school every meeting) is left untouched. */
-export function pinRivalPlayerTeam(event: GameEvent, rivalPlayerTeam: string): GameEvent {
-  return pinPlaceholder(event, 'rivalDuel', PRO_OPPONENT_TEAM_NAMES, rivalPlayerTeam);
+function hashString(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+/** Pins the named rival to one team for the player's current league tier — without this, the
+ * generic "{opponent}" slot in rival-duel cards was drawn independently of the rival's identity,
+ * so the same rival appeared to change franchise every meeting. Derived deterministically from
+ * the rival's own name rather than stored, so it stays put for a whole stretch in a league
+ * without extra saved state, but re-derives to the OTHER pool if the player's own career moves
+ * between the NBA/G-League tier and Europe — a rival permanently parked in a league the player
+ * isn't currently in could otherwise never be crossed paths with again. Only rewrites text that
+ * actually names a pro team, so the high-school-era version of the rivalry (a different school
+ * every meeting) is left untouched. */
+export function pinRivalPlayerTeam(event: GameEvent, rivalName: string, league: League): GameEvent {
+  const pool = league === 'europe' ? EUROPE_TEAM_NAME_LIST : NBA_LIKE_TEAM_NAMES;
+  const pinned = pool[hashString(rivalName) % pool.length];
+  return pinPlaceholder(event, 'rivalDuel', PRO_OPPONENT_TEAM_NAMES, pinned);
 }
 
 const RIVAL_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name);
@@ -234,9 +250,6 @@ export function createNewCareer(
     skillPoints: bonusSkillPoints,
     rivalName: RIVAL_PLAYERS[randInt(0, RIVAL_PLAYERS.length - 1)],
     rivalRecord: { wins: 0, losses: 0 },
-    rivalPlayerTeam: PRO_OPPONENT_TEAM_NAMES.filter((n) => n !== startingTeam.name)[
-      randInt(0, PRO_OPPONENT_TEAM_NAMES.length - 2)
-    ],
     rivalTeamName: RIVAL_TEAM_NAMES[randInt(0, RIVAL_TEAM_NAMES.length - 1)],
     rivalTeamRecord: { wins: 0, losses: 0 },
     rivalryProvoked: false,
@@ -248,7 +261,8 @@ export function createNewCareer(
     pendingFinaleResult: null,
     hasReachedFinale: false,
     eliteBreakthroughCount: 0,
-    hasBeenSelectedInternationally: false,
+    hasBeenSelectedForJo: false,
+    hasBeenSelectedForCdm: false,
     newlyUnlockedAchievements: [],
     traits: [],
     newlyUnlockedTraits: [],
@@ -422,20 +436,31 @@ function forcedMilestone(career: Career): GameEvent | null {
   // Getting picked for the national team at all was otherwise a normal random draw inside a pool
   // of well over a thousand event variants, gated to only a handful of eligible seasons — a
   // player could go a whole career without ever once seeing it happen. Guarantee a real shot at
-  // the very next eligible Olympic/World Cup cycle once the player is an established pro.
+  // the very next eligible cycle once the player is an established pro. The Olympics and the
+  // World Cup are guaranteed INDEPENDENTLY — a single shared flag used to mean that whichever
+  // competition's cycle happened to line up first silently used up the only guarantee, leaving
+  // the other one a near-invisible random draw for the rest of the career.
   if (
-    !career.hasBeenSelectedInternationally &&
+    !career.hasBeenSelectedForJo &&
     !career.pendingNationalCampaign &&
     career.currentTeam.league !== 'lycee' &&
     career.age >= 24 &&
-    career.stats.reputation >= 45
+    career.stats.reputation >= 45 &&
+    career.season % 4 === QUADRENNIAL_CYCLE.jeuxOlympiques &&
+    !career.usedThisSeasonIds.includes('jo-selection-equipe')
   ) {
-    if (career.season % 4 === QUADRENNIAL_CYCLE.jeuxOlympiques && !career.usedThisSeasonIds.includes('jo-selection-equipe')) {
-      return getEvent('jo-selection-equipe') ?? null;
-    }
-    if (career.season % 4 === QUADRENNIAL_CYCLE.coupeDuMonde && !career.usedThisSeasonIds.includes('cdm-qualification')) {
-      return getEvent('cdm-qualification') ?? null;
-    }
+    return getEvent('jo-selection-equipe') ?? null;
+  }
+  if (
+    !career.hasBeenSelectedForCdm &&
+    !career.pendingNationalCampaign &&
+    career.currentTeam.league !== 'lycee' &&
+    career.age >= 24 &&
+    career.stats.reputation >= 45 &&
+    career.season % 4 === QUADRENNIAL_CYCLE.coupeDuMonde &&
+    !career.usedThisSeasonIds.includes('cdm-qualification')
+  ) {
+    return getEvent('cdm-qualification') ?? null;
   }
   // A national team call-up rolls the tournament run once, then the matching result event
   // (the final, or an early-exit round) is guaranteed to follow — so the player always sees

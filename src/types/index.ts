@@ -248,9 +248,6 @@ export interface Career {
   /** Persistent named rival for duel-style events, pinned for this career. */
   rivalName: string;
   rivalRecord: { wins: number; losses: number };
-  /** The team the named rival plays for — pinned once so the rivalry reads as one real player on
-   * one real roster, instead of a different franchise showing up every time you two meet. */
-  rivalPlayerTeam: string;
   /** A whole fanbase can turn into a rival too (a la Trae Young vs. New York), pinned for this career. */
   rivalTeamName: string;
   rivalTeamRecord: { wins: number; losses: number };
@@ -282,10 +279,13 @@ export interface Career {
    * the last, so a career can keep climbing toward true legend status on sustained dominance
    * without any single hot stretch snowballing straight to the max. */
   eliteBreakthroughCount: number;
-  /** True once the player has ever been called up for the national team (Olympics or World Cup),
-   * win or lose — guarantees at least one real shot at international competition over a career
-   * instead of leaving the initial call-up to a near-invisible random draw. */
-  hasBeenSelectedInternationally: boolean;
+  /** True once the player has ever been called up for the Olympics, win or lose — guarantees a
+   * real shot at the Games over a career instead of leaving the call-up to a near-invisible
+   * random draw. Tracked separately from the World Cup so guaranteeing one doesn't silently use
+   * up the guarantee for the other. */
+  hasBeenSelectedForJo: boolean;
+  /** Same idea as hasBeenSelectedForJo, but for the World Cup. */
+  hasBeenSelectedForCdm: boolean;
   /** Achievement ids unlocked by THIS career's ending, for a one-time flash on the ending screen. */
   newlyUnlockedAchievements: string[];
   /** Permanent double-edged personality traits earned mid-career (a buff paired with a nerf). */

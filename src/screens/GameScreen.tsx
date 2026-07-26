@@ -26,7 +26,10 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
   const rawCurrentEvent = career.currentEventId ? getEvent(career.currentEventId) : undefined;
   const currentEvent = rawCurrentEvent
     ? pinRivalHighSchool(
-        pinRivalTeam(pinRivalPlayerTeam(pinRivalName(rawCurrentEvent, career.rivalName), career.rivalPlayerTeam), career.rivalTeamName),
+        pinRivalTeam(
+          pinRivalPlayerTeam(pinRivalName(rawCurrentEvent, career.rivalName), career.rivalName, career.currentTeam.league),
+          career.rivalTeamName,
+        ),
         career.rivalHighSchool,
       )
     : undefined;

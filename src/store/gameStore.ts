@@ -51,7 +51,6 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     skillPoints: c.skillPoints ?? 0,
     rivalName: c.rivalName ?? 'Malik Sanders',
     rivalRecord: c.rivalRecord ?? { wins: 0, losses: 0 },
-    rivalPlayerTeam: c.rivalPlayerTeam ?? 'Boston Clovers',
     rivalTeamName: c.rivalTeamName ?? 'Chicago Bison',
     rivalTeamRecord: c.rivalTeamRecord ?? { wins: 0, losses: 0 },
     rivalryProvoked: c.rivalryProvoked ?? false,
@@ -64,7 +63,11 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     hasReachedFinale: c.hasReachedFinale ?? false,
     // Saves from before the diminishing multi-trigger version stored a plain boolean.
     eliteBreakthroughCount: typeof c.eliteBreakthroughCount === 'number' ? c.eliteBreakthroughCount : c.hadEliteBreakthrough ? 1 : 0,
-    hasBeenSelectedInternationally: c.hasBeenSelectedInternationally ?? false,
+    // Saves from before the JO/CDM guarantees were tracked separately had one shared flag that
+    // could already be true from whichever competition came first — reset both here so an
+    // in-progress career actually gets the fixed, independent guarantee for the one it never saw.
+    hasBeenSelectedForJo: c.hasBeenSelectedForJo ?? false,
+    hasBeenSelectedForCdm: c.hasBeenSelectedForCdm ?? false,
     newlyUnlockedAchievements: c.newlyUnlockedAchievements ?? [],
     traits: c.traits ?? [],
     newlyUnlockedTraits: c.newlyUnlockedTraits ?? [],
@@ -293,7 +296,8 @@ export const useGameStore = create<GameStore>()(
             const pendingFinaleResult = event.id === 'finale-moment-decisif' ? outcome.wasSuccess : c.pendingFinaleResult;
             const hasReachedFinale =
               c.hasReachedFinale || event.id === 'finale-prequel-timeout' || event.id === 'finale-moment-decisif';
-            const hasBeenSelectedInternationally = c.hasBeenSelectedInternationally || !!selectionCompetition;
+            const hasBeenSelectedForJo = c.hasBeenSelectedForJo || selectionCompetition === 'jeuxOlympiques';
+            const hasBeenSelectedForCdm = c.hasBeenSelectedForCdm || selectionCompetition === 'coupeDuMonde';
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -313,7 +317,8 @@ export const useGameStore = create<GameStore>()(
               pendingNationalCampaign,
               pendingFinaleResult,
               hasReachedFinale,
-              hasBeenSelectedInternationally,
+              hasBeenSelectedForJo,
+              hasBeenSelectedForCdm,
               phase: linkedNextEventId ? 'event' : 'choiceResult',
               currentEventId: linkedNextEventId ?? c.currentEventId,
               lastChoiceResultText: resultText,
