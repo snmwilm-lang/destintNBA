@@ -56,7 +56,7 @@ export function AchievementsScreen({ onBack }: AchievementsScreenProps) {
                     </span>
                   </div>
                   <span className="text-xs font-bold tabular-nums text-slate-400">
-                    {current}/{challenge.target}
+                    {current.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US')}/{challenge.target.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US')}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">{challenge.description[lang]}</p>

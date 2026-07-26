@@ -37,6 +37,16 @@ function uid(): string {
   return `career-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 }
 
+interface PersistedShape {
+  lang?: Lang;
+  careers?: (Partial<Career> & Record<string, unknown>)[];
+  activeCareerId?: string | null;
+  unlockedAchievements?: string[];
+  dailyChallengeDate?: string;
+  dailyProgress?: Partial<Record<DailyChallengeMetric, number>>;
+  dailyClaimedIds?: string[];
+}
+
 // The Career shape has grown several new required fields over the game's development. A save
 // written before one of those fields existed would otherwise rehydrate with it `undefined` and
 // crash the first time it's read — so every load backfills sane defaults for anything missing,
@@ -401,12 +411,37 @@ export const useGameStore = create<GameStore>()(
       name: 'hardwood-dreams-save',
       version: 2,
       migrate: (persisted) => {
-        const state = persisted as { lang?: Lang; careers?: (Partial<Career> & Record<string, unknown>)[]; activeCareerId?: string | null; unlockedAchievements?: string[] };
+        const state = persisted as PersistedShape;
         return {
           lang: state.lang ?? 'fr',
           careers: (state.careers ?? []).map(reconcileCareer),
           activeCareerId: state.activeCareerId ?? null,
           unlockedAchievements: state.unlockedAchievements ?? [],
+          dailyChallengeDate: state.dailyChallengeDate ?? '',
+          dailyProgress: state.dailyProgress ?? {},
+          dailyClaimedIds: state.dailyClaimedIds ?? [],
+        };
+      },
+      // `migrate` only fires when the persisted version number differs from `version` above — a
+      // save written once at version 2 will never run it again, so any Career field added later
+      // (most of them, over this game's development) would silently rehydrate as `undefined` and
+      // crash the moment it's read. `merge` runs on every single load regardless of version, so
+      // reconciling here is what actually keeps old saves safe on an ongoing basis. Every store
+      // key that should survive a reload has to be listed explicitly here (not just `careers`) —
+      // anything left out silently falls back to the freshly-initialized default instead of the
+      // persisted value.
+      merge: (persisted, current) => {
+        const state = persisted as PersistedShape | undefined;
+        if (!state) return current;
+        return {
+          ...current,
+          lang: state.lang ?? current.lang,
+          careers: (state.careers ?? []).map(reconcileCareer),
+          activeCareerId: state.activeCareerId ?? null,
+          unlockedAchievements: state.unlockedAchievements ?? [],
+          dailyChallengeDate: state.dailyChallengeDate ?? current.dailyChallengeDate,
+          dailyProgress: state.dailyProgress ?? current.dailyProgress,
+          dailyClaimedIds: state.dailyClaimedIds ?? current.dailyClaimedIds,
         };
       },
     },

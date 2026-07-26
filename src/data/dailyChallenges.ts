@@ -61,11 +61,11 @@ export const DAILY_CHALLENGE_POOL: DailyChallengeTemplate[] = [
     target: 1,
   },
   {
-    id: 'daily-money-10000',
+    id: 'daily-money-500000',
     name: { fr: 'Gros contrat', en: 'Big paycheck' },
-    description: { fr: 'Gagne 10 000 € (salaire).', en: 'Earn €10,000 (salary).' },
+    description: { fr: 'Gagne 500 000 € de salaire sur une saison.', en: 'Earn €500,000 in salary in a single season.' },
     metric: 'moneyEarned',
-    target: 10000,
+    target: 500_000,
   },
 ];
 
