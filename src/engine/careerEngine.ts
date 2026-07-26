@@ -493,14 +493,22 @@ function eventWeight(event: GameEvent, career: Career): number {
   if (career.rivalryProvoked && event.tags?.includes('cityRivalry')) {
     weight *= 14;
   }
-  // The persistent named rival is meant to be a real, felt storyline across the whole career —
-  // left at base weight it was buried deep enough in a pool of well over a thousand variants that
-  // players could go years without crossing paths. A modest, capped boost keeps it a recurring
-  // presence (a real beat every season or two) without crowding out everything else in the pool.
+  // The persistent named rival is meant to be a real, felt storyline across the whole (pro)
+  // career — left at base weight it was buried deep enough in a pool of well over a thousand
+  // variants that players could go years without crossing paths, so it gets a modest, capped
+  // boost there. High school is the opposite problem: the event pool eligible at that age is
+  // much smaller to begin with (a handful of seasons, lycee-only cards), so the same boost made
+  // the rival show up constantly — damp it below baseline there instead of boosting it.
   if (event.tags?.includes('rivalDuel')) {
-    weight *= career.currentTeam.league === 'nba' || career.currentTeam.league === 'europe' ? 2.5 : 1.5;
-    const meetings = career.rivalRecord.wins + career.rivalRecord.losses;
-    weight *= 1 + Math.min(meetings, 6) * 0.05;
+    if (career.currentTeam.league === 'nba' || career.currentTeam.league === 'europe') {
+      weight *= 2.5;
+      const meetings = career.rivalRecord.wins + career.rivalRecord.losses;
+      weight *= 1 + Math.min(meetings, 6) * 0.05;
+    } else if (career.currentTeam.league === 'lycee') {
+      weight *= 0.4;
+    } else {
+      weight *= 1.5;
+    }
   }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
