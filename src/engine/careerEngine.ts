@@ -1052,8 +1052,12 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   // while sustained, repeated dominance across a whole career can still climb toward true
   // legend status — without letting any one dominant stretch snowball straight to the max the
   // way an uncapped repeatable version did.
+  // This must key off trophies ACTUALLY won, not the raw rating — a season that crossed the MVP
+  // threshold but lost the vote (see rollIndividualAward) is exactly the case the contest system
+  // was built to make possible, and a leftover direct noteMoyenne check here would silently hand
+  // out the same potentiel bump regardless of whether the award was actually won.
   const majorTrophyCount = trophies.filter((t) => /-(mvp|champion|scoring|assists|defense)$/.test(t.id)).length;
-  const eliteSeasonBonus = majorTrophyCount >= 3 ? 10 : majorTrophyCount === 2 ? 7 : statLine.noteMoyenne >= 8.7 ? 4 : 0;
+  const eliteSeasonBonus = majorTrophyCount >= 3 ? 10 : majorTrophyCount === 2 ? 7 : majorTrophyCount === 1 ? 4 : 0;
   if (eliteSeasonBonus > 0 && career.age <= 32 && eliteBreakthroughCount < MAX_BREAKTHROUGH_TRIGGERS) {
     const effectiveBonus = Math.max(1, Math.round(eliteSeasonBonus * Math.pow(0.5, eliteBreakthroughCount)));
     eliteBreakthroughCount += 1;
