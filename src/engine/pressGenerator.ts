@@ -10,6 +10,10 @@ interface PressContext {
   statLine: SeasonStatLine;
   classementRank: number;
   wonTitle: boolean;
+  /** Set when the player had an MVP-caliber season but the actual vote went to the named rival —
+   * gives the "so close, and lost it to someone real" beat a face instead of the trophy just
+   * silently not showing up. */
+  mvpSnub?: { rivalName: string };
 }
 
 function fillFr(str: string, ctx: Record<string, string>): string {
@@ -23,6 +27,7 @@ export function generatePressArticles(ctx: PressContext, idPrefix: string): Pres
     points: ctx.statLine.points.toFixed(1),
     note: ctx.noteMoyenne.toFixed(1),
     rank: String(ctx.classementRank),
+    rival: ctx.mvpSnub?.rivalName ?? '',
   };
   const journalist = JOURNALISTS[Math.floor(Math.random() * JOURNALISTS.length)];
 
@@ -66,16 +71,28 @@ export function generatePressArticles(ctx: PressContext, idPrefix: string): Pres
       '{player} and {team} crowned champions! A season to remember forever.',
     ),
   ];
+  const mvpSnubTemplates = [
+    tt(
+      'Une saison à {note}/10, et pourtant {player} repart les mains vides : le trophée de MVP part chez {rival}.',
+      'A {note}/10 season, and still {player} walks away empty-handed: the MVP trophy goes to {rival}.',
+    ),
+    tt(
+      '{player} a fait presque tout juste cette saison. Presque : {rival} lui souffle le titre de MVP dans les dernières semaines.',
+      '{player} did almost everything right this season. Almost: {rival} steals the MVP away in the final weeks.',
+    ),
+  ];
 
   const pool = ctx.wonTitle
     ? titleTemplates
-    : ctx.noteMoyenne >= 7
-      ? positiveTemplates
-      : ctx.noteMoyenne >= 5
-        ? neutralTemplates
-        : negativeTemplates;
+    : ctx.mvpSnub
+      ? mvpSnubTemplates
+      : ctx.noteMoyenne >= 7
+        ? positiveTemplates
+        : ctx.noteMoyenne >= 5
+          ? neutralTemplates
+          : negativeTemplates;
 
-  const tone = ctx.wonTitle || ctx.noteMoyenne >= 7 ? 'positif' : ctx.noteMoyenne >= 5 ? 'neutre' : 'negatif';
+  const tone = ctx.wonTitle || ctx.noteMoyenne >= 7 ? 'positif' : ctx.mvpSnub ? 'negatif' : ctx.noteMoyenne >= 5 ? 'neutre' : 'negatif';
 
   const count = 1 + Math.floor(Math.random() * 2);
   const articles: PressArticle[] = [];
@@ -83,11 +100,13 @@ export function generatePressArticles(ctx: PressContext, idPrefix: string): Pres
     const body = pool[Math.floor(Math.random() * pool.length)];
     const headline = ctx.wonTitle
       ? tt('{player} champion avec {team}', '{player} wins it all with {team}')
-      : ctx.noteMoyenne >= 7
-        ? tt('{player} impressionne', '{player} impresses')
-        : ctx.noteMoyenne >= 5
-          ? tt('{player}, saison sans relief', "{player}'s quiet season")
-          : tt('{player} sous pression', '{player} under pressure');
+      : ctx.mvpSnub
+        ? tt('{player} snobé pour le MVP', '{player} snubbed for MVP')
+        : ctx.noteMoyenne >= 7
+          ? tt('{player} impressionne', '{player} impresses')
+          : ctx.noteMoyenne >= 5
+            ? tt('{player}, saison sans relief', "{player}'s quiet season")
+            : tt('{player} sous pression', '{player} under pressure');
     articles.push({
       id: `${idPrefix}-press-${i}`,
       season: ctx.season,

@@ -248,6 +248,9 @@ export interface Career {
   /** Persistent named rival for duel-style events, pinned for this career. */
   rivalName: string;
   rivalRecord: { wins: number; losses: number };
+  /** The team the named rival plays for — pinned once so the rivalry reads as one real player on
+   * one real roster, instead of a different franchise showing up every time you two meet. */
+  rivalPlayerTeam: string;
   /** A whole fanbase can turn into a rival too (a la Trae Young vs. New York), pinned for this career. */
   rivalTeamName: string;
   rivalTeamRecord: { wins: number; losses: number };

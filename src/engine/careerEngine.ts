@@ -19,7 +19,7 @@ import type {
 import { allEvents } from '../data/events';
 import { HIGH_SCHOOL_TEAM_POOL, NBA_TEAM_POOL, EUROPE_TEAM_POOL, allTeamsForLeague } from '../data/teams';
 import { BUILDS, buildIdentity, getBuild } from '../data/builds';
-import { HIGH_SCHOOL_TEAMS, NBA_LIKE_TEAMS, RIVAL_PLAYERS } from '../data/names';
+import { EUROPE_TEAMS, HIGH_SCHOOL_TEAMS, NBA_LIKE_TEAMS, RIVAL_PLAYERS } from '../data/names';
 import { getNationality } from '../data/nationalities';
 import { checkNewTraits } from '../data/traits';
 import { applyEffects, clampStat, initialStats, randFloat, randInt, weightedPick } from './statUtils';
@@ -145,6 +145,17 @@ export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
   return pinPlaceholder(event, 'rivalDuel', RIVAL_PLAYERS, rivalName);
 }
 
+export const PRO_OPPONENT_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name).concat(EUROPE_TEAMS.map((t) => t.name));
+
+/** Pins the named rival to a single team for the whole pro career — without this, the generic
+ * "{opponent}" slot in rival-duel cards was drawn independently of the rival's identity, so the
+ * same rival appeared to change franchise every time the two crossed paths. Only rewrites text
+ * that actually names a pro team, so the high-school-era version of the rivalry (a different
+ * school every meeting) is left untouched. */
+export function pinRivalPlayerTeam(event: GameEvent, rivalPlayerTeam: string): GameEvent {
+  return pinPlaceholder(event, 'rivalDuel', PRO_OPPONENT_TEAM_NAMES, rivalPlayerTeam);
+}
+
 const RIVAL_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name);
 
 /** Same idea as pinRivalName, but for a "cityRivalry"-tagged card: an entire fanbase turned
@@ -223,6 +234,9 @@ export function createNewCareer(
     skillPoints: bonusSkillPoints,
     rivalName: RIVAL_PLAYERS[randInt(0, RIVAL_PLAYERS.length - 1)],
     rivalRecord: { wins: 0, losses: 0 },
+    rivalPlayerTeam: PRO_OPPONENT_TEAM_NAMES.filter((n) => n !== startingTeam.name)[
+      randInt(0, PRO_OPPONENT_TEAM_NAMES.length - 2)
+    ],
     rivalTeamName: RIVAL_TEAM_NAMES[randInt(0, RIVAL_TEAM_NAMES.length - 1)],
     rivalTeamRecord: { wins: 0, losses: 0 },
     rivalryProvoked: false,
@@ -456,12 +470,12 @@ function eventWeight(event: GameEvent, career: Career): number {
   }
   // The persistent named rival is meant to be a real, felt storyline across the whole career —
   // left at base weight it was buried deep enough in a pool of well over a thousand variants that
-  // players could go years without crossing paths. Make it a recurring presence once pro, and
-  // heat it up further the more the two have already clashed.
+  // players could go years without crossing paths. A modest, capped boost keeps it a recurring
+  // presence (a real beat every season or two) without crowding out everything else in the pool.
   if (event.tags?.includes('rivalDuel')) {
-    weight *= career.currentTeam.league === 'nba' || career.currentTeam.league === 'europe' ? 6 : 3;
+    weight *= career.currentTeam.league === 'nba' || career.currentTeam.league === 'europe' ? 2.5 : 1.5;
     const meetings = career.rivalRecord.wins + career.rivalRecord.losses;
-    weight *= 1 + Math.min(meetings, 10) * 0.15;
+    weight *= 1 + Math.min(meetings, 6) * 0.05;
   }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
@@ -791,11 +805,32 @@ function computeClassement(career: Career, noteMoyenne: number, forcedChampion?:
   return { rank, total };
 }
 
-function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number): Trophy[] {
+/** A league-wide individual award is never a rubber stamp on crossing a stat line — some other
+ * player around the league can always be having an even better season. Being at/above the
+ * threshold only makes the player a genuine candidate; winning is a roll that gets harder to
+ * repeat (voters move on to the next story) and harder the stronger the rest of the league's
+ * field happens to be that year. Returns null on a snub so the caller can still surface who beat
+ * them for it. */
+function rollIndividualAward(dominance: number, priorWinsInCareer: number): boolean {
+  const repeatResistance = Math.min(40, priorWinsInCareer * 14);
+  const fieldStrength = randFloat(5, 45);
+  const winChance = Math.max(0.05, Math.min(0.85, (35 + dominance - repeatResistance - fieldStrength) / 100));
+  return Math.random() < winChance;
+}
+
+interface TrophyResult {
+  trophies: Trophy[];
+  /** Set when the player had an MVP-caliber season but lost the actual vote — surfaces who beat
+   * them for it in the press instead of the award just silently not happening. */
+  mvpSnubbedBy: string | null;
+}
+
+function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number): TrophyResult {
   const trophies: Trophy[] = [];
   const idBase = `trophy-s${career.season}`;
   const league = career.currentTeam.league;
   const isFirstProSeason = league !== 'lycee' && !career.history.some((h) => h.league === league);
+  let mvpSnubbedBy: string | null = null;
 
   if (rank === 1) {
     const champLabel =
@@ -815,55 +850,74 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
     });
   }
   if (statLine.noteMoyenne >= 8.7) {
-    trophies.push({
-      id: `${idBase}-mvp`,
-      season: career.season,
-      name: tt('MVP', 'MVP'),
-      description: tt(
-        `Une note moyenne de ${statLine.noteMoyenne}/10 qui impose le respect.`,
-        `A ${statLine.noteMoyenne}/10 average rating that commands respect.`,
-      ),
-    });
+    const priorMvps = career.trophies.filter((t) => t.id.endsWith('-mvp')).length;
+    const dominance = (statLine.noteMoyenne - 8.7) * 22;
+    if (rollIndividualAward(dominance, priorMvps)) {
+      trophies.push({
+        id: `${idBase}-mvp`,
+        season: career.season,
+        name: tt('MVP', 'MVP'),
+        description: tt(
+          `Une note moyenne de ${statLine.noteMoyenne}/10 qui impose le respect.`,
+          `A ${statLine.noteMoyenne}/10 average rating that commands respect.`,
+        ),
+      });
+    } else {
+      // The named rival is the face of the competition the player just lost to about half the
+      // time — the rest, an unnamed contender around the league had the better case.
+      mvpSnubbedBy = Math.random() < 0.5 ? career.rivalName : null;
+    }
   } else if (isFirstProSeason && statLine.noteMoyenne >= 6.5) {
-    trophies.push({
-      id: `${idBase}-royo`,
-      season: career.season,
-      name: tt("Recrue de l'année", 'Rookie of the Year'),
-      description: tt(
-        'Une première saison professionnelle qui ne passe pas inaperçue.',
-        'A rookie season that did not go unnoticed.',
-      ),
-    });
+    if (rollIndividualAward((statLine.noteMoyenne - 6.5) * 25, 0)) {
+      trophies.push({
+        id: `${idBase}-royo`,
+        season: career.season,
+        name: tt("Recrue de l'année", 'Rookie of the Year'),
+        description: tt(
+          'Une première saison professionnelle qui ne passe pas inaperçue.',
+          'A rookie season that did not go unnoticed.',
+        ),
+      });
+    }
   }
-  if (statLine.points >= 30) {
-    trophies.push({
-      id: `${idBase}-scoring`,
-      season: career.season,
-      name: tt('Meilleur marqueur de la ligue', 'Scoring Champion'),
-      description: tt(
-        `${statLine.points} points de moyenne sur la saison.`,
-        `${statLine.points} points per game this season.`,
-      ),
-    });
+  if (statLine.points >= 28) {
+    const priorScoring = career.trophies.filter((t) => t.id.endsWith('-scoring')).length;
+    if (rollIndividualAward((statLine.points - 28) * 8, priorScoring)) {
+      trophies.push({
+        id: `${idBase}-scoring`,
+        season: career.season,
+        name: tt('Meilleur marqueur de la ligue', 'Scoring Champion'),
+        description: tt(
+          `${statLine.points} points de moyenne sur la saison.`,
+          `${statLine.points} points per game this season.`,
+        ),
+      });
+    }
   }
-  if (statLine.contres >= 2.4) {
-    trophies.push({
-      id: `${idBase}-defense`,
-      season: career.season,
-      name: tt("Défenseur de l'année", 'Defensive Player of the Year'),
-      description: tt('Un mur infranchissable près du cercle.', 'An impenetrable wall near the rim.'),
-    });
+  if (statLine.contres >= 2.2) {
+    const priorDefense = career.trophies.filter((t) => t.id.endsWith('-defense')).length;
+    if (rollIndividualAward((statLine.contres - 2.2) * 35, priorDefense)) {
+      trophies.push({
+        id: `${idBase}-defense`,
+        season: career.season,
+        name: tt("Défenseur de l'année", 'Defensive Player of the Year'),
+        description: tt('Un mur infranchissable près du cercle.', 'An impenetrable wall near the rim.'),
+      });
+    }
   }
-  if (statLine.passes >= 9) {
-    trophies.push({
-      id: `${idBase}-assists`,
-      season: career.season,
-      name: tt('Meilleur passeur de la ligue', 'Assists Champion'),
-      description: tt(
-        `${statLine.passes} passes décisives de moyenne sur la saison.`,
-        `${statLine.passes} assists per game this season.`,
-      ),
-    });
+  if (statLine.passes >= 8.5) {
+    const priorAssists = career.trophies.filter((t) => t.id.endsWith('-assists')).length;
+    if (rollIndividualAward((statLine.passes - 8.5) * 20, priorAssists)) {
+      trophies.push({
+        id: `${idBase}-assists`,
+        season: career.season,
+        name: tt('Meilleur passeur de la ligue', 'Assists Champion'),
+        description: tt(
+          `${statLine.passes} passes décisives de moyenne sur la saison.`,
+          `${statLine.passes} assists per game this season.`,
+        ),
+      });
+    }
   }
   if (career.stats.popularite >= 92) {
     trophies.push({
@@ -873,7 +927,7 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
       description: tt('Le public ne jure plus que par toi.', 'The crowd can\'t get enough of you.'),
     });
   }
-  return trophies;
+  return { trophies, mvpSnubbedBy };
 }
 
 export function generateTransferOffers(career: Career): Team[] {
@@ -954,7 +1008,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
 
   const statLine = generateStatLine(career, stats, matchesMissed, vintage);
   const { rank, total } = computeClassement(career, statLine.noteMoyenne, career.pendingFinaleResult === true);
-  const trophies = generateTrophies(career, statLine, rank);
+  const { trophies, mvpSnubbedBy } = generateTrophies(career, statLine, rank);
 
   // A season that sweeps the league's hardware is proof the player is legitimately elite right
   // now — the recognized skill stats (and Overall) shouldn't need years of gradual progression to
@@ -992,6 +1046,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
       statLine,
       classementRank: rank,
       wonTitle: rank === 1,
+      mvpSnub: mvpSnubbedBy ? { rivalName: mvpSnubbedBy } : undefined,
     },
     `s${career.season}`,
   );

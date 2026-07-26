@@ -51,6 +51,7 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     skillPoints: c.skillPoints ?? 0,
     rivalName: c.rivalName ?? 'Malik Sanders',
     rivalRecord: c.rivalRecord ?? { wins: 0, losses: 0 },
+    rivalPlayerTeam: c.rivalPlayerTeam ?? 'Boston Clovers',
     rivalTeamName: c.rivalTeamName ?? 'Chicago Bison',
     rivalTeamRecord: c.rivalTeamRecord ?? { wins: 0, losses: 0 },
     rivalryProvoked: c.rivalryProvoked ?? false,
