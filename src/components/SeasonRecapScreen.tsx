@@ -34,7 +34,7 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 1, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-2xl rounded-3xl border border-court-600/60 bg-court-800/90 shadow-2xl shadow-black/40 overflow-hidden"
     >

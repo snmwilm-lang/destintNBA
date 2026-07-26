@@ -56,7 +56,7 @@ export function ChoiceResultCard({ text, statDeltas, moneyDelta, wasSuccess, car
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 1, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className={`w-full max-w-lg rounded-3xl border px-6 py-8 text-center shadow-2xl shadow-black/40 ${
         showVictorySlide

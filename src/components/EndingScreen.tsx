@@ -62,7 +62,7 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 1, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className="w-full max-w-xl rounded-3xl border border-gold-500/40 bg-gradient-to-b from-court-800 to-court-900 px-8 py-10 text-center shadow-2xl shadow-black/50"
     >
