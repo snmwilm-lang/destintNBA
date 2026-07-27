@@ -553,17 +553,16 @@ function eventWeight(event: GameEvent, career: Career): number {
   if (career.rivalryProvoked && event.tags?.includes('cityRivalry')) {
     weight *= 14;
   }
-  // The persistent named rival is meant to be a real, felt storyline across the whole (pro)
-  // career — left at base weight it was buried deep enough in a pool of well over a thousand
-  // variants that players could go years without crossing paths, so it gets a modest, capped
-  // boost there. High school is the opposite problem: the event pool eligible at that age is
-  // much smaller to begin with (a handful of seasons, lycee-only cards), so the same boost made
-  // the rival show up constantly — damp it below baseline there instead of boosting it.
-  // The rivalry's real weight now comes from the scripted showdown (see rivalShowdownCount in
-  // forcedMilestone) — organic rival-duel cards are dialed way down so the total head-to-head
-  // history over a whole career stays in the 1-3 range instead of a recurring monthly beat.
+  // The persistent named rival is meant to be a real, felt regular-season storyline — genuine
+  // competition (crossing paths, trading blows in the standings) more than just the two career-
+  // defining showdowns, but nowhere near every season either: damped below baseline so it lands
+  // roughly every other pro season on average instead of dominating the pool or vanishing into
+  // it. High school's eligible pool is much smaller to begin with, so it's damped further there.
+  // The rare, scripted showdown (see rivalShowdownCount in forcedMilestone) is what's kept capped
+  // at exactly 2 for the whole career — it's the "final"-stakes duel that fills the rivalry's
+  // headline moments, not these regular meetings, so it doesn't share this frequency limit.
   if (event.tags?.includes('rivalDuel')) {
-    weight *= 0.06;
+    weight *= career.currentTeam.league === 'lycee' ? 0.3 : 0.6;
   }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
