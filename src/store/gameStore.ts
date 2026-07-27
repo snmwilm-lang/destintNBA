@@ -34,6 +34,24 @@ const NATIONAL_SELECTION_EVENT_IDS: Record<string, 'jeuxOlympiques' | 'coupeDuMo
   'cdm-qualification': 'coupeDuMonde',
 };
 
+// Each round of the rare full playoff run resolves to a different next step depending on whether
+// the choice actually succeeded — winning advances (or, at the last round, hands off into the
+// existing Finals chain), losing routes to that round's elimination card. `null` for onSuccess
+// means "hand off to the Finals chain" rather than "another playoff-run round".
+const PLAYOFF_RUN_TRANSITIONS: Record<string, { onSuccess: string; onFailure: string }> = {
+  'playoffs-run-round1': { onSuccess: 'playoffs-run-round2', onFailure: 'playoffs-run-eliminated-round1' },
+  'playoffs-run-round2': { onSuccess: 'playoffs-run-round3', onFailure: 'playoffs-run-eliminated-round2' },
+  // A win here hands off into the existing Finals chain (finale-prequel-timeout) rather than
+  // another playoff-run round — forcedMilestone's pendingPlayoffRunEventId check picks it up
+  // exactly like any other round, and the pointer gets cleared once that event is consumed.
+  'playoffs-run-round3': { onSuccess: 'finale-prequel-timeout', onFailure: 'playoffs-run-eliminated-round3' },
+  'cityRivalry-playoffs-decisif': { onSuccess: 'finale-prequel-timeout', onFailure: 'playoffs-run-eliminated-round3' },
+};
+// The round-3 slot itself can be swapped for the rival-fanbase version once the rivalry has
+// genuinely escalated — checked when round 2 is won, so the decision is made exactly once, right
+// when it's needed, not re-rolled every time forcedMilestone is consulted.
+const RIVAL_PLAYOFF_MEETINGS_THRESHOLD = 2;
+
 function uid(): string {
   return `career-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 }
@@ -67,6 +85,12 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     rivalryProvoked: c.rivalryProvoked ?? false,
     rivalHighSchool: c.rivalHighSchool ?? 'Northview High',
     rivalHighSchoolRecord: c.rivalHighSchoolRecord ?? { wins: 0, losses: 0 },
+    rivalShowdownCount: c.rivalShowdownCount ?? 0,
+    // Existing saves get it immediately eligible (their own season) rather than a fixed floor
+    // that may already be in their past.
+    rivalShowdownEligibleSeason: c.rivalShowdownEligibleSeason ?? c.season ?? 3,
+    pendingPlayoffRunEventId: c.pendingPlayoffRunEventId ?? null,
+    recentMvpWinnerNames: c.recentMvpWinnerNames ?? [],
     nationality: c.nationality ?? 'US',
     momentum: c.momentum ?? 50,
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
@@ -122,7 +146,10 @@ function updateActiveCareer(state: GameStore, updater: (c: Career) => Career): P
  * returning the fresh SeasonResult too, so daily-challenge progress (seasons/trophies/salary) can
  * be credited without re-deriving whether a season actually just completed. */
 function advancePastChoice(c: Career): { career: Career; seasonResult: SeasonResult | null } {
-  if (c.eventInSeasonIndex >= c.eventsPerSeason) {
+  // A rare full playoff run must be allowed to finish (win through to the Finals handoff, or
+  // get eliminated) before the season is simulated, even if the season's normal event budget
+  // has already run out — otherwise a mid-run season could get cut off before it resolves.
+  if (c.eventInSeasonIndex >= c.eventsPerSeason && !c.pendingPlayoffRunEventId) {
     const { career: simulated, result } = simulateSeason(c);
     return { career: { ...simulated, phase: 'seasonRecap' }, seasonResult: result };
   }
@@ -310,8 +337,31 @@ export const useGameStore = create<GameStore>()(
             const pendingFinaleResult = event.id === 'finale-moment-decisif' ? outcome.wasSuccess : c.pendingFinaleResult;
             const hasReachedFinale =
               c.hasReachedFinale || event.id === 'finale-prequel-timeout' || event.id === 'finale-moment-decisif';
+            // Each round of the rare full playoff run resolves to a different next step depending
+            // on whether the choice actually won — see PLAYOFF_RUN_TRANSITIONS. Round 3 specifically
+            // gets swapped for the rival-fanbase version once that rivalry has genuinely escalated.
+            const playoffRunTransition = PLAYOFF_RUN_TRANSITIONS[event.id];
+            const pendingPlayoffRunEventId = playoffRunTransition
+              ? outcome.wasSuccess
+                ? (event.id === 'playoffs-run-round2' &&
+                  c.rivalryProvoked &&
+                  c.rivalTeamRecord.wins + c.rivalTeamRecord.losses >= RIVAL_PLAYOFF_MEETINGS_THRESHOLD
+                    ? 'cityRivalry-playoffs-prequel'
+                    : playoffRunTransition.onSuccess)
+                : playoffRunTransition.onFailure
+              : // Once the exact card the pointer was pointing at is actually consumed — a handoff
+                // into the Finals chain, or a terminal elimination card — its job is done: clear it,
+                // or forcedMilestone would keep re-triggering that same card forever.
+                event.id === c.pendingPlayoffRunEventId
+                ? null
+                : c.pendingPlayoffRunEventId;
             const hasBeenSelectedForJo = c.hasBeenSelectedForJo || selectionCompetition === 'jeuxOlympiques';
             const hasBeenSelectedForCdm = c.hasBeenSelectedForCdm || selectionCompetition === 'coupeDuMonde';
+            // The rival showdown resolving is what actually consumes one of the career's two
+            // shots at it — space the next one 1-2 seasons out so they never land back to back.
+            const rivalShowdownCount = event.id === 'rival-showdown-decisif' ? c.rivalShowdownCount + 1 : c.rivalShowdownCount;
+            const rivalShowdownEligibleSeason =
+              event.id === 'rival-showdown-decisif' ? c.season + 1 + Math.round(Math.random()) : c.rivalShowdownEligibleSeason;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -324,6 +374,9 @@ export const useGameStore = create<GameStore>()(
               rivalRecord,
               rivalTeamRecord,
               rivalHighSchoolRecord,
+              rivalShowdownCount,
+              rivalShowdownEligibleSeason,
+              pendingPlayoffRunEventId,
               momentum,
               rivalryProvoked,
               draftStock,

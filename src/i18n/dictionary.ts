@@ -158,6 +158,8 @@ export const dictionary = {
   choiceDefeatTitleJo: { fr: "MÉDAILLE D'ARGENT", en: 'SILVER MEDAL' },
   choiceVictoryTitleCdm: { fr: 'CHAMPION DU MONDE !', en: 'WORLD CHAMPION!' },
   choiceDefeatTitleCdm: { fr: 'FINALISTE MONDIAL', en: 'WORLD RUNNER-UP' },
+  choiceVictoryTitleRivalPlayoffs: { fr: 'MATCH 7 REMPORTÉ !', en: 'GAME 7 WON!' },
+  choiceDefeatTitleRivalPlayoffs: { fr: 'LE RÊVE S\'ARRÊTE AU MATCH 7', en: 'THE DREAM ENDS IN GAME 7' },
   recapTraining: { fr: 'Entraînement ciblé', en: 'Targeted training' },
   recapPointsAvailable: { fr: '{count} pts disponibles', en: '{count} pts available' },
   recapPotentiel: { fr: 'Potentiel {value}', en: 'Potential {value}' },

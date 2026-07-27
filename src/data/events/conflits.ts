@@ -333,4 +333,179 @@ export const conflitsEvents: EventTemplate[] = [
     ],
     tags: ['schoolRivalry'],
   },
+  {
+    id: 'rival-showdown-prequel',
+    category: 'conflits',
+    title: tt('Le duel qui va marquer les esprits', 'The duel that will be remembered'),
+    description: tt(
+      "Ce soir, face à Marcus Idun, ce n'est plus un match parmi d'autres. Tout le monde le sent dans le vestiaire — ce duel-là, on s'en souviendra.",
+      "Tonight, against Marcus Idun, this is no longer just another game. Everyone in the locker room can feel it — this duel will be remembered.",
+    ),
+    minAge: 20,
+    leagues: ['nba', 'gLeague', 'europe'],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Le regarder droit dans les yeux avant le match', 'Look him dead in the eye before the game'),
+        resultText: tt(
+          "Pas un mot échangé. Juste un regard qui dit tout. Le message est passé des deux côtés.",
+          'Not a word exchanged. Just a look that says everything. The message lands on both sides.',
+        ),
+        effects: { mental: 3 },
+        linkedNextEventId: 'rival-showdown-decisif',
+      },
+      {
+        label: tt('Rester silencieux, laisser parler le jeu', 'Stay silent, let the game do the talking'),
+        resultText: tt(
+          "Tu gardes tout à l'intérieur. Ce soir, ce sera le tableau d'affichage qui répondra pour toi.",
+          "You keep it all inside. Tonight, the scoreboard will do the talking for you.",
+        ),
+        effects: { mental: 2, forme: 1 },
+        linkedNextEventId: 'rival-showdown-decisif',
+      },
+      {
+        label: tt('Revoir mentalement chaque confrontation passée', 'Replay every past meeting in your head'),
+        resultText: tt(
+          "Chaque panier, chaque défaite, chaque mot de trop te reviennent en tête, un par un.",
+          'Every basket, every loss, every word too many comes back to you, one by one.',
+        ),
+        effects: { iqBasket: 2, mental: 2 },
+        linkedNextEventId: 'rival-showdown-decisif',
+      },
+    ],
+    tags: ['rivalShowdown'],
+  },
+  {
+    id: 'rival-showdown-decisif',
+    category: 'conflits',
+    title: tt('Face à face avec Marcus Idun', 'Face to face with Marcus Idun'),
+    description: tt(
+      "Dernière possession. Le match se joue entre vous deux, comme toujours. Tout ce que cette rivalité a construit se règle maintenant, sur ce ballon.",
+      "Final possession. The game comes down to the two of you, like it always does. Everything this rivalry has built up gets settled right now, on this ball.",
+    ),
+    minAge: 20,
+    leagues: ['nba', 'gLeague', 'europe'],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Le prendre en un-contre-un pour de bon', 'Take him one-on-one for real'),
+        successChance: {
+          baseChance: 0.42,
+          statBonus: { technique: 0.012, mental: 0.012 },
+          onSuccess: { reputation: 18, popularite: 14, moral: 10 },
+          onFailure: { moral: -10, reputation: -4 },
+          successText: tt(
+            "Le geste passe. La salle explose. Cette fois, c'est réglé — devant tout le monde, tu as gagné ce duel.",
+            'The move connects. The building explodes. This time it\'s settled — in front of everyone, you won this duel.',
+          ),
+          failureText: tt(
+            "Il te devine avant même que tu bouges. Un duel de plus qui bascule de son côté, et ça va se voir.",
+            'He reads you before you even move. One more duel that tips his way, and everyone will notice.',
+          ),
+        },
+      },
+      {
+        label: tt('Faire confiance au collectif jusqu\'au bout', 'Trust the team all the way to the end'),
+        effects: { relationCoequipiers: 4, iqBasket: 2 },
+        successChance: {
+          baseChance: 0.42,
+          statBonus: { iqBasket: 0.012, relationCoequipiers: 0.01 },
+          onSuccess: { reputation: 14, popularite: 10, moral: 8 },
+          onFailure: { moral: -10, reputation: -4 },
+          successText: tt(
+            "Le ballon circule, trouve la bonne main. Le collectif triomphe là où le duel individuel n'avait jamais suffi.",
+            'The ball moves, finds the right hands. The team wins where the individual duel alone was never enough.',
+          ),
+          failureText: tt(
+            "Le système se grippe au pire moment. Marcus Idun, lui, n'a pas hésité.",
+            'The system breaks down at the worst possible moment. Marcus Idun, for his part, did not hesitate.',
+          ),
+        },
+      },
+    ],
+    tags: ['rivalDuel'],
+  },
+  // The rival-fanbase version of the conference finals round (see playoffs-run-round3) — swapped
+  // in instead of the generic version when the rivalry has actually escalated enough to earn it.
+  {
+    id: 'cityRivalry-playoffs-prequel',
+    category: 'playoffs',
+    title: tt('La finale de conférence face à Chicago Bison', 'The conference finals against Chicago Bison'),
+    description: tt(
+      "Cette série ne ressemble à aucune autre. Chicago Bison, en face, pour une place en Finale — le sommet de cette rivalité tout entière.",
+      "This series is unlike any other. Chicago Bison, on the other side, for a spot in the Finals — the peak of this entire rivalry.",
+    ),
+    leagues: ['nba', 'gLeague'],
+    weight: 1,
+    choices: [
+      {
+        label: tt("S'adresser au groupe avant le match 7", 'Address the group before Game 7'),
+        resultText: tt(
+          "Tu n'as pas besoin de grands mots. Tout le monde dans ce vestiaire sait ce que ce match représente.",
+          "You don't need grand words. Everyone in this locker room knows what this game means.",
+        ),
+        effects: { mental: 3, relationCoequipiers: 2 },
+        linkedNextEventId: 'cityRivalry-playoffs-decisif',
+      },
+      {
+        label: tt('Se murer dans un silence total', 'Retreat into total silence'),
+        resultText: tt(
+          "Pas un mot. Juste une concentration totale, tournée vers ce qui va suivre.",
+          'Not a word. Just total focus, turned toward what comes next.',
+        ),
+        effects: { mental: 4 },
+        linkedNextEventId: 'cityRivalry-playoffs-decisif',
+      },
+    ],
+    tags: ['cityRivalry'],
+  },
+  {
+    id: 'cityRivalry-playoffs-decisif',
+    category: 'playoffs',
+    title: tt('Match 7 face à Chicago Bison', 'Game 7 against Chicago Bison'),
+    description: tt(
+      "Dernières minutes du match 7. La série, la rivalité, la fierté de toute une ville — tout se joue maintenant, sur ce parquet.",
+      "Final minutes of Game 7. The series, the rivalry, an entire city's pride — it all comes down to this, right here on the floor.",
+    ),
+    leagues: ['nba', 'gLeague'],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Prendre le money-time à ton compte', 'Take crunch time into your own hands'),
+        successChance: {
+          baseChance: 0.42,
+          statBonus: { technique: 0.012, mental: 0.012 },
+          onSuccess: { reputation: 20, popularite: 16, moral: 12 },
+          onFailure: { moral: -12, reputation: -5 },
+          successText: tt(
+            'Le buzzer retentit. Toute la salle se tait — sauf votre coin de vestiaire. Vous éliminez votre rival de toujours, chez lui, au match 7. La Finale vous attend.',
+            'The buzzer sounds. The whole building goes silent — except your corner of the locker room. You eliminate your longtime rival, on their own floor, in Game 7. The Finals await.',
+          ),
+          failureText: tt(
+            "Le tir sort. La salle de Chicago Bison explose de joie. Cette rivalité restera, cette fois encore, à leur avantage.",
+            "The shot rims out. The Chicago Bison crowd erupts. This rivalry stays, once again, on their side.",
+          ),
+        },
+      },
+      {
+        label: tt('Faire confiance au collectif jusqu\'au bout', 'Trust the team all the way to the end'),
+        effects: { relationCoequipiers: 4 },
+        successChance: {
+          baseChance: 0.42,
+          statBonus: { iqBasket: 0.012, relationCoequipiers: 0.01 },
+          onSuccess: { reputation: 16, popularite: 12, moral: 10 },
+          onFailure: { moral: -12, reputation: -5 },
+          successText: tt(
+            'Le ballon circule, trouve la bonne main au meilleur moment. Le collectif triomphe de cette rivalité, dans le bruit assourdissant de leur propre salle.',
+            "The ball moves, finds the right hands at the perfect moment. The team effort conquers this rivalry, in the deafening noise of their own building.",
+          ),
+          failureText: tt(
+            "Le système se grippe au pire moment possible. Chicago Bison célèbre chez eux, aux dépens de votre rivalité.",
+            'The system breaks down at the worst possible moment. Chicago Bison celebrates at home, at your rivalry\'s expense.',
+          ),
+        },
+      },
+    ],
+    tags: ['cityRivalry'],
+  },
 ];

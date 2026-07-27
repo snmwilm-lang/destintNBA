@@ -45,7 +45,9 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
         ? 'jo'
         : lastResolvedEventId === 'cdm-finale-mondiale'
           ? 'cdm'
-          : null;
+          : lastResolvedEventId === 'cityRivalry-playoffs-decisif'
+            ? 'rivalPlayoffs'
+            : null;
 
   // Right after a rival-duel or city-rivalry choice resolves, surface the updated head-to-head
   // score in the moment — that's what actually makes the rivalry feel alive, instead of a stat

@@ -257,6 +257,18 @@ export interface Career {
   /** A rival high school (ages 15-19 only) — the origin story that can seed the career's legacy. */
   rivalHighSchool: string;
   rivalHighSchoolRecord: { wins: number; losses: number };
+  /** How many times the career-defining rival showdown (a real, choice-decided duel — see
+   * RIVAL_SHOWDOWN_PREQUEL_ID) has fired. Capped at 2 for the whole career, so it stays a rare,
+   * remembered event instead of a recurring beat. */
+  rivalShowdownCount: number;
+  /** The earliest season the next rival showdown is allowed to fire — set 1-2 seasons after the
+   * previous one (or a modest floor before the first), so the two scripted showdowns a career can
+   * ever have are spread out instead of both landing back to back. */
+  rivalShowdownEligibleSeason: number;
+  /** Names that recently won an MVP-snub vote in this career (most recent last, capped at 3) —
+   * excluded from the next snub's simulated field so the "other player" who beats the player to
+   * the trophy isn't the same face over and over. */
+  recentMvpWinnerNames: string[];
   /** Country represented in international competition (Olympics, World Cup). */
   nationality: string;
   /** 0-100, starts neutral. Rises on successful/good choices, falls on failed/bad ones — a real
@@ -270,6 +282,11 @@ export interface Career {
    * next season simulation so hitting (or missing) that shot always narratively matches whether
    * the team is actually crowned champion, instead of the two being decided independently. */
   pendingFinaleResult: boolean | null;
+  /** Set while a rare, full playoff-run sequence (see PLAYOFF_RUN_TRANSITIONS) is in progress —
+   * points at the exact next round/elimination card to show, since each round's outcome (win or
+   * lose the choice) has to determine what comes next, not just chain unconditionally. Cleared
+   * once the run ends, either by elimination or by handing off into the existing Finals chain. */
+  pendingPlayoffRunEventId: string | null;
   /** True once the player has reached the finals at least once — the first trip is guaranteed by
    * year 3 in the league; every trip after that is a normal (reputation-gated) random draw, so a
    * genuinely great player/team can make it back more than once instead of exactly once ever. */

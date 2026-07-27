@@ -5,12 +5,13 @@ import type { DictionaryKey } from '../i18n/dictionary';
 import { isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLabels';
 import { computeOverallDelta } from '../engine/careerEngine';
 
-export type CareerDefiningVariant = 'finale' | 'jo' | 'cdm';
+export type CareerDefiningVariant = 'finale' | 'jo' | 'cdm' | 'rivalPlayoffs';
 
 const VICTORY_CONTENT: Record<CareerDefiningVariant, { winIcon: string; loseIcon: string; winTitleKey: DictionaryKey; loseTitleKey: DictionaryKey }> = {
   finale: { winIcon: '🏆', loseIcon: '💔', winTitleKey: 'choiceVictoryTitle', loseTitleKey: 'choiceDefeatTitle' },
   jo: { winIcon: '🥇', loseIcon: '🥈', winTitleKey: 'choiceVictoryTitleJo', loseTitleKey: 'choiceDefeatTitleJo' },
   cdm: { winIcon: '🌍', loseIcon: '🥈', winTitleKey: 'choiceVictoryTitleCdm', loseTitleKey: 'choiceDefeatTitleCdm' },
+  rivalPlayoffs: { winIcon: '🔥', loseIcon: '🥶', winTitleKey: 'choiceVictoryTitleRivalPlayoffs', loseTitleKey: 'choiceDefeatTitleRivalPlayoffs' },
 };
 
 export interface RivalryUpdate {

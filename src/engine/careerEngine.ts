@@ -108,8 +108,9 @@ export function getEvent(id: string): GameEvent | undefined {
 /** Swaps whichever generic placeholder from `pool` a tagged card was generated with for this
  * career's own pinned value, so the same named opponent (or rival fanbase) keeps showing up
  * across seasons instead of a different one every time. */
-function pinPlaceholder(event: GameEvent, tag: string, pool: string[], pinned: string): GameEvent {
-  if (!event.tags?.includes(tag)) return event;
+function pinPlaceholder(event: GameEvent, tag: string | string[], pool: string[], pinned: string): GameEvent {
+  const tags = Array.isArray(tag) ? tag : [tag];
+  if (!tags.some((t) => event.tags?.includes(t))) return event;
   const swap = (text: LocalizedText): LocalizedText => {
     let fr = text.fr;
     let en = text.en;
@@ -139,10 +140,12 @@ function pinPlaceholder(event: GameEvent, tag: string, pool: string[], pinned: s
   };
 }
 
-/** Swaps whichever generic rival name a "rivalDuel"-tagged card was generated with for this
- * career's own pinned rival, so the same named opponent keeps showing up across seasons. */
+/** Swaps whichever generic rival name a "rivalDuel"- or "rivalShowdown"-tagged card was generated
+ * with for this career's own pinned rival, so the same named opponent keeps showing up across
+ * seasons. rivalShowdown is the prequel half of the rare, career-defining showdown — tagged
+ * separately from rivalDuel so it doesn't also get counted as a resolved head-to-head game. */
 export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
-  return pinPlaceholder(event, 'rivalDuel', RIVAL_PLAYERS, rivalName);
+  return pinPlaceholder(event, ['rivalDuel', 'rivalShowdown'], RIVAL_PLAYERS, rivalName);
 }
 
 const NBA_LIKE_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name);
@@ -255,10 +258,14 @@ export function createNewCareer(
     rivalryProvoked: false,
     rivalHighSchool: HIGH_SCHOOL_TEAMS.filter((s) => s !== startingTeam.name)[randInt(0, HIGH_SCHOOL_TEAMS.length - 2)],
     rivalHighSchoolRecord: { wins: 0, losses: 0 },
+    rivalShowdownCount: 0,
+    rivalShowdownEligibleSeason: 3,
+    recentMvpWinnerNames: [],
     nationality,
     momentum: 50,
     pendingNationalCampaign: null,
     pendingFinaleResult: null,
+    pendingPlayoffRunEventId: null,
     hasReachedFinale: false,
     eliteBreakthroughCount: 0,
     hasBeenSelectedForJo: false,
@@ -325,8 +332,28 @@ export const NATIONAL_CAMPAIGN_RESULT_IDS = new Set([
 // backing them, but they're not themselves a "result" the store should react to.
 const NATIONAL_CAMPAIGN_PREQUEL_IDS = new Set(['jo-prequel-finale', 'cdm-prequel-finale']);
 
+// The rival showdown is a rare, career-defining beat gated entirely through forcedMilestone (see
+// rivalShowdownCount/rivalShowdownEligibleSeason) — it must never surface through the normal
+// random draw, or it would show up untethered from the count/spacing rules that keep it rare.
+const RIVAL_SHOWDOWN_IDS = new Set(['rival-showdown-prequel', 'rival-showdown-decisif']);
+
+// Same "forced-path only" idea, for the rare full playoff-run sequence — every step is reached
+// exclusively through pendingPlayoffRunEventId, never a random draw.
+const PLAYOFF_RUN_IDS = new Set([
+  'playoffs-run-round1',
+  'playoffs-run-eliminated-round1',
+  'playoffs-run-round2',
+  'playoffs-run-eliminated-round2',
+  'playoffs-run-round3',
+  'playoffs-run-eliminated-round3',
+  'cityRivalry-playoffs-prequel',
+  'cityRivalry-playoffs-decisif',
+]);
+
 function meetsRequirements(event: GameEvent, career: Career): boolean {
   if (NATIONAL_CAMPAIGN_RESULT_IDS.has(event.id) || NATIONAL_CAMPAIGN_PREQUEL_IDS.has(event.id)) return false;
+  if (RIVAL_SHOWDOWN_IDS.has(event.id)) return false;
+  if (PLAYOFF_RUN_IDS.has(event.id)) return false;
   if (event.minAge !== undefined && career.age < event.minAge) return false;
   if (event.maxAge !== undefined && career.age > event.maxAge) return false;
   if (event.minSeason !== undefined && career.season < event.minSeason) return false;
@@ -390,6 +417,12 @@ export function seasonsPlayedInLeague(career: Career, league: League): number {
 }
 
 function forcedMilestone(career: Career): GameEvent | null {
+  // A playoff run in progress always takes priority over everything else — each round's outcome
+  // decides exactly what comes next (see PLAYOFF_RUN_TRANSITIONS in gameStore.ts), so once one is
+  // under way it must keep resolving in sequence, never interrupted by another forced beat.
+  if (career.pendingPlayoffRunEventId) {
+    return getEvent(career.pendingPlayoffRunEventId) ?? null;
+  }
   if (career.age >= 18 && career.currentTeam.league === 'lycee') {
     for (const id of DRAFT_SEQUENCE) {
       if (!career.seenEventIds.includes(id) && !career.usedThisSeasonIds.includes(id)) {
@@ -422,6 +455,20 @@ function forcedMilestone(career: Career): GameEvent | null {
   ) {
     return getEvent(FINALE_PREQUEL_EVENT_ID) ?? null;
   }
+  // A rare, full playoff run — three real elimination rounds instead of the usual single generic
+  // playoffs card — only ever offered as bonus texture once the player has already banked their
+  // guaranteed first Finals trip, so it can never compete with (or delay) that guarantee. Rolled
+  // exactly once per eligible season, at the very first event of that season.
+  if (
+    career.currentTeam.league !== 'lycee' &&
+    career.hasReachedFinale &&
+    career.stats.reputation >= 50 &&
+    career.eventInSeasonIndex === 0 &&
+    !career.usedThisSeasonIds.includes('playoffs-run-round1') &&
+    Math.random() < 0.15
+  ) {
+    return getEvent('playoffs-run-round1') ?? null;
+  }
   // The deliberate "start a rivalry" choice is meant to be a real, discoverable decision — not a
   // needle buried in a pool of well over a thousand event variants. Guarantee it's offered once,
   // early in the player's NBA career, instead of leaving it to a near-invisible random draw.
@@ -432,6 +479,19 @@ function forcedMilestone(career: Career): GameEvent | null {
     seasonsPlayedInLeague(career, 'nba') >= 1
   ) {
     return getEvent(RIVALRY_PROVOCATION_EVENT_ID) ?? null;
+  }
+  // The career-defining rival showdown — a real, choice-decided duel — is capped at twice in a
+  // whole career and spaced 1-2 seasons apart, so it stays a rare, remembered moment instead of a
+  // recurring beat like every other rival-duel card in the pool. Gated on reputation so it lands
+  // once the rivalry actually means something, not in a rookie's first eligible season.
+  if (
+    career.currentTeam.league !== 'lycee' &&
+    career.rivalShowdownCount < 2 &&
+    career.season >= career.rivalShowdownEligibleSeason &&
+    career.stats.reputation >= 55 &&
+    !career.usedThisSeasonIds.includes('rival-showdown-prequel')
+  ) {
+    return getEvent('rival-showdown-prequel') ?? null;
   }
   // Getting picked for the national team at all was otherwise a normal random draw inside a pool
   // of well over a thousand event variants, gated to only a handful of eligible seasons — a
@@ -499,16 +559,11 @@ function eventWeight(event: GameEvent, career: Career): number {
   // boost there. High school is the opposite problem: the event pool eligible at that age is
   // much smaller to begin with (a handful of seasons, lycee-only cards), so the same boost made
   // the rival show up constantly — damp it below baseline there instead of boosting it.
+  // The rivalry's real weight now comes from the scripted showdown (see rivalShowdownCount in
+  // forcedMilestone) — organic rival-duel cards are dialed way down so the total head-to-head
+  // history over a whole career stays in the 1-3 range instead of a recurring monthly beat.
   if (event.tags?.includes('rivalDuel')) {
-    if (career.currentTeam.league === 'nba' || career.currentTeam.league === 'europe') {
-      weight *= 2.5;
-      const meetings = career.rivalRecord.wins + career.rivalRecord.losses;
-      weight *= 1 + Math.min(meetings, 6) * 0.05;
-    } else if (career.currentTeam.league === 'lycee') {
-      weight *= 0.4;
-    } else {
-      weight *= 1.5;
-    }
+    weight *= 0.06;
   }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
@@ -527,7 +582,12 @@ export function pickNextEvent(career: Career): GameEvent | null {
   if (candidates.length === 0) {
     // fall back: allow season repeats if the pool is exhausted, but never re-show unique events
     const fallback = allEvents.filter(
-      (e) => !NATIONAL_CAMPAIGN_RESULT_IDS.has(e.id) && !NATIONAL_CAMPAIGN_PREQUEL_IDS.has(e.id) && (!e.unique || !career.seenEventIds.includes(e.id)),
+      (e) =>
+        !NATIONAL_CAMPAIGN_RESULT_IDS.has(e.id) &&
+        !NATIONAL_CAMPAIGN_PREQUEL_IDS.has(e.id) &&
+        !RIVAL_SHOWDOWN_IDS.has(e.id) &&
+        !PLAYOFF_RUN_IDS.has(e.id) &&
+        (!e.unique || !career.seenEventIds.includes(e.id)),
     );
     return weightedPick(fallback, (e) => eventWeight(e, career));
   }
@@ -854,8 +914,14 @@ function rollIndividualAward(dominance: number, priorWinsInCareer: number): bool
 interface TrophyResult {
   trophies: Trophy[];
   /** Set when the player had an MVP-caliber season but lost the actual vote — surfaces who beat
-   * them for it in the press instead of the award just silently not happening. */
-  mvpSnubbedBy: string | null;
+   * them for it (and with what kind of season) in the press instead of the award just silently
+   * not happening. `reason` picks which press framing fits: a clean note-for-note edge, or (once
+   * the player's own rating is already near the 10/10 ceiling and a "better number" can't really
+   * exist) a team-success/momentum framing instead, so the snub still reads as earned. */
+  mvpSnub: { winnerName: string; winnerNote: number; reason: 'noteMoyenne' | 'formCollective' } | null;
+  /** Only set alongside mvpSnub — the winner's name, so the caller can keep a short no-repeat
+   * history and stop the same "other player" winning the vote over and over. */
+  mvpSnubWinnerName: string | null;
 }
 
 function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number): TrophyResult {
@@ -863,7 +929,8 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
   const idBase = `trophy-s${career.season}`;
   const league = career.currentTeam.league;
   const isFirstProSeason = league !== 'lycee' && !career.history.some((h) => h.league === league);
-  let mvpSnubbedBy: string | null = null;
+  let mvpSnub: { winnerName: string; winnerNote: number; reason: 'noteMoyenne' | 'formCollective' } | null = null;
+  let mvpSnubWinnerName: string | null = null;
 
   if (rank === 1) {
     const champLabel =
@@ -896,9 +963,33 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
         ),
       });
     } else {
-      // The named rival is the face of the competition the player just lost to about half the
-      // time — the rest, an unnamed contender around the league had the better case.
-      mvpSnubbedBy = Math.random() < 0.5 ? career.rivalName : null;
+      // Real competition needs a face and a case, not just a silent non-event — but it also needs
+      // to feel like an actual vote, not one arbitrary name pulled from a hat. Simulate a small
+      // field of other MVP-caliber players (never the pinned rival — that storyline is reserved
+      // for the rare, scripted showdown — and never a recent snub winner, so the same "other
+      // player" doesn't keep taking it), and hand the trophy to whoever tops that simulated field.
+      const excluded = new Set([career.rivalName, ...career.recentMvpWinnerNames]);
+      let candidatePool = RIVAL_PLAYERS.filter((n) => !excluded.has(n));
+      if (candidatePool.length < 3) candidatePool = RIVAL_PLAYERS.filter((n) => n !== career.rivalName);
+      const contenderCount = 2 + randInt(0, 1); // a 2-3 player race for the award
+      const pool = [...candidatePool];
+      const contenders: { name: string; note: number }[] = [];
+      for (let i = 0; i < contenderCount && pool.length > 0; i++) {
+        const idx = randInt(0, pool.length - 1);
+        const [name] = pool.splice(idx, 1);
+        contenders.push({ name, note: Math.round(randFloat(8.3, 9.9) * 10) / 10 });
+      }
+      const best = contenders.reduce((a, b) => (b.note > a.note ? b : a));
+      // A note can't really go higher than 10, so once the player is already near that ceiling a
+      // "bigger number" stops being a credible reason to lose the vote — the press explanation
+      // switches to team success/momentum instead, and the winner's note is allowed to sit close
+      // to (even fractionally under) the player's own rather than an impossible markup.
+      const isTight = statLine.noteMoyenne >= 9.5;
+      const winnerNote = isTight
+        ? Math.round(Math.max(best.note, statLine.noteMoyenne - randFloat(0, 0.2)) * 10) / 10
+        : Math.round(Math.max(best.note, Math.min(10, statLine.noteMoyenne + randFloat(0.1, 0.6))) * 10) / 10;
+      mvpSnub = { winnerName: best.name, winnerNote, reason: isTight ? 'formCollective' : 'noteMoyenne' };
+      mvpSnubWinnerName = best.name;
     }
   } else if (isFirstProSeason && statLine.noteMoyenne >= 6.5) {
     if (rollIndividualAward((statLine.noteMoyenne - 6.5) * 25, 0)) {
@@ -960,7 +1051,7 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
       description: tt('Le public ne jure plus que par toi.', 'The crowd can\'t get enough of you.'),
     });
   }
-  return { trophies, mvpSnubbedBy };
+  return { trophies, mvpSnub, mvpSnubWinnerName };
 }
 
 export function generateTransferOffers(career: Career): Team[] {
@@ -1041,7 +1132,10 @@ export function simulateSeason(career: Career): { career: Career; result: Season
 
   const statLine = generateStatLine(career, stats, matchesMissed, vintage);
   const { rank, total } = computeClassement(career, statLine.noteMoyenne, career.pendingFinaleResult === true);
-  const { trophies, mvpSnubbedBy } = generateTrophies(career, statLine, rank);
+  const { trophies, mvpSnub, mvpSnubWinnerName } = generateTrophies(career, statLine, rank);
+  const recentMvpWinnerNames = mvpSnubWinnerName
+    ? [...career.recentMvpWinnerNames, mvpSnubWinnerName].slice(-3)
+    : career.recentMvpWinnerNames;
 
   // A season that sweeps the league's hardware is proof the player is legitimately elite right
   // now — the recognized skill stats (and Overall) shouldn't need years of gradual progression to
@@ -1083,7 +1177,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
       statLine,
       classementRank: rank,
       wonTitle: rank === 1,
-      mvpSnub: mvpSnubbedBy ? { rivalName: mvpSnubbedBy } : undefined,
+      mvpSnub: mvpSnub ?? undefined,
     },
     `s${career.season}`,
   );
@@ -1128,6 +1222,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     history: [...career.history, result],
     lastSeasonResult: result,
     pendingFinaleResult: null,
+    recentMvpWinnerNames,
     eliteBreakthroughCount,
     traits: [...career.traits, ...newTraits.map((t) => t.id)],
     newlyUnlockedTraits: newTraits.map((t) => t.id),
