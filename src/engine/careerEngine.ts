@@ -458,14 +458,17 @@ function forcedMilestone(career: Career): GameEvent | null {
   // A rare, full playoff run — three real elimination rounds instead of the usual single generic
   // playoffs card — only ever offered as bonus texture once the player has already banked their
   // guaranteed first Finals trip, so it can never compete with (or delay) that guarantee. Rolled
-  // exactly once per eligible season, at the very first event of that season.
+  // once per eligible season, at the very first event of that season. 15% was tuned too low in
+  // practice — simulation showed a whole ~18-season post-Finale career could roll zero hits, which
+  // reads as the feature simply not existing. Raised so it reliably shows up a few times over a
+  // long career instead of being a near-mythical draw.
   if (
     career.currentTeam.league !== 'lycee' &&
     career.hasReachedFinale &&
     career.stats.reputation >= 50 &&
     career.eventInSeasonIndex === 0 &&
     !career.usedThisSeasonIds.includes('playoffs-run-round1') &&
-    Math.random() < 0.15
+    Math.random() < 0.35
   ) {
     return getEvent('playoffs-run-round1') ?? null;
   }
@@ -1513,7 +1516,11 @@ export function startNextSeason(career: Career): Career {
     eventsPerSeason,
     usedThisSeasonIds: [],
     phase: 'event',
-    currentEventId: pickNextEvent({ ...withDelayed, usedThisSeasonIds: [], eventsPerSeason })?.id ?? null,
+    // eventInSeasonIndex must be forced to 0 here too — withDelayed still carries the previous
+    // season's end-of-season value at this point, which silently defeated every forcedMilestone
+    // check gated on "the very first event of the season" (the rare full playoff run never once
+    // fired in simulation because of exactly this).
+    currentEventId: pickNextEvent({ ...withDelayed, usedThisSeasonIds: [], eventsPerSeason, eventInSeasonIndex: 0 })?.id ?? null,
     lastSeasonResult: null,
     pendingTransferOffers: null,
     newlyUnlockedTraits: [],
