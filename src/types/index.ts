@@ -108,6 +108,11 @@ export interface EventChoice {
    * their own terms — instead of only ever retiring automatically at the age/decline cutoff (see
    * checkEnding). Used by the late-career "train your kid or hang it up" moment. */
   endsCareer?: boolean;
+  /** Tags a successChance choice with what kind of action it represents, so the player's build
+   * identity (see buildIdentity in data/builds.ts) can give it a real, felt edge or penalty on
+   * top of the raw stat-driven statBonus — a build built around scoring should have noticeably
+   * better odds on a shooting attempt than a pure playmaking build, and vice versa. */
+  actionStyle?: 'scoring' | 'driving' | 'passing';
 }
 
 export interface GameEvent {

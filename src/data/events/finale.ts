@@ -71,6 +71,7 @@ export const finaleEvents: EventTemplate[] = [
     choices: [
       {
         label: tt('Tir à 3 points', '3-point shot'),
+        actionStyle: 'scoring',
         successChance: {
           baseChance: 0.42,
           statBonus: { technique: 0.012, mental: 0.006 },
@@ -88,6 +89,7 @@ export const finaleEvents: EventTemplate[] = [
       },
       {
         label: tt("Drive jusqu'au cercle", 'Drive to the rim'),
+        actionStyle: 'driving',
         successChance: {
           baseChance: 0.5,
           statBonus: { physique: 0.01, technique: 0.008 },
@@ -105,6 +107,7 @@ export const finaleEvents: EventTemplate[] = [
       },
       {
         label: tt('Passe au joueur démarqué', 'Pass to the open man'),
+        actionStyle: 'passing',
         successChance: {
           baseChance: 0.55,
           statBonus: { iqBasket: 0.012 },
@@ -122,6 +125,7 @@ export const finaleEvents: EventTemplate[] = [
       },
       {
         label: tt('Step-back', 'Step-back jumper'),
+        actionStyle: 'scoring',
         successChance: {
           baseChance: 0.38,
           statBonus: { technique: 0.014, mental: 0.008 },

@@ -72,6 +72,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
     choices: [
       {
         label: tt('Prendre le rôle de leader offensif', 'Take on the offensive leadership role'),
+        actionStyle: 'scoring',
         successChance: {
           baseChance: 0.48,
           statBonus: { technique: 0.01, mental: 0.01 },
@@ -83,6 +84,7 @@ export const jeuxOlympiquesEvents: EventTemplate[] = [
       },
       {
         label: tt("Jouer collectif jusqu'au bout", 'Play team basketball until the end'),
+        actionStyle: 'passing',
         effects: { relationCoequipiers: 6, iqBasket: 3 },
         successChance: {
           baseChance: 0.48,

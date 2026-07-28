@@ -145,6 +145,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
     choices: [
       {
         label: tt('Jouer le rôle de leader décisif', 'Play the decisive leader role'),
+        actionStyle: 'scoring',
         successChance: {
           baseChance: 0.46,
           statBonus: { technique: 0.01, mental: 0.01 },
@@ -156,6 +157,7 @@ export const coupeDuMondeEvents: EventTemplate[] = [
       },
       {
         label: tt('Porter le collectif national', 'Carry the national team'),
+        actionStyle: 'passing',
         effects: { relationCoequipiers: 6, iqBasket: 3 },
         successChance: {
           baseChance: 0.46,

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { Archetype, Career, CareerEnding, Lang, Position, SeasonResult, StatKey, Team } from '../types';
 import { isGoodDelta } from '../i18n/statLabels';
 import {
+  applyBuildStyleBonus,
   baseEventId,
   type CareerPath,
   checkEnding,
@@ -250,9 +251,12 @@ export const useGameStore = create<GameStore>()(
         if (!career || !career.currentEventId) return;
         const rawEvent = getEvent(career.currentEventId);
         if (!rawEvent) return;
-        const event = pinRivalHighSchool(
-          pinRivalTeam(pinRivalPlayerTeam(pinRivalName(rawEvent, career.rivalName), career.rivalName, career.currentTeam.league), career.rivalTeamName),
-          career.rivalHighSchool,
+        const event = applyBuildStyleBonus(
+          pinRivalHighSchool(
+            pinRivalTeam(pinRivalPlayerTeam(pinRivalName(rawEvent, career.rivalName), career.rivalName, career.currentTeam.league), career.rivalTeamName),
+            career.rivalHighSchool,
+          ),
+          career.archetype,
         );
         const outcome = resolveChoice(career, event, choiceId);
 

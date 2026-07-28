@@ -1,6 +1,6 @@
 import type { Career } from '../types';
 import { useGameStore } from '../store/gameStore';
-import { getEvent, pinRivalHighSchool, pinRivalName, pinRivalPlayerTeam, pinRivalTeam } from '../engine/careerEngine';
+import { applyBuildStyleBonus, getEvent, pinRivalHighSchool, pinRivalName, pinRivalPlayerTeam, pinRivalTeam } from '../engine/careerEngine';
 import { useT } from '../i18n/useT';
 import { TopBar } from '../components/TopBar';
 import { EventCard } from '../components/EventCard';
@@ -25,12 +25,15 @@ export function GameScreen({ career, onOpenMenu, onRestart }: GameScreenProps) {
 
   const rawCurrentEvent = career.currentEventId ? getEvent(career.currentEventId) : undefined;
   const currentEvent = rawCurrentEvent
-    ? pinRivalHighSchool(
-        pinRivalTeam(
-          pinRivalPlayerTeam(pinRivalName(rawCurrentEvent, career.rivalName), career.rivalName, career.currentTeam.league),
-          career.rivalTeamName,
+    ? applyBuildStyleBonus(
+        pinRivalHighSchool(
+          pinRivalTeam(
+            pinRivalPlayerTeam(pinRivalName(rawCurrentEvent, career.rivalName), career.rivalName, career.currentTeam.league),
+            career.rivalTeamName,
+          ),
+          career.rivalHighSchool,
         ),
-        career.rivalHighSchool,
+        career.archetype,
       )
     : undefined;
 

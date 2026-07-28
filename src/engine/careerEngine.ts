@@ -3,6 +3,7 @@ import type {
   Career,
   CareerEnding,
   EventCategory,
+  EventChoice,
   GameEvent,
   InjuryKey,
   InjuryRecord,
@@ -146,6 +147,30 @@ function pinPlaceholder(event: GameEvent, tag: string | string[], pool: string[]
  * separately from rivalDuel so it doesn't also get counted as a resolved head-to-head game. */
 export function pinRivalName(event: GameEvent, rivalName: string): GameEvent {
   return pinPlaceholder(event, ['rivalDuel', 'rivalShowdown'], RIVAL_PLAYERS, rivalName);
+}
+
+/** Gives a build a real, felt edge (or penalty) on choices tagged with actionStyle — a build
+ * built around scoring should have noticeably better odds on a shooting attempt (the Finals-
+ * clinching shot, an Olympic/World Cup final) than a pure playmaking build, on top of whatever
+ * the raw stat difference alone already gives via statBonus. Reuses the same per-season box-score
+ * signature (buildIdentity) so a build's identity stays consistent between the season stat line
+ * and these one-off dramatic moments. */
+export function applyBuildStyleBonus(event: GameEvent, archetype: Archetype): GameEvent {
+  const identity = buildIdentity(getBuild(archetype) ?? BUILDS[0]);
+  const bonusFor = (style: EventChoice['actionStyle']): number => {
+    if (style === 'scoring') return identity.pointsPct;
+    if (style === 'driving') return identity.reboundsPct;
+    if (style === 'passing') return identity.passesPct;
+    return 0;
+  };
+  let touched = false;
+  const choices = event.choices.map((c) => {
+    if (!c.actionStyle || !c.successChance) return c;
+    touched = true;
+    const baseChance = Math.max(0.05, Math.min(0.85, c.successChance.baseChance + (bonusFor(c.actionStyle) / 100) * 0.4));
+    return { ...c, successChance: { ...c.successChance, baseChance } };
+  });
+  return touched ? { ...event, choices } : event;
 }
 
 const NBA_LIKE_TEAM_NAMES = NBA_LIKE_TEAMS.map((t) => t.name);
