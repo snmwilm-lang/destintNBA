@@ -261,6 +261,8 @@ export function createNewCareer(
     rivalShowdownCount: 0,
     rivalShowdownEligibleSeason: 3,
     recentMvpWinnerNames: [],
+    mvpCampaignPoints: 0,
+    pendingVoluntaryRetirement: false,
     nationality,
     momentum: 50,
     pendingNationalCampaign: null,
@@ -472,6 +474,20 @@ function forcedMilestone(career: Career): GameEvent | null {
   ) {
     return getEvent('playoffs-run-round1') ?? null;
   }
+  // Same lesson as the playoff run above, applied here too: a rare-but-real serious injury scare
+  // left purely to its own low organic weight (0.5) inside a pool of well over a thousand expanded
+  // event variants works out to roughly a 4-5% chance of EVER happening across a whole career —
+  // which reads as broken, not rare. Only offered to players who've genuinely built up real risk
+  // (risqueBlessure >= 35 — taller builds accumulate this fastest, see heightTilt in rollInjuries).
+  if (
+    career.currentTeam.league !== 'lycee' &&
+    career.stats.risqueBlessure >= 35 &&
+    career.eventInSeasonIndex === 0 &&
+    !career.usedThisSeasonIds.includes('blessure-grave-diagnostic') &&
+    Math.random() < 0.12
+  ) {
+    return getEvent('blessure-grave-diagnostic') ?? null;
+  }
   // The deliberate "start a rivalry" choice is meant to be a real, discoverable decision — not a
   // needle buried in a pool of well over a thousand event variants. Guarantee it's offered once,
   // early in the player's NBA career, instead of leaving it to a near-invisible random draw.
@@ -495,6 +511,18 @@ function forcedMilestone(career: Career): GameEvent | null {
     !career.usedThisSeasonIds.includes('rival-showdown-prequel')
   ) {
     return getEvent('rival-showdown-prequel') ?? null;
+  }
+  // The late-career "train your kid or hang it up on your own terms" crossroads — guaranteed
+  // once, deliberately allowed to land in the middle of a season (not gated to a season boundary
+  // like the automatic age/decline retirement in checkEnding), so choosing to retire here feels
+  // like a real mid-season decision the player made, not just another end-of-season formality.
+  if (
+    career.currentTeam.league !== 'lycee' &&
+    career.age >= 35 &&
+    !career.seenEventIds.includes('famille-heritage-fin-carriere') &&
+    !career.usedThisSeasonIds.includes('famille-heritage-fin-carriere')
+  ) {
+    return getEvent('famille-heritage-fin-carriere') ?? null;
   }
   // Getting picked for the national team at all was otherwise a normal random draw inside a pool
   // of well over a thousand event variants, gated to only a handful of eligible seasons — a
@@ -736,13 +764,22 @@ function rollInjuries(career: Career, statsAfterProgress: PlayerStats): { blessu
   const blessures: InjuryRecord[] = [];
   let matchesMissed = 0;
   let stats = statsAfterProgress;
-  const injuryChance = statsAfterProgress.risqueBlessure / 260; // ~0-38% per season
+  // A taller-than-average frame for the position carries more joint/impact load every single
+  // season, not just as a one-time nudge to the starting risqueBlessure stat that later choices
+  // can easily dilute away — so it's folded directly into the yearly roll here too, keeping the
+  // height/injury relationship coherent across a whole career instead of fading out after a few
+  // seasons of unrelated choices.
+  const tilt = heightTilt(career.position, career.height);
+  const heightInjuryBump = Math.max(0, tilt) * 0.06; // up to +6pp for the tallest builds at their position
+  const injuryChance = statsAfterProgress.risqueBlessure / 260 + heightInjuryBump; // ~0-44% per season
   const keys: InjuryKey[] = ['cheville', 'genou', 'dos', 'ischio', 'epaule', 'poignet'];
   let rolls = Math.random() < injuryChance ? 1 : 0;
   if (Math.random() < injuryChance * 0.3) rolls += 1;
   for (let i = 0; i < rolls; i++) {
     const key = keys[randInt(0, keys.length - 1)];
-    const weeksOut = randInt(1, key === 'genou' ? 20 : 8);
+    // A bigger frame also means a knee or back injury tends to linger longer to heal.
+    const severityBump = Math.round(Math.max(0, tilt) * 4);
+    const weeksOut = randInt(1, key === 'genou' ? 20 + severityBump : 8 + severityBump);
     blessures.push({ key, weeksOut, season: career.season });
     matchesMissed += Math.round(weeksOut * 1.6);
     stats = applyEffects(stats, { forme: -Math.min(20, weeksOut), risqueBlessure: -8 });
@@ -810,19 +847,31 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   );
 
   const stealSkill = (stats.iqBasket * 0.5 + stats.physique * 0.3 + stats.mental * 0.2) / 100;
-  const interceptions = Math.min(4, stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08 * choiceFactor);
+  const interceptions = Math.min(
+    4,
+    stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08 * choiceFactor * (1 + identity.stealsPct / 100),
+  );
 
   const blockSkill = (stats.physique * 0.6 + stats.iqBasket * 0.4) / 100;
-  const contres = Math.min(5, blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12 * choiceFactor);
+  const contres = Math.min(
+    5,
+    blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12 * choiceFactor * (1 + identity.blocksPct / 100),
+  );
 
   const adresse3pts = Math.max(15, Math.min(52, 24 + stats.technique * 0.32 - stats.physique * 0.04 + (choiceFactor - 1) * 20 + randFloat(-3, 3)));
 
+  // Rebalanced so an elite rating actually requires elite core skill, not just good health. The
+  // old weights let forme/moral alone (choiceFactor) push even a barely-above-average player
+  // (composite ~55-65) over the MVP-caliber line at full health — simulation showed ~65% of
+  // seasons crossing it. Composite now carries most of the weight; forme/moral/minutes still
+  // matter (a great player having a rough patch shouldn't be immune to it) but can no longer
+  // substitute for the skill itself.
   const composite = (stats.technique + stats.physique + stats.mental + stats.iqBasket) / 4;
   const noteMoyenne = Math.max(
     2,
     Math.min(
       10,
-      3.2 + (composite / 100) * 5.5 + (minutes / maxMinutes(league)) * 1.3 + (choiceFactor - 1) * 4 + identity.noteDelta + randFloat(-0.4, 0.4),
+      2.4 + (composite / 100) * 7.2 + (minutes / maxMinutes(league)) * 0.9 + (choiceFactor - 1) * 1.6 + identity.noteDelta + randFloat(-0.4, 0.4),
     ),
   );
 
@@ -962,7 +1011,12 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
     const teamSuccessBonus = rank === 1 ? 20 : 0;
     const scoringCaseBonus = statLine.points >= 28 ? 10 : 0;
     const flawlessSeasonBonus = statLine.noteMoyenne >= 9.5 ? 10 : 0;
-    const dominance = (statLine.noteMoyenne - 8.7) * 22 + teamSuccessBonus + scoringCaseBonus + flawlessSeasonBonus;
+    // Real campaigning (media narrative, contract-year statements) is a real lever on a vote, on
+    // top of the stat line itself — but it can also backfire (see mvpCampaignImpact on choices),
+    // so it's allowed to swing the case in either direction, just capped well below what a real
+    // season of production is worth.
+    const campaignBonus = Math.max(-8, Math.min(12, career.mvpCampaignPoints * 3));
+    const dominance = (statLine.noteMoyenne - 8.7) * 22 + teamSuccessBonus + scoringCaseBonus + flawlessSeasonBonus + campaignBonus;
     if (rollIndividualAward(dominance, priorMvps)) {
       trophies.push({
         id: `${idBase}-mvp`,
@@ -1070,7 +1124,19 @@ export function generateTransferOffers(career: Career): Team[] {
   const scale = CONTRACT_SCALE[career.currentTeam.league];
   const normalizedValue = scale.max > scale.min ? ((career.valeurMarchande - scale.min) / (scale.max - scale.min)) * 100 : 50;
   const eligible = leaguePools.filter((t) => t.id !== career.currentTeam.id);
-  const sorted = eligible.sort((a, b) => Math.abs(a.salaryBudget - normalizedValue) - Math.abs(b.salaryBudget - normalizedValue));
+
+  // A front office's real quality isn't fixed forever — a rebuilding team can turn it around, a
+  // contender can quietly decline — so re-roll a fresh season-to-season "form" swing on top of
+  // each team's baseline every time offers are generated, instead of treating the same handful of
+  // teams as permanently elite or permanently bad across an entire career.
+  const withForm = eligible.map((t) => ({
+    ...t,
+    ambition: clampStat(t.ambition + randFloat(-18, 18)),
+    coachQuality: clampStat(t.coachQuality + randFloat(-15, 15)),
+    mediaExposure: clampStat(t.mediaExposure + randFloat(-10, 10)),
+  }));
+
+  const sorted = [...withForm].sort((a, b) => Math.abs(a.salaryBudget - normalizedValue) - Math.abs(b.salaryBudget - normalizedValue));
   const count = career.currentTeam.league === 'lycee' ? 3 : 2 + randInt(0, 2);
   const offers: Team[] = [];
   // A bad team drafting a great prospect is realistic — but a proven, in-demand player should be
@@ -1079,14 +1145,25 @@ export function generateTransferOffers(career: Career): Team[] {
   // real standing, a genuine contender fights for their signature among the offers.
   const isElite = career.stats.reputation >= 65 && career.currentTeam.league !== 'lycee';
   if (isElite) {
-    const contender = [...eligible].sort((a, b) => b.ambition - a.ambition)[0];
+    const contender = [...withForm].sort((a, b) => b.ambition - a.ambition)[0];
     if (contender) offers.push(contender);
   }
   const shuffled = sorted.sort(() => Math.random() - 0.5);
   for (const team of shuffled) {
     if (offers.length >= count) break;
     if (offers.some((o) => o.id === team.id)) continue;
+    // Not every team actually wants you — a front office whose budget is way off from the
+    // player's real value realistically passes more often than one that's a genuine fit.
+    const fitGap = Math.abs(team.salaryBudget - normalizedValue);
+    const interestChance = Math.max(0.15, 1 - fitGap / 140);
+    if (Math.random() > interestChance) continue;
     offers.push(team);
+  }
+  // Still guarantee at least one offer so a career can never dead-end — but the total no longer
+  // has to hit `count` every time; some seasons genuinely draw thinner interest than others.
+  if (offers.length === 0) {
+    const fallback = sorted[0];
+    if (fallback) offers.push(fallback);
   }
   return offers;
 }
@@ -1234,6 +1311,7 @@ export function simulateSeason(career: Career): { career: Career; result: Season
     lastSeasonResult: result,
     pendingFinaleResult: null,
     recentMvpWinnerNames,
+    mvpCampaignPoints: 0,
     eliteBreakthroughCount,
     traits: [...career.traits, ...newTraits.map((t) => t.id)],
     newlyUnlockedTraits: newTraits.map((t) => t.id),

@@ -107,4 +107,82 @@ export const blessureEvents: EventTemplate[] = [
       { label: tt('Ignorer et continuer normalement', 'Ignore it and carry on as normal'), effects: { risqueBlessure: 9 } },
     ],
   },
+  // A rare, serious injury scare — gated to players who have genuinely built up real risk (tall
+  // builds accumulate this fastest, see heightTilt in rollInjuries) — staged as a real two-step
+  // decision instead of a single silent stat roll, since a career-threatening injury deserves an
+  // actual choice about how to handle it.
+  {
+    id: 'blessure-grave-diagnostic',
+    category: 'blessure',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Diagnostic inquiétant', 'A worrying diagnosis'),
+    description: tt(
+      "L'IRM de routine révèle quelque chose de plus sérieux que prévu : une blessure qui pourrait vraiment peser sur la suite de ta carrière.",
+      'The routine MRI turns up something more serious than expected — an injury that could genuinely weigh on the rest of your career.',
+    ),
+    requirements: [{ stat: 'risqueBlessure', min: 35 }],
+    weight: 0.5,
+    choices: [
+      {
+        label: tt('Rester positif face à l\'annonce', 'Stay positive about the news'),
+        effects: { mental: 2 },
+        linkedNextEventId: 'blessure-grave-decision',
+      },
+      {
+        label: tt("Laisser l'inquiétude s'installer", 'Let the worry set in'),
+        effects: { moral: -2, mental: 1 },
+        linkedNextEventId: 'blessure-grave-decision',
+      },
+    ],
+  },
+  {
+    id: 'blessure-grave-decision',
+    category: 'blessure',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Chirurgie ou jouer avec la douleur ?', 'Surgery or play through the pain?'),
+    description: tt(
+      'Le staff médical te présente les options. Ta décision va peser lourd sur la suite de ta carrière.',
+      'The medical staff lays out the options. Whatever you decide here will weigh heavily on the rest of your career.',
+    ),
+    // Defensive gate in case this is ever drawn directly instead of via the diagnostic's
+    // linkedNextEventId chain — same standard used for the Finals decisive beat.
+    requirements: [{ stat: 'risqueBlessure', min: 35 }],
+    weight: 0.5,
+    choices: [
+      {
+        label: tt('Opter pour la chirurgie et une rééducation complète', 'Opt for surgery and a full rehab'),
+        resultText: tt(
+          "L'opération se passe bien. La rééducation est longue mais complète — tu reviens sur des bases saines.",
+          'The surgery goes well. The rehab is long but thorough — you come back on healthy footing.',
+        ),
+        effects: { forme: -10, tempsDeJeu: -6, risqueBlessure: -15, moral: -2 },
+        moneyDelta: -50000,
+      },
+      {
+        label: tt('Jouer à travers la douleur', 'Play through the pain'),
+        successChance: {
+          baseChance: 0.35,
+          statBonus: { mental: 0.015 },
+          onSuccess: { reputation: 5, popularite: 4, moral: 3 },
+          onFailure: { forme: -15, risqueBlessure: 12, moral: -6, tempsDeJeu: -10 },
+          successText: tt(
+            'Contre toute attente, ton corps tient le coup. Une histoire de dureté qui marque les esprits.',
+            'Against all odds, your body holds up. A story of toughness that leaves a mark.',
+          ),
+          failureText: tt(
+            "La blessure s'aggrave sérieusement. Tu payes cher d'avoir forcé.",
+            'The injury gets seriously worse. Pushing through it costs you dearly.',
+          ),
+        },
+      },
+      {
+        label: tt('Rééducation conservative, sans chirurgie', 'Conservative rehab, no surgery'),
+        resultText: tt(
+          "Tu choisis la voie du milieu : pas de bistouri, mais un vrai programme de soin pris au sérieux.",
+          'You take the middle path: no scalpel, but a real, disciplined recovery program.',
+        ),
+        effects: { forme: -5, tempsDeJeu: -3, risqueBlessure: -6 },
+      },
+    ],
+  },
 ];

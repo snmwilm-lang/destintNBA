@@ -355,4 +355,66 @@ export const matchEvents: EventTemplate[] = [
       },
     ],
   },
+  {
+    id: 'match-chasse-record',
+    category: 'match',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Une soirée historique face à {opponent}', 'A historic night against {opponent}'),
+    description: tt(
+      "Tout rentre depuis le début du match. À la mi-temps, tu réalises que le record de la ligue — 14 tirs à 3-points inscrits en un seul match — n'est plus si loin. Comment abordes-tu la seconde mi-temps ?",
+      "Everything is falling since tip-off. At halftime, you realize the league record — 14 made threes in a single game — isn't that far off. How do you play the second half?",
+    ),
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
+    minSeason: 2,
+    requirements: [{ stat: 'reputation', min: 40 }],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Foncer vers le record, tir après tir', 'Chase the record, shot after shot'),
+        successChance: {
+          baseChance: 0.2,
+          statBonus: { technique: 0.018, mental: 0.008 },
+          onSuccess: { reputation: 6, popularite: 6, moral: 4 },
+          onFailure: { moral: -3, forme: -2 },
+          successText: tt(
+            'Le ballon rentre encore et encore. 14 tirs à 3-points inscrits : un nouveau record de la ligue ! La salle est debout.',
+            'The ball keeps falling. 14 threes made — a new league record! The whole arena is on its feet.',
+          ),
+          failureText: tt(
+            "Le rythme retombe après un début de match électrique. Le record résiste, cette fois.",
+            'The rhythm fades after a red-hot start. The record holds, this time.',
+          ),
+        },
+      },
+      {
+        label: tt('Enchaîner les step-backs à 3-points', 'String together step-back threes'),
+        successChance: {
+          baseChance: 0.42,
+          statBonus: { technique: 0.015, mental: 0.01 },
+          onSuccess: { reputation: 4, popularite: 3 },
+          onFailure: { moral: -2 },
+          successText: tt(
+            "Le step-back devient injouable ce soir — une master class d'adresse.",
+            'The step-back is unguardable tonight — a clinic in shot-making.',
+          ),
+          failureText: tt('Les step-backs finissent par se dérégler sur la fin de match.', 'The step-backs lose their rhythm late in the game.'),
+        },
+      },
+      {
+        label: tt('Attaquer le cercle à chaque possession', 'Attack the rim on every possession'),
+        successChance: {
+          baseChance: 0.48,
+          statBonus: { physique: 0.016 },
+          onSuccess: { reputation: 3, tempsDeJeu: 2 },
+          onFailure: { forme: -3 },
+          successText: tt('Tu punis la peinture toute la soirée, aucune défense ne tient.', 'You punish the paint all night — no defense can hold up.'),
+          failureText: tt('La défense adverse resserre le cercle et finit par te ralentir.', "The defense collapses on the rim and eventually slows you down."),
+        },
+      },
+      {
+        label: tt('Faire jouer le collectif plutôt que chercher le record', 'Get everyone involved instead of chasing the record'),
+        effects: { relationCoequipiers: 3, iqBasket: 2, popularite: 1 },
+      },
+    ],
+  },
 ];

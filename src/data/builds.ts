@@ -215,6 +215,8 @@ export interface BuildIdentity {
   pointsPct: number;
   passesPct: number;
   reboundsPct: number;
+  stealsPct: number;
+  blocksPct: number;
   noteDelta: number;
 }
 
@@ -223,8 +225,12 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** A build's boosts translate into a distinct on-court statistical signature — scorer builds
- * put up more points, playmaking builds rack up more assists, and so on — instead of only
- * nudging the underlying 0-100 attributes. Specializing this hard also costs a touch of
+ * put up more points, playmaking builds rack up more assists, defensive builds rack up more
+ * steals/blocks, and so on — instead of only nudging the underlying 0-100 attributes. Each
+ * signature is a real trade-off, not just a bonus in its own lane: investing hard in one area
+ * now visibly costs output in the others (a pure scorer build genuinely passes and rebounds
+ * less, a playmaking build genuinely scores less), so two builds with the same raw attributes
+ * put up meaningfully different box scores. Specializing this hard also costs a touch of
  * well-roundedness, reflected as a small rating penalty. */
 export function buildIdentity(build: BuildDef): BuildIdentity {
   const b = build.boosts;
@@ -237,14 +243,16 @@ export function buildIdentity(build: BuildDef): BuildIdentity {
   // Capped tighter than before (was up to +35%) — stacked with everything else that already
   // pushes scoring up in a season, a 35% build bonus alone was enough to turn a good-not-perfect
   // player into a 50+ point-per-game scorer, well past anything realistic.
-  const pointsPct = clamp(Math.round(technique * 1.9 + physique * 0.5), -8, 20);
-  const passesPct = clamp(Math.round(iqBasket * 1.1 + relationCoequipiers * 1.5), -10, 25);
-  const reboundsPct = clamp(Math.round(physique * 1.7), -10, 30);
+  const pointsPct = clamp(Math.round(technique * 1.9 + physique * 0.5 - (iqBasket * 0.4 + relationCoequipiers * 0.6)), -18, 20);
+  const passesPct = clamp(Math.round(iqBasket * 1.1 + relationCoequipiers * 1.5 - (technique * 0.5 + physique * 0.3)), -18, 25);
+  const reboundsPct = clamp(Math.round(physique * 1.7 - (technique * 0.3 + iqBasket * 0.2)), -18, 30);
+  const stealsPct = clamp(Math.round(mental * 1.2 + iqBasket * 0.8 - technique * 0.3), -18, 25);
+  const blocksPct = clamp(Math.round(physique * 1.3 + iqBasket * 0.5 - technique * 0.4), -18, 30);
 
   const total = technique + physique + iqBasket + relationCoequipiers + mental;
   const maxSingle = Math.max(technique, physique, iqBasket, relationCoequipiers, mental);
   const specialization = total > 0 ? maxSingle / total : 0;
   const noteDelta = Math.round((0.55 - specialization) * 0.2 * 100) / 100;
 
-  return { pointsPct, passesPct, reboundsPct, noteDelta };
+  return { pointsPct, passesPct, reboundsPct, stealsPct, blocksPct, noteDelta };
 }

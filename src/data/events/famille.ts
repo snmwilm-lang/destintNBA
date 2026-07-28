@@ -149,4 +149,35 @@ export const familleEvents: EventTemplate[] = [
       { label: tt('Écouter mais suivre ton propre instinct', 'Listen but trust your own instinct'), effects: { mental: 1 } },
     ],
   },
+  {
+    id: 'famille-heritage-fin-carriere',
+    category: 'famille',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Ton héritage', 'Your legacy'),
+    description: tt(
+      "En pleine saison, une question te trotte dans la tête depuis des semaines : combien de temps encore ? Ton enfant te regarde s'entraîner avec des étoiles dans les yeux et rêve déjà de te ressembler sur un terrain.",
+      "In the middle of the season, a question has been on your mind for weeks: how much longer? Your kid watches you train with stars in their eyes, already dreaming of following in your footsteps.",
+    ),
+    minAge: 34,
+    unique: true,
+    choices: [
+      {
+        label: tt("Prendre le temps d'entraîner ton enfant, continuer ta carrière", "Take the time to coach your kid, keep playing"),
+        resultText: tt(
+          "Tu passes tes après-midis libres à lui apprendre les fondamentaux. Ce n'est plus seulement ta carrière — c'est une histoire qui continue.",
+          "You spend your free afternoons teaching them the fundamentals. It's not just your career anymore — it's a story that keeps going.",
+        ),
+        effects: { moral: 4, mental: 2, popularite: 2 },
+      },
+      {
+        label: tt('Te retirer maintenant, sur tes propres termes', 'Retire now, on your own terms'),
+        resultText: tt(
+          "Tu annonces ta retraite en pleine saison, la tête haute. Pas de déclin à traîner encore des années — tu pars au sommet de ta propre histoire.",
+          'You announce your retirement mid-season, head held high. No dragging out a decline for years more — you go out on your own story\'s terms.',
+        ),
+        effects: { moral: 3 },
+        endsCareer: true,
+      },
+    ],
+  },
 ];

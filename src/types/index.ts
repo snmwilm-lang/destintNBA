@@ -98,6 +98,16 @@ export interface EventChoice {
    * (missing practice, arrogance with the press, poor discipline, etc. should be negative;
    * professionalism and maturity should be positive). */
   draftImpact?: number;
+  /** How this choice actively builds (or hurts) the player's real-world MVP case — media
+   * narrative, contract-year statements, public campaigning — on top of raw stat production.
+   * Accumulated over the season and folded into the MVP vote itself (see rollIndividualAward),
+   * then reset. Playing the campaign right can meaningfully tip a close vote; overplaying it can
+   * backfire. */
+  mvpCampaignImpact?: number;
+  /** Marks a choice as the player deliberately ending their career right here, mid-season, on
+   * their own terms — instead of only ever retiring automatically at the age/decline cutoff (see
+   * checkEnding). Used by the late-career "train your kid or hang it up" moment. */
+  endsCareer?: boolean;
 }
 
 export interface GameEvent {
@@ -269,6 +279,14 @@ export interface Career {
    * excluded from the next snub's simulated field so the "other player" who beats the player to
    * the trophy isn't the same face over and over. */
   recentMvpWinnerNames: string[];
+  /** Accumulates this season's mvpCampaignImpact choices — a real, player-driven lever on the MVP
+   * vote (see rollIndividualAward) on top of the raw stat line. Reset to 0 once the season's award
+   * roll consumes it. */
+  mvpCampaignPoints: number;
+  /** Set the moment a choice with endsCareer=true is picked — consumed on the next
+   * acknowledgeChoiceResult to end the career right there, mid-season, instead of waiting for the
+   * usual automatic age/decline retirement at a season boundary. */
+  pendingVoluntaryRetirement: boolean;
   /** Country represented in international competition (Olympics, World Cup). */
   nationality: string;
   /** 0-100, starts neutral. Rises on successful/good choices, falls on failed/bad ones — a real

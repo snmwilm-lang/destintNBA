@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Archetype, Career, Lang, Position, SeasonResult, StatKey, Team } from '../types';
+import type { Archetype, Career, CareerEnding, Lang, Position, SeasonResult, StatKey, Team } from '../types';
 import { isGoodDelta } from '../i18n/statLabels';
 import {
   baseEventId,
@@ -91,6 +91,8 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     rivalShowdownEligibleSeason: c.rivalShowdownEligibleSeason ?? c.season ?? 3,
     pendingPlayoffRunEventId: c.pendingPlayoffRunEventId ?? null,
     recentMvpWinnerNames: c.recentMvpWinnerNames ?? [],
+    mvpCampaignPoints: c.mvpCampaignPoints ?? 0,
+    pendingVoluntaryRetirement: c.pendingVoluntaryRetirement ?? false,
     nationality: c.nationality ?? 'US',
     momentum: c.momentum ?? 50,
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
@@ -140,6 +142,21 @@ function updateActiveCareer(state: GameStore, updater: (c: Career) => Career): P
   if (!state.activeCareerId) return {};
   const careers = state.careers.map((c) => (c.id === state.activeCareerId ? { ...updater(c), updatedAt: Date.now() } : c));
   return { careers };
+}
+
+/** Shared by every path that can end a career (the automatic age/decline retirement at a season
+ * boundary, and a deliberate mid-season choice like retiring on your own terms) — computes the
+ * career sheet once and checks it against every achievement, so no ending path can silently skip
+ * the achievements pass. */
+function finalizeEndedCareer(state: GameStore, career: Career, ending: CareerEnding): Partial<GameStore> {
+  const endedCareer: Career = { ...career, ending, retired: true, phase: 'ended', pendingVoluntaryRetirement: false };
+  const sheet = computeCareerSheet(endedCareer);
+  const newlyUnlocked = ACHIEVEMENTS.filter((a) => !state.unlockedAchievements.includes(a.id) && a.check(endedCareer, sheet)).map((a) => a.id);
+  const withAchievements: Career = { ...endedCareer, newlyUnlockedAchievements: newlyUnlocked, updatedAt: Date.now() };
+  return {
+    careers: state.careers.map((c) => (c.id === state.activeCareerId ? withAchievements : c)),
+    unlockedAchievements: [...state.unlockedAchievements, ...newlyUnlocked],
+  };
 }
 
 /** Moves past the "choice result" beat: either the next event card, or the season simulation —
@@ -362,6 +379,10 @@ export const useGameStore = create<GameStore>()(
             const rivalShowdownCount = event.id === 'rival-showdown-decisif' ? c.rivalShowdownCount + 1 : c.rivalShowdownCount;
             const rivalShowdownEligibleSeason =
               event.id === 'rival-showdown-decisif' ? c.season + 1 + Math.round(Math.random()) : c.rivalShowdownEligibleSeason;
+            // Accumulates across the whole season, consumed (and reset) by the MVP vote at
+            // season-end — see rollIndividualAward's campaignBonus in generateTrophies.
+            const mvpCampaignPoints = c.mvpCampaignPoints + (choice?.mvpCampaignImpact ?? 0);
+            const pendingVoluntaryRetirement = choice?.endsCareer === true;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -376,6 +397,8 @@ export const useGameStore = create<GameStore>()(
               rivalHighSchoolRecord,
               rivalShowdownCount,
               rivalShowdownEligibleSeason,
+              mvpCampaignPoints,
+              pendingVoluntaryRetirement,
               pendingPlayoffRunEventId,
               momentum,
               rivalryProvoked,
@@ -410,6 +433,17 @@ export const useGameStore = create<GameStore>()(
           if (!s.activeCareerId) return {};
           const career = s.careers.find((c) => c.id === s.activeCareerId);
           if (!career) return {};
+          if (career.pendingVoluntaryRetirement) {
+            const ending: CareerEnding = {
+              type: 'retraiteAnticipee',
+              title: { fr: 'Retraite sur tes propres termes', en: 'Retirement on your own terms' },
+              description: {
+                fr: "Tu as choisi de partir en pleine saison, sans attendre le déclin. Une décision qui t'appartient, du début à la fin.",
+                en: "You chose to walk away mid-season, without waiting for the decline. A decision that was entirely yours, start to finish.",
+              },
+            };
+            return finalizeEndedCareer(s, career, ending);
+          }
           const { career: advanced, seasonResult } = advancePastChoice(career);
           const careers = s.careers.map((c) => (c.id === s.activeCareerId ? { ...advanced, updatedAt: Date.now() } : c));
           const afterAdvance = { careers };
@@ -430,16 +464,7 @@ export const useGameStore = create<GameStore>()(
           if (!career) return {};
           const ending = checkEnding(career);
           if (ending) {
-            const endedCareer: Career = { ...career, ending, retired: true, phase: 'ended' };
-            const sheet = computeCareerSheet(endedCareer);
-            const newlyUnlocked = ACHIEVEMENTS.filter((a) => !s.unlockedAchievements.includes(a.id) && a.check(endedCareer, sheet)).map(
-              (a) => a.id,
-            );
-            const withAchievements: Career = { ...endedCareer, newlyUnlockedAchievements: newlyUnlocked, updatedAt: Date.now() };
-            return {
-              careers: s.careers.map((c) => (c.id === s.activeCareerId ? withAchievements : c)),
-              unlockedAchievements: [...s.unlockedAchievements, ...newlyUnlocked],
-            };
+            return finalizeEndedCareer(s, career, ending);
           }
           return updateActiveCareer(s, (c) => {
             if (c.currentTeam.league !== 'lycee') {

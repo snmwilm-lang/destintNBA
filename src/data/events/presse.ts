@@ -88,4 +88,34 @@ export const presseEvents: EventTemplate[] = [
       { label: tt('Ignorer et avancer', 'Ignore it and move on'), effects: { moral: -2 } },
     ],
   },
+  {
+    id: 'presse-campagne-mvp',
+    category: 'presse',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('{journalist} te demande si tu mérites le MVP', '{journalist} asks if you deserve the MVP'),
+    description: tt(
+      "En pleine course aux trophées, {journalist} te tend le micro : penses-tu mériter le titre de MVP cette saison ?",
+      'In the middle of the awards race, {journalist} puts the mic in front of you: do you think you deserve the MVP this season?',
+    ),
+    slots: [{ key: 'journalist', pool: JOURNALISTS }],
+    requirements: [{ stat: 'reputation', min: 50 }],
+    weight: 1.5,
+    choices: [
+      {
+        label: tt('Revendiquer ouvertement le trophée', 'Openly claim you deserve it'),
+        effects: { popularite: 3, reputation: 2, relationCoequipiers: -1 },
+        mvpCampaignImpact: 2,
+      },
+      {
+        label: tt('Rediriger vers le collectif, rester humble', 'Deflect to the team, stay humble'),
+        effects: { relationCoequipiers: 2, mental: 1 },
+        mvpCampaignImpact: 0,
+      },
+      {
+        label: tt('Critiquer publiquement le processus de vote', 'Publicly criticize the voting process'),
+        effects: { reputation: -2, popularite: -1 },
+        mvpCampaignImpact: -2,
+      },
+    ],
+  },
 ];
