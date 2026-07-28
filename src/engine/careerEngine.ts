@@ -528,6 +528,19 @@ function forcedMilestone(career: Career): GameEvent | null {
   ) {
     return getEvent('blessure-grave-diagnostic') ?? null;
   }
+  // Same lesson again: the specialty-skill training event was drawing at ~0.07% per pick inside
+  // this pool (well over a thousand expanded variants), which works out to roughly a 9% chance of
+  // EVER seeing it across a whole career — nowhere near "rare but not too rare" for a mechanic
+  // meant to give real, repeated chances to specialize. Rolled once per eligible season, at a
+  // different slot than the other forced season-openers above so they don't compete for the same
+  // draw.
+  if (
+    career.eventInSeasonIndex === 2 &&
+    !career.usedThisSeasonIds.includes('entrainement-travail-specifique') &&
+    Math.random() < 0.25
+  ) {
+    return getEvent('entrainement-travail-specifique') ?? null;
+  }
   // The deliberate "start a rivalry" choice is meant to be a real, discoverable decision — not a
   // needle buried in a pool of well over a thousand event variants. Guarantee it's offered once,
   // early in the player's NBA career, instead of leaving it to a near-invisible random draw.
@@ -1316,11 +1329,14 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   // Each trigger halves the gain from the last, so the running total converges fast no matter how
   // many triggers are allowed — the old tier (10/7/4) topped out around potentiel 92 even for a
   // maximally dominant, maximally lucky career (verified in simulation), putting a true 95-100
-  // Général out of reach for anyone. Raised so a full-sweep career (majorTrophyCount>=3, every
-  // trigger) can actually converge toward the high 90s, while a merely very good career (mixed or
-  // partial sweeps) still lands in the same 80s-low-90s range as before.
+  // Général out of reach for anyone. Only the top tier (a genuine 3+ trophy sweep in one season)
+  // was raised — the 1-2 trophy tiers were left at their original 4/7, since simulation showed
+  // that even a moderately good career hits those often enough over many seasons that raising them
+  // too was pushing "pretty good, not legendary" careers above 92 nearly 1 time in 6. A true
+  // full-sweep career (repeated majorTrophyCount>=3 seasons) can still converge toward the high
+  // 90s; everything else still tops out in the same 80s-low-90s range as before.
   const majorTrophyCount = trophies.filter((t) => /-(mvp|champion|scoring|assists|defense)$/.test(t.id)).length;
-  const eliteSeasonBonus = majorTrophyCount >= 3 ? 13 : majorTrophyCount === 2 ? 9 : majorTrophyCount === 1 ? 5 : 0;
+  const eliteSeasonBonus = majorTrophyCount >= 3 ? 13 : majorTrophyCount === 2 ? 7 : majorTrophyCount === 1 ? 4 : 0;
   if (eliteSeasonBonus > 0 && career.age <= 32 && eliteBreakthroughCount < MAX_BREAKTHROUGH_TRIGGERS) {
     const effectiveBonus = Math.max(1, Math.round(eliteSeasonBonus * Math.pow(0.5, eliteBreakthroughCount)));
     eliteBreakthroughCount += 1;
