@@ -240,8 +240,10 @@ export function createNewCareer(
     : HIGH_SCHOOL_TEAM_POOL[randInt(0, HIGH_SCHOOL_TEAM_POOL.length - 1)];
   let stats = initialStats(getBuild(archetype)?.boosts ?? {});
   // Taller-than-average builds lean into strength and rim protection at the cost of
-  // some quickness/ball-handling touch; shorter builds trade the other way.
-  const tilt = heightTilt(position, height);
+  // some quickness/ball-handling touch; shorter builds trade the other way. How much this
+  // actually matters depends on the build itself — a bully/rim-protector build lives or dies by
+  // its size, a sharpshooter can thrive at almost any height within the position.
+  const tilt = heightTilt(position, height) * buildIdentity(getBuild(archetype) ?? BUILDS[0]).heightSensitivity;
   stats = applyEffects(stats, {
     physique: Math.round(tilt * 6),
     technique: Math.round(-tilt * 4),
@@ -794,8 +796,8 @@ function rollInjuries(career: Career, statsAfterProgress: PlayerStats): { blessu
   // can easily dilute away — so it's folded directly into the yearly roll here too, keeping the
   // height/injury relationship coherent across a whole career instead of fading out after a few
   // seasons of unrelated choices.
-  const tilt = heightTilt(career.position, career.height);
-  const heightInjuryBump = Math.max(0, tilt) * 0.06; // up to +6pp for the tallest builds at their position
+  const tilt = heightTilt(career.position, career.height) * buildIdentity(getBuild(career.archetype) ?? BUILDS[0]).heightSensitivity;
+  const heightInjuryBump = Math.max(0, tilt) * 0.06; // up to +6pp for the tallest, most size-reliant builds
   const injuryChance = statsAfterProgress.risqueBlessure / 260 + heightInjuryBump; // ~0-44% per season
   const keys: InjuryKey[] = ['cheville', 'genou', 'dos', 'ischio', 'epaule', 'poignet'];
   let rolls = Math.random() < injuryChance ? 1 : 0;
@@ -827,7 +829,14 @@ function maxMinutes(league: League): number {
 function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: number, vintage: boolean): SeasonStatLine {
   const league = career.currentTeam.league;
   const profile = POSITION_PROFILE[career.position];
-  const tilt = heightTilt(career.position, career.height);
+  // The chosen build isn't just flat attribute boosts — it gives the player a distinct
+  // statistical signature (a scorer build puts up more points, a playmaking build racks up
+  // more assists), at the cost of a bit of well-roundedness in the average rating.
+  const identity = buildIdentity(getBuild(career.archetype) ?? BUILDS[0]);
+  // How much actually being tall/short matters here depends on the build itself — a physique-
+  // leaning build (bully, rim protector) genuinely lives or dies by its size, a technique-leaning
+  // build (sharpshooter, pure ball-handler) can thrive at almost any height within the position.
+  const tilt = heightTilt(career.position, career.height) * identity.heightSensitivity;
   const total = scheduledGames(league);
   const matchs = Math.max(0, total - matchesMissed);
   const minutesFactor = stats.tempsDeJeu / 100;
@@ -840,11 +849,6 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   // A vintage season (see isEligibleForVintageSeason) also shows up as a small on-court surge,
   // not just a stat line that quietly stops declining.
   const choiceFactor = formFactor * moralFactor * (vintage ? 1.1 : 1);
-
-  // The chosen build isn't just flat attribute boosts — it gives the player a distinct
-  // statistical signature (a scorer build puts up more points, a playmaking build racks up
-  // more assists), at the cost of a bit of well-roundedness in the average rating.
-  const identity = buildIdentity(getBuild(career.archetype) ?? BUILDS[0]);
 
   const scoringSkill = (stats.technique * 0.6 + stats.iqBasket * 0.2 + stats.physique * 0.2) / 100;
   // 30 ppg is already a rare, MVP-caliber scoring season in real basketball — the multiplier

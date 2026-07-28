@@ -218,6 +218,13 @@ export interface BuildIdentity {
   stealsPct: number;
   blocksPct: number;
   noteDelta: number;
+  /** How much height itself actually matters for this build — a physique/rim-leaning build
+   * (a bully, a rim protector) genuinely lives or dies by its size, so height's usual effects
+   * (physique/technique tilt, rebounds/blocks, injury risk) hit harder for it in both directions;
+   * a touch/technique-leaning build (a sharpshooter, a pure ball-handler) can succeed at almost
+   * any size within its position, so those same effects are dampened. 1.0 = the previous
+   * uniform-for-everyone behavior. */
+  heightSensitivity: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -254,5 +261,9 @@ export function buildIdentity(build: BuildDef): BuildIdentity {
   const specialization = total > 0 ? maxSingle / total : 0;
   const noteDelta = Math.round((0.55 - specialization) * 0.2 * 100) / 100;
 
-  return { pointsPct, passesPct, reboundsPct, stealsPct, blocksPct, noteDelta };
+  // Physique-leaning builds care the most about actually being big; technique-leaning builds can
+  // get by at almost any size. Centered on 1.0 (unchanged from before this existed).
+  const heightSensitivity = clamp(Math.round((1 + (physique - technique) * 0.025) * 100) / 100, 0.55, 1.6);
+
+  return { pointsPct, passesPct, reboundsPct, stealsPct, blocksPct, noteDelta, heightSensitivity };
 }
