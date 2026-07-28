@@ -1313,8 +1313,14 @@ export function simulateSeason(career: Career): { career: Career; result: Season
   // threshold but lost the vote (see rollIndividualAward) is exactly the case the contest system
   // was built to make possible, and a leftover direct noteMoyenne check here would silently hand
   // out the same potentiel bump regardless of whether the award was actually won.
+  // Each trigger halves the gain from the last, so the running total converges fast no matter how
+  // many triggers are allowed — the old tier (10/7/4) topped out around potentiel 92 even for a
+  // maximally dominant, maximally lucky career (verified in simulation), putting a true 95-100
+  // Général out of reach for anyone. Raised so a full-sweep career (majorTrophyCount>=3, every
+  // trigger) can actually converge toward the high 90s, while a merely very good career (mixed or
+  // partial sweeps) still lands in the same 80s-low-90s range as before.
   const majorTrophyCount = trophies.filter((t) => /-(mvp|champion|scoring|assists|defense)$/.test(t.id)).length;
-  const eliteSeasonBonus = majorTrophyCount >= 3 ? 10 : majorTrophyCount === 2 ? 7 : majorTrophyCount === 1 ? 4 : 0;
+  const eliteSeasonBonus = majorTrophyCount >= 3 ? 13 : majorTrophyCount === 2 ? 9 : majorTrophyCount === 1 ? 5 : 0;
   if (eliteSeasonBonus > 0 && career.age <= 32 && eliteBreakthroughCount < MAX_BREAKTHROUGH_TRIGGERS) {
     const effectiveBonus = Math.max(1, Math.round(eliteSeasonBonus * Math.pow(0.5, eliteBreakthroughCount)));
     eliteBreakthroughCount += 1;
