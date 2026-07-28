@@ -208,6 +208,14 @@ export function pinRivalTeam(event: GameEvent, rivalTeamName: string): GameEvent
   return pinPlaceholder(event, 'cityRivalry', RIVAL_TEAM_NAMES, rivalTeamName);
 }
 
+/** Picks a rival fanbase team, excluding whatever team the player is actually on — without this,
+ * the rival team could land on the player's own starting team (or, later, a transfer could land
+ * the player on their own pinned rival), which reads as "I'm public enemy #1 of my own club." */
+export function pickRivalTeamName(excludeTeamName: string): string {
+  const pool = RIVAL_TEAM_NAMES.filter((n) => n !== excludeTeamName);
+  return pool[randInt(0, pool.length - 1)];
+}
+
 /** Same idea again, but for a "schoolRivalry"-tagged card: a rival high school program, the
  * origin story that can go on to seed the career's legacy. */
 export function pinRivalHighSchool(event: GameEvent, rivalHighSchool: string): GameEvent {
@@ -280,7 +288,7 @@ export function createNewCareer(
     skillPoints: bonusSkillPoints,
     rivalName: RIVAL_PLAYERS[randInt(0, RIVAL_PLAYERS.length - 1)],
     rivalRecord: { wins: 0, losses: 0 },
-    rivalTeamName: RIVAL_TEAM_NAMES[randInt(0, RIVAL_TEAM_NAMES.length - 1)],
+    rivalTeamName: pickRivalTeamName(startingTeam.name),
     rivalTeamRecord: { wins: 0, losses: 0 },
     rivalryProvoked: false,
     rivalHighSchool: HIGH_SCHOOL_TEAMS.filter((s) => s !== startingTeam.name)[randInt(0, HIGH_SCHOOL_TEAMS.length - 2)],
@@ -1152,7 +1160,9 @@ export function generateTransferOffers(career: Career): Team[] {
   const leaguePools = career.currentTeam.league === 'lycee' ? [...NBA_TEAM_POOL] : [...NBA_TEAM_POOL, ...EUROPE_TEAM_POOL];
   const scale = CONTRACT_SCALE[career.currentTeam.league];
   const normalizedValue = scale.max > scale.min ? ((career.valeurMarchande - scale.min) / (scale.max - scale.min)) * 100 : 50;
-  const eligible = leaguePools.filter((t) => t.id !== career.currentTeam.id);
+  // Never let the player's own pinned city rival make them an offer — signing there would make
+  // the whole cityRivalry storyline incoherent ("I'm public enemy #1 of my own club").
+  const eligible = leaguePools.filter((t) => t.id !== career.currentTeam.id && t.name !== career.rivalTeamName);
 
   // A front office's real quality isn't fixed forever — a rebuilding team can turn it around, a
   // contender can quietly decline — so re-roll a fresh season-to-season "form" swing on top of
@@ -1605,6 +1615,13 @@ export function startNextSeason(career: Career): Career {
     // there, instead of a purely random team assignment.
     currentTeam = nextLeague === 'nba' && career.draftPick !== null ? teamForDraftPick(career.draftPick) : allTeamsForLeague(nextLeague)[randInt(0, allTeamsForLeague(nextLeague).length - 1)];
   }
+  // The draft (or a league move) isn't something the player chose — if it happens to land them
+  // on their own pinned rival team, that reads as "I'm public enemy #1 of my own club" for the
+  // rest of the cityRivalry storyline. Re-pin to someone else right away.
+  let rivalTeamName = career.rivalTeamName;
+  if (currentTeam.name === rivalTeamName) {
+    rivalTeamName = pickRivalTeamName(currentTeam.name);
+  }
   let stats = career.stats;
   if (justDrafted) {
     // A consensus top prospect and a guy who barely got picked shouldn't share the same talent
@@ -1613,7 +1630,7 @@ export function startNextSeason(career: Career): Career {
     const draftPotentielAdjustment = Math.round((career.draftStock - 50) * 0.3);
     stats = { ...stats, potentiel: clampStat(stats.potentiel + draftPotentielAdjustment) };
   }
-  const withDelayed = applyDueDelayedEffects({ ...career, age: nextAge, currentTeam, stats });
+  const withDelayed = applyDueDelayedEffects({ ...career, age: nextAge, currentTeam, stats, rivalTeamName });
   // Vary the pace season to season instead of always the same fixed count.
   const eventsPerSeason = randomEventsPerSeason();
   return {

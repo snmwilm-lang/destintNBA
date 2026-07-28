@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Archetype, Position } from '../types';
-import { type CareerPath, defaultHeightForPosition, POSITION_HEIGHT_RANGE } from '../engine/careerEngine';
-import { type BuildDef, buildIdentity, buildsForPosition, defaultBuildForPosition } from '../data/builds';
+import { type CareerPath, defaultHeightForPosition, heightTilt, POSITION_HEIGHT_RANGE } from '../engine/careerEngine';
+import { type BuildDef, buildIdentity, buildsForPosition, defaultBuildForPosition, getBuild } from '../data/builds';
 import { NATIONALITIES } from '../data/nationalities';
 import { useGameStore } from '../store/gameStore';
 import { useLang, useT } from '../i18n/useT';
@@ -27,6 +27,23 @@ function formatIdentityBadge(build: BuildDef, t: (key: DictionaryKey) => string)
     .map((s) => `${s.pct >= 0 ? '+' : ''}${s.pct}% ${s.label}`);
   const noteText = `${t('createIdentityNote')} ${identity.noteDelta >= 0 ? '+' : ''}${identity.noteDelta.toFixed(2)}`;
   return `🧬 ${[...top, noteText].join(' · ')}`;
+}
+
+/** Shows the actual physique/technique/injury-risk swing this exact height gives this exact
+ * build — the same tilt × heightSensitivity math the engine applies at career creation, made
+ * visible so the height slider isn't just a cosmetic number. */
+function formatHeightBadge(position: Position, height: number, build: BuildDef, t: (key: DictionaryKey) => string): string {
+  const identity = buildIdentity(build);
+  const tilt = heightTilt(position, height) * identity.heightSensitivity;
+  const physiqueBonus = Math.round(tilt * 6);
+  const techniqueBonus = Math.round(-tilt * 4);
+  const riskBonus = Math.round(Math.max(0, tilt) * 4);
+  const parts = [
+    `${physiqueBonus >= 0 ? '+' : ''}${physiqueBonus} ${t('createHeightPhysique')}`,
+    `${techniqueBonus >= 0 ? '+' : ''}${techniqueBonus} ${t('createHeightTechnique')}`,
+  ];
+  if (riskBonus !== 0) parts.push(`+${riskBonus} ${t('createHeightRisk')}`);
+  return `📏 ${parts.join(' · ')}`;
 }
 
 interface CharacterCreationProps {
@@ -138,6 +155,7 @@ export function CharacterCreation({ onCancel, onCreated }: CharacterCreationProp
             <span>{formatHeight(heightMin, lang)}</span>
             <span>{formatHeight(heightMax, lang)}</span>
           </div>
+          <div className="mt-1.5 text-[11px] text-slate-400">{formatHeightBadge(position, height, getBuild(archetype) ?? builds[0], t)}</div>
         </div>
 
         <label className="mb-2 block text-xs uppercase tracking-wide text-slate-400">{t('createArchetypeLabel')}</label>

@@ -15,6 +15,7 @@ import {
   getEvent,
   NATIONAL_CAMPAIGN_RESULT_IDS,
   pickNextEvent,
+  pickRivalTeamName,
   pinRivalHighSchool,
   pinRivalName,
   pinRivalPlayerTeam,
@@ -81,7 +82,11 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     skillPoints: c.skillPoints ?? 0,
     rivalName: c.rivalName ?? 'Malik Sanders',
     rivalRecord: c.rivalRecord ?? { wins: 0, losses: 0 },
-    rivalTeamName: c.rivalTeamName ?? 'Chicago Bison',
+    // Self-heals saves from before the rival team was guaranteed to differ from the player's own
+    // (or one that's since drifted into a match via a draft/trade) — otherwise the whole
+    // cityRivalry storyline reads as "I'm public enemy #1 of my own club."
+    rivalTeamName:
+      c.rivalTeamName && c.rivalTeamName !== c.currentTeam?.name ? c.rivalTeamName : pickRivalTeamName(c.currentTeam?.name ?? ''),
     rivalTeamRecord: c.rivalTeamRecord ?? { wins: 0, losses: 0 },
     rivalryProvoked: c.rivalryProvoked ?? false,
     rivalHighSchool: c.rivalHighSchool ?? 'Northview High',

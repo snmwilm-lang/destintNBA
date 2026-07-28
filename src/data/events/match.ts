@@ -371,9 +371,11 @@ export const matchEvents: EventTemplate[] = [
     choices: [
       {
         label: tt('Foncer vers le record, tir après tir', 'Chase the record, shot after shot'),
+        // A league record has to stay a genuinely rare success, even for an elite build — capped
+        // low enough that a maxed-out sharpshooter still fails to break it most of the time.
         successChance: {
-          baseChance: 0.2,
-          statBonus: { technique: 0.018, mental: 0.008 },
+          baseChance: 0.08,
+          statBonus: { technique: 0.01, mental: 0.005 },
           onSuccess: { reputation: 6, popularite: 6, moral: 4 },
           onFailure: { moral: -3, forme: -2 },
           successText: tt(
