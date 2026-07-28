@@ -950,7 +950,16 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
   }
   if (statLine.noteMoyenne >= 8.7) {
     const priorMvps = career.trophies.filter((t) => t.id.endsWith('-mvp')).length;
-    const dominance = (statLine.noteMoyenne - 8.7) * 22;
+    // A rating over the threshold makes someone a candidate — actually winning the vote should
+    // also reflect the things real MVP voters weigh heavily: team success and a real counting-
+    // stat case. Without these, a flawless 10/10 season on a title-winning, league-leading-scorer
+    // team was landing under a coin flip (~43% in simulation) purely because the roll only ever
+    // looked at the rating — a player who genuinely checked every box could still lose the vote
+    // more often than not, which reads as broken rather than as a rare, earned snub.
+    const teamSuccessBonus = rank === 1 ? 20 : 0;
+    const scoringCaseBonus = statLine.points >= 28 ? 10 : 0;
+    const flawlessSeasonBonus = statLine.noteMoyenne >= 9.5 ? 10 : 0;
+    const dominance = (statLine.noteMoyenne - 8.7) * 22 + teamSuccessBonus + scoringCaseBonus + flawlessSeasonBonus;
     if (rollIndividualAward(dominance, priorMvps)) {
       trophies.push({
         id: `${idBase}-mvp`,
