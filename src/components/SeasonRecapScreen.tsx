@@ -6,6 +6,7 @@ import { INJURY_LABEL_KEYS, isGoodDelta, STAT_LABEL_KEYS } from '../i18n/statLab
 import { CONDITIONING_STATS, TRAINABLE_STATS } from '../engine/careerEngine';
 import { useGameStore } from '../store/gameStore';
 import { getTrait } from '../data/traits';
+import { StatBar } from './StatBar';
 
 interface SeasonRecapScreenProps {
   career: Career;
@@ -234,6 +235,13 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
                 </div>
               </button>
             ))}
+          </div>
+          <h3 className="mt-4 mb-2 text-xs uppercase tracking-wide text-slate-400">{t('recapSpecialtySkills')}</h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatBar label={t('skillDunk')} value={career.skillDunk} max={10} colorClass="bg-orange-400" icon="🏀" />
+            <StatBar label={t('skillShoot')} value={career.skillShoot} max={10} colorClass="bg-sky-400" icon="🎯" />
+            <StatBar label={t('skillPass')} value={career.skillPass} max={10} colorClass="bg-emerald-400" icon="🤝" />
+            <StatBar label={t('skillDef')} value={career.skillDef} max={10} colorClass="bg-rose-400" icon="🛡️" />
           </div>
         </section>
       </div>

@@ -121,4 +121,40 @@ export const entrainementEvents: EventTemplate[] = [
       { label: tt('Regarder pour le plaisir sans analyser', 'Just watch for fun without analyzing'), effects: { moral: 2 } },
     ],
   },
+  // The four capped (0-10) specialty skills — Dunk, Shoot, Pass, Def — only grow through a
+  // dedicated event like this one, never through general stat gains. Kept rare-but-not-too-rare
+  // (moderate weight, no forced trigger) so a full career gets real, felt opportunities to
+  // specialize without it becoming a routine pick every season.
+  {
+    id: 'entrainement-travail-specifique',
+    category: 'entrainement',
+    title: tt('Séance de travail spécifique', 'Specialized skill work'),
+    description: tt(
+      "Le staff te laisse le choix : sur quel aspect précis de ton jeu veux-tu vraiment progresser cette semaine ?",
+      'The staff leaves it up to you: which specific part of your game do you want to really sharpen this week?',
+    ),
+    weight: 1.5,
+    choices: [
+      {
+        label: tt('Travailler les dunks en puissance', 'Work on power dunks'),
+        effects: { physique: 2, popularite: 1 },
+        skillBoost: { skill: 'dunk', amount: 1 },
+      },
+      {
+        label: tt('Travailler le tir extérieur', 'Work on outside shooting'),
+        effects: { technique: 2 },
+        skillBoost: { skill: 'shoot', amount: 1 },
+      },
+      {
+        label: tt('Travailler la vision de jeu et les passes', 'Work on court vision and passing'),
+        effects: { iqBasket: 2, relationCoequipiers: 1 },
+        skillBoost: { skill: 'pass', amount: 1 },
+      },
+      {
+        label: tt('Travailler le positionnement défensif', 'Work on defensive positioning'),
+        effects: { mental: 2, iqBasket: 1 },
+        skillBoost: { skill: 'def', amount: 1 },
+      },
+    ],
+  },
 ];

@@ -51,6 +51,11 @@ export const dictionary = {
   createHeightPhysique: { fr: 'physique', en: 'physicality' },
   createHeightTechnique: { fr: 'technique', en: 'technique' },
   createHeightRisk: { fr: 'risque blessure', en: 'injury risk' },
+  recapSpecialtySkills: { fr: 'Compétences spécialisées', en: 'Specialty skills' },
+  skillDunk: { fr: 'Dunk', en: 'Dunk' },
+  skillShoot: { fr: 'Tir', en: 'Shoot' },
+  skillPass: { fr: 'Passe', en: 'Pass' },
+  skillDef: { fr: 'Défense', en: 'Def' },
   createStartButton: { fr: 'Commencer la carrière', en: 'Start career' },
   createAge: { fr: '15 ans, dernière année de collège.', en: '15 years old, finishing middle school.' },
 

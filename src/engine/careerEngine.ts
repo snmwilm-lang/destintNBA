@@ -19,7 +19,7 @@ import type {
 } from '../types';
 import { allEvents } from '../data/events';
 import { HIGH_SCHOOL_TEAM_POOL, NBA_TEAM_POOL, EUROPE_TEAM_POOL, allTeamsForLeague } from '../data/teams';
-import { BUILDS, buildIdentity, getBuild } from '../data/builds';
+import { BUILDS, buildIdentity, getBuild, startingSkillBadges } from '../data/builds';
 import { EUROPE_TEAMS, HIGH_SCHOOL_TEAMS, NBA_LIKE_TEAMS, RIVAL_PLAYERS } from '../data/names';
 import { getNationality } from '../data/nationalities';
 import { checkNewTraits } from '../data/traits';
@@ -247,6 +247,7 @@ export function createNewCareer(
     ? NBA_TEAM_POOL[randInt(0, NBA_TEAM_POOL.length - 1)]
     : HIGH_SCHOOL_TEAM_POOL[randInt(0, HIGH_SCHOOL_TEAM_POOL.length - 1)];
   let stats = initialStats(getBuild(archetype)?.boosts ?? {});
+  const startingBadges = startingSkillBadges(getBuild(archetype) ?? BUILDS[0]);
   // Taller-than-average builds lean into strength and rim protection at the cost of
   // some quickness/ball-handling touch; shorter builds trade the other way. How much this
   // actually matters depends on the build itself — a bully/rim-protector build lives or dies by
@@ -298,6 +299,10 @@ export function createNewCareer(
     recentMvpWinnerNames: [],
     mvpCampaignPoints: 0,
     pendingVoluntaryRetirement: false,
+    skillDunk: startingBadges.dunk,
+    skillShoot: startingBadges.shoot,
+    skillPass: startingBadges.pass,
+    skillDef: startingBadges.def,
     nationality,
     momentum: 50,
     pendingNationalCampaign: null,
@@ -863,6 +868,10 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   // stack here used to compound past that for any merely very good (not maxed-out) player, so a
   // normal great season was landing in the 50s instead of the 25-35 range it should.
   let points = scoringSkill * minutes * profile.score * randFloat(0.85, 1.15) * 0.95 * choiceFactor * (1 + identity.pointsPct / 100);
+  // The capped 0-10 Dunk/Shoot specialty skills are a slower, deliberate long-term investment
+  // (trained through rare events, not general stat growth) — a real but modest payoff on top of
+  // everything else, capped well under what the build identity itself already swings.
+  points *= 1 + career.skillDunk * 0.01 + career.skillShoot * 0.01;
   // A rare career-year bump — this is a SEASON average, so it stays modest even when it lands,
   // rather than the wild multiplier a single highlight game could get away with.
   if (Math.random() < 0.04) points *= randFloat(1.05, 1.18);
@@ -880,22 +889,49 @@ function generateStatLine(career: Career, stats: PlayerStats, matchesMissed: num
   const passSkill = (stats.iqBasket * 0.6 + stats.technique * 0.2 + stats.mental * 0.2) / 100;
   const passes = Math.min(
     14,
-    passSkill * minutes * profile.pass * (1 - tilt * 0.25) * randFloat(0.85, 1.15) * 0.4 * choiceFactor * (1 + identity.passesPct / 100),
+    passSkill *
+      minutes *
+      profile.pass *
+      (1 - tilt * 0.25) *
+      randFloat(0.85, 1.15) *
+      0.4 *
+      choiceFactor *
+      (1 + identity.passesPct / 100) *
+      (1 + career.skillPass * 0.012),
   );
 
   const stealSkill = (stats.iqBasket * 0.5 + stats.physique * 0.3 + stats.mental * 0.2) / 100;
   const interceptions = Math.min(
     4,
-    stealSkill * minutes * profile.steal * (1 - tilt * 0.15) * randFloat(0.8, 1.2) * 0.08 * choiceFactor * (1 + identity.stealsPct / 100),
+    stealSkill *
+      minutes *
+      profile.steal *
+      (1 - tilt * 0.15) *
+      randFloat(0.8, 1.2) *
+      0.08 *
+      choiceFactor *
+      (1 + identity.stealsPct / 100) *
+      (1 + career.skillDef * 0.012),
   );
 
   const blockSkill = (stats.physique * 0.6 + stats.iqBasket * 0.4) / 100;
   const contres = Math.min(
     5,
-    blockSkill * minutes * profile.block * (1 + tilt * 0.35) * randFloat(0.8, 1.2) * 0.12 * choiceFactor * (1 + identity.blocksPct / 100),
+    blockSkill *
+      minutes *
+      profile.block *
+      (1 + tilt * 0.35) *
+      randFloat(0.8, 1.2) *
+      0.12 *
+      choiceFactor *
+      (1 + identity.blocksPct / 100) *
+      (1 + career.skillDef * 0.012),
   );
 
-  const adresse3pts = Math.max(15, Math.min(52, 24 + stats.technique * 0.32 - stats.physique * 0.04 + (choiceFactor - 1) * 20 + randFloat(-3, 3)));
+  const adresse3pts = Math.max(
+    15,
+    Math.min(52, 24 + stats.technique * 0.32 - stats.physique * 0.04 + (choiceFactor - 1) * 20 + career.skillShoot * 0.4 + randFloat(-3, 3)),
+  );
 
   // Rebalanced so an elite rating actually requires elite core skill, not just good health. The
   // old weights let forme/moral alone (choiceFactor) push even a barely-above-average player

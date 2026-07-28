@@ -113,6 +113,10 @@ export interface EventChoice {
    * top of the raw stat-driven statBonus — a build built around scoring should have noticeably
    * better odds on a shooting attempt than a pure playmaking build, and vice versa. */
   actionStyle?: 'scoring' | 'driving' | 'passing';
+  /** Trains one of the four capped specialty skills (0-10 each — see Career.skillDunk etc.) by a
+   * fixed amount, clamped at the cap. Meant to come from rare-but-not-too-rare dedicated training
+   * events, not from every choice — most events shouldn't touch these at all. */
+  skillBoost?: { skill: 'dunk' | 'shoot' | 'pass' | 'def'; amount: number };
 }
 
 export interface GameEvent {
@@ -292,6 +296,14 @@ export interface Career {
    * acknowledgeChoiceResult to end the career right there, mid-season, instead of waiting for the
    * usual automatic age/decline retirement at a season boundary. */
   pendingVoluntaryRetirement: boolean;
+  /** Four capped (0-10) specialty skills — Dunk, Shoot, Pass, Def — distinct from the main 0-100
+   * attributes. Each build starts with a small head start in the skills that fit it, and the rest
+   * only grows through dedicated, rare-but-not-too-rare training events (see skillBoost on
+   * EventChoice), not through general stat growth. */
+  skillDunk: number;
+  skillShoot: number;
+  skillPass: number;
+  skillDef: number;
   /** Country represented in international competition (Olympics, World Cup). */
   nationality: string;
   /** 0-100, starts neutral. Rises on successful/good choices, falls on failed/bad ones — a real

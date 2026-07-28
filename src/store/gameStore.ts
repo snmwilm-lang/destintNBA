@@ -99,6 +99,10 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     recentMvpWinnerNames: c.recentMvpWinnerNames ?? [],
     mvpCampaignPoints: c.mvpCampaignPoints ?? 0,
     pendingVoluntaryRetirement: c.pendingVoluntaryRetirement ?? false,
+    skillDunk: c.skillDunk ?? 0,
+    skillShoot: c.skillShoot ?? 0,
+    skillPass: c.skillPass ?? 0,
+    skillDef: c.skillDef ?? 0,
     nationality: c.nationality ?? 'US',
     momentum: c.momentum ?? 50,
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
@@ -392,6 +396,10 @@ export const useGameStore = create<GameStore>()(
             // season-end — see rollIndividualAward's campaignBonus in generateTrophies.
             const mvpCampaignPoints = c.mvpCampaignPoints + (choice?.mvpCampaignImpact ?? 0);
             const pendingVoluntaryRetirement = choice?.endsCareer === true;
+            const skillDunk = choice?.skillBoost?.skill === 'dunk' ? Math.min(10, c.skillDunk + choice.skillBoost.amount) : c.skillDunk;
+            const skillShoot = choice?.skillBoost?.skill === 'shoot' ? Math.min(10, c.skillShoot + choice.skillBoost.amount) : c.skillShoot;
+            const skillPass = choice?.skillBoost?.skill === 'pass' ? Math.min(10, c.skillPass + choice.skillBoost.amount) : c.skillPass;
+            const skillDef = choice?.skillBoost?.skill === 'def' ? Math.min(10, c.skillDef + choice.skillBoost.amount) : c.skillDef;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -408,6 +416,10 @@ export const useGameStore = create<GameStore>()(
               rivalShowdownEligibleSeason,
               mvpCampaignPoints,
               pendingVoluntaryRetirement,
+              skillDunk,
+              skillShoot,
+              skillPass,
+              skillDef,
               pendingPlayoffRunEventId,
               momentum,
               rivalryProvoked,

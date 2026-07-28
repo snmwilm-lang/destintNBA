@@ -267,3 +267,29 @@ export function buildIdentity(build: BuildDef): BuildIdentity {
 
   return { pointsPct, passesPct, reboundsPct, stealsPct, blocksPct, noteDelta, heightSensitivity };
 }
+
+export interface StartingSkillBadges {
+  dunk: number;
+  shoot: number;
+  pass: number;
+  def: number;
+}
+
+/** A build's starting head start on the four capped (0-10) specialty skills — Dunk, Shoot, Pass,
+ * Def. Only a head start, not the ceiling: a build good at everything else can still train up a
+ * skill it didn't start with, just more slowly than one already leaning that way. */
+export function startingSkillBadges(build: BuildDef): StartingSkillBadges {
+  const b = build.boosts;
+  const technique = b.technique ?? 0;
+  const physique = b.physique ?? 0;
+  const iqBasket = b.iqBasket ?? 0;
+  const relationCoequipiers = b.relationCoequipiers ?? 0;
+  const mental = b.mental ?? 0;
+  const cap10 = (v: number) => Math.max(0, Math.min(10, Math.round(v)));
+  return {
+    dunk: cap10(physique * 0.18),
+    shoot: cap10(technique * 0.18),
+    pass: cap10((iqBasket + relationCoequipiers) * 0.11),
+    def: cap10((mental + iqBasket) * 0.09),
+  };
+}
