@@ -96,6 +96,7 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     // that may already be in their past.
     rivalShowdownEligibleSeason: c.rivalShowdownEligibleSeason ?? c.season ?? 3,
     pendingPlayoffRunEventId: c.pendingPlayoffRunEventId ?? null,
+    playoffRunCount: c.playoffRunCount ?? 0,
     recentMvpWinnerNames: c.recentMvpWinnerNames ?? [],
     mvpCampaignPoints: c.mvpCampaignPoints ?? 0,
     pendingVoluntaryRetirement: c.pendingVoluntaryRetirement ?? false,
@@ -392,6 +393,10 @@ export const useGameStore = create<GameStore>()(
             const rivalShowdownCount = event.id === 'rival-showdown-decisif' ? c.rivalShowdownCount + 1 : c.rivalShowdownCount;
             const rivalShowdownEligibleSeason =
               event.id === 'rival-showdown-decisif' ? c.season + 1 + Math.round(Math.random()) : c.rivalShowdownEligibleSeason;
+            // Counts against the career-wide cap the moment the run is actually drawn — win or
+            // lose the rounds that follow, drawing it at all is what should count as "one of the
+            // handful of times this happens."
+            const playoffRunCount = event.id === 'playoffs-run-round1' ? c.playoffRunCount + 1 : c.playoffRunCount;
             // Accumulates across the whole season, consumed (and reset) by the MVP vote at
             // season-end — see rollIndividualAward's campaignBonus in generateTrophies.
             const mvpCampaignPoints = c.mvpCampaignPoints + (choice?.mvpCampaignImpact ?? 0);
@@ -414,6 +419,7 @@ export const useGameStore = create<GameStore>()(
               rivalHighSchoolRecord,
               rivalShowdownCount,
               rivalShowdownEligibleSeason,
+              playoffRunCount,
               mvpCampaignPoints,
               pendingVoluntaryRetirement,
               skillDunk,

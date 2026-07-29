@@ -308,6 +308,7 @@ export function createNewCareer(
     pendingNationalCampaign: null,
     pendingFinaleResult: null,
     pendingPlayoffRunEventId: null,
+    playoffRunCount: 0,
     hasReachedFinale: false,
     eliteBreakthroughCount: 0,
     hasBeenSelectedForJo: false,
@@ -374,6 +375,16 @@ export const NATIONAL_CAMPAIGN_RESULT_IDS = new Set([
 // backing them, but they're not themselves a "result" the store should react to.
 const NATIONAL_CAMPAIGN_PREQUEL_IDS = new Set(['jo-prequel-finale', 'cdm-prequel-finale']);
 
+// finale-moment-decisif is meant to only ever be reached via finale-prequel-timeout's
+// linkedNextEventId chain (the two-part "moment décisif" beat) — its own weight (12, x6 from
+// BIG_MOMENT_CATEGORIES = 72 effective) combined with a fairly easy requirements gate
+// (forme/relationCoequipiers >= 65) meant it was actually being drawn directly and independently
+// via the normal pool far more often than through the prequel — tracing real simulated careers
+// showed EVERY single championship came from this shot, some careers landing it 6-8 times because
+// nothing ever stopped it from being its own free-standing draw. The "defensive gate in case it's
+// ever drawn directly" was, in practice, the primary path, not a rare fallback.
+const FINALE_DECISIVE_ID = 'finale-moment-decisif';
+
 // The rival showdown is a rare, career-defining beat gated entirely through forcedMilestone (see
 // rivalShowdownCount/rivalShowdownEligibleSeason) — it must never surface through the normal
 // random draw, or it would show up untethered from the count/spacing rules that keep it rare.
@@ -396,6 +407,14 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
   if (NATIONAL_CAMPAIGN_RESULT_IDS.has(event.id) || NATIONAL_CAMPAIGN_PREQUEL_IDS.has(event.id)) return false;
   if (RIVAL_SHOWDOWN_IDS.has(event.id)) return false;
   if (PLAYOFF_RUN_IDS.has(event.id)) return false;
+  if (event.id === FINALE_DECISIVE_ID) return false;
+  // A percentage-based weight decay alone wasn't enough here — a career draws thousands of events
+  // over its lifetime, so even a heavily damped-but-nonzero weight on the normal draw eventually
+  // gets hit, letting some careers snowball to 6-8 championships (verified in simulation). Once a
+  // dynasty's already real (3+ titles), a repeat Finals trip through the normal draw becomes
+  // genuinely impossible rather than just unlikely — the rare full-playoff-run system (capped at
+  // 3 draws of its own) is left as the one remaining, deliberately rare path back.
+  if (event.id === 'finale-prequel-timeout' && career.trophies.filter((t) => t.id.includes('-champion')).length >= 3) return false;
   if (event.minAge !== undefined && career.age < event.minAge) return false;
   if (event.maxAge !== undefined && career.age > event.maxAge) return false;
   if (event.minSeason !== undefined && career.season < event.minSeason) return false;
@@ -501,16 +520,18 @@ function forcedMilestone(career: Career): GameEvent | null {
   // playoffs card — only ever offered as bonus texture once the player has already banked their
   // guaranteed first Finals trip, so it can never compete with (or delay) that guarantee. Rolled
   // once per eligible season, at the very first event of that season. 15% was tuned too low in
-  // practice — simulation showed a whole ~18-season post-Finale career could roll zero hits, which
-  // reads as the feature simply not existing. Raised so it reliably shows up a few times over a
-  // long career instead of being a near-mythical draw.
+  // practice (a whole ~18-season post-Finale career could roll zero hits) but 35% overcorrected —
+  // simulation showed it firing ~4 times per career on average, which stopped feeling special.
+  // Capped like the other rare, career-defining beats (rival showdown, city-rivalry final) so it
+  // stays a handful of memorable runs, not a recurring texture beat.
   if (
     career.currentTeam.league !== 'lycee' &&
     career.hasReachedFinale &&
     career.stats.reputation >= 50 &&
+    career.playoffRunCount < 3 &&
     career.eventInSeasonIndex === 0 &&
     !career.usedThisSeasonIds.includes('playoffs-run-round1') &&
-    Math.random() < 0.35
+    Math.random() < 0.22
   ) {
     return getEvent('playoffs-run-round1') ?? null;
   }
@@ -647,6 +668,21 @@ function eventWeight(event: GameEvent, career: Career): number {
   // headline moments, not these regular meetings, so it doesn't share this frequency limit.
   if (event.tags?.includes('rivalDuel')) {
     weight *= career.currentTeam.league === 'lycee' ? 0.3 : 0.6;
+  }
+  // The Finals-clinching shot always means the title (see forcedChampion in computeClassement),
+  // completely bypassing that function's own repeat-title resistance — so a team that keeps
+  // making the Finals was racking up 6-7 titles over a career regardless of how stingy the
+  // ambient title roll got, since the guaranteed-shot path never got any harder to reach. The
+  // first trip is untouched (still guaranteed by year 3, still base weight); every trip after a
+  // title is what actually needs to get rarer, the same way winning it repeatedly should.
+  if (event.id === 'finale-prequel-timeout') {
+    const priorTitles = career.trophies.filter((t) => t.id.includes('-champion')).length;
+    // finale-prequel-timeout's own base weight (12) already gets a further x6 from the
+    // BIG_MOMENT_CATEGORIES bonus above — a linear falloff still left it at 8-50+ after repeat
+    // titles, dwarfing the ~1-2 weight of everything else in the pool. Exponential decay actually
+    // converges toward "as rare as anything else" instead of staying disproportionately likely
+    // forever.
+    weight *= Math.pow(0.15, priorTitles);
   }
   // Same beat came up recently (even with a different name plugged in) — let the pool breathe.
   const recencyIndex = career.recentEventIds.lastIndexOf(baseEventId(event.id));
@@ -1017,16 +1053,23 @@ function computeClassement(career: Career, noteMoyenne: number, forcedChampion?:
   const playerContribution = noteMoyenne * 6 + career.stats.reputation * 0.2 + carryBonus;
   // Solid competition, not a rubber stamp: rival front offices specifically build super-teams to
   // dethrone a proven champion, so each additional title in the same career gets meaningfully
-  // harder to repeat, on top of the raw team+player quality that was already required.
+  // harder to repeat, on top of the raw team+player quality that was already required. Both the
+  // resistance and the overall cap below were tuned down after simulation showed titles landing
+  // in ~20-25% of ALL seasons (well over 3 per career on average) — nowhere near special enough
+  // for what's supposed to be the league's ultimate prize every year.
   const priorTitles = career.trophies.filter((t) => t.id.includes('-champion')).length;
-  const leagueResistance = Math.min(28, priorTitles * 8);
+  const leagueResistance = Math.min(55, priorTitles * 18);
   const contention = teamStrength * 0.4 + playerContribution * 0.6 - leagueResistance;
   // Winning the title is resolved as its own direct roll rather than spreading every team across
   // a continuous 1..total scale — with a large league, "exactly rank 1" is a razor-thin sliver of
   // that scale, so mapping it that way made a title all but impossible even for a flawless
   // season. A real MVP-level year on a good roster now has a genuine, meaningful shot; an average
-  // year on an average team still essentially never wins it.
-  const winChance = Math.max(0, Math.min(0.35, (contention - 60) / 130));
+  // year on an average team still essentially never wins it. Even after a first pass at tuning
+  // this down, simulation showed the AMBIENT roll (not the guaranteed Finals-shot path) was still
+  // ~75% of all titles awarded and averaging 3+ per career — a per-season chance compounds fast
+  // across a 15-20 season career even when individually modest, so this needed to come down
+  // further, not just the repeat-title resistance.
+  const winChance = Math.max(0, Math.min(0.15, (contention - 68) / 150));
   if (Math.random() < winChance) {
     return { rank: 1, total };
   }

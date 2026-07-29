@@ -322,6 +322,10 @@ export interface Career {
    * lose the choice) has to determine what comes next, not just chain unconditionally. Cleared
    * once the run ends, either by elimination or by handing off into the existing Finals chain. */
   pendingPlayoffRunEventId: string | null;
+  /** How many times the rare full playoff run (see PLAYOFF_RUN_TRANSITIONS) has been drawn this
+   * career — capped like the other rare, career-defining beats (rival showdown, city-rivalry
+   * final) so it stays a handful of memorable runs instead of a recurring texture beat. */
+  playoffRunCount: number;
   /** True once the player has reached the finals at least once — the first trip is guaranteed by
    * year 3 in the league; every trip after that is a normal (reputation-gated) random draw, so a
    * genuinely great player/team can make it back more than once instead of exactly once ever. */
