@@ -1038,7 +1038,8 @@ export function computeMarketValue(stats: PlayerStats, age: number, league: Leag
 }
 
 function computeClassement(career: Career, noteMoyenne: number, forcedChampion?: boolean): { rank: number; total: number } {
-  const total = career.currentTeam.league === 'nba' ? NBA_TEAM_POOL.length : career.currentTeam.league === 'europe' ? EUROPE_TEAM_POOL.length : HIGH_SCHOOL_TEAM_POOL.length;
+  const pool = allTeamsForLeague(career.currentTeam.league);
+  const total = pool.length;
   // The Finals-clinching shot (finale-moment-decisif) is that title, not a separate roll of the
   // dice — hitting it always means the team is champion this season, no exceptions.
   if (forcedChampion) {
@@ -1052,28 +1053,25 @@ function computeClassement(career: Career, noteMoyenne: number, forcedChampion?:
   const playerContribution = noteMoyenne * 6 + career.stats.reputation * 0.2 + carryBonus;
   // Solid competition, not a rubber stamp: rival front offices specifically build super-teams to
   // dethrone a proven champion, so each additional title in the same career gets meaningfully
-  // harder to repeat, on top of the raw team+player quality that was already required. Both the
-  // resistance and the overall cap below were tuned down after simulation showed titles landing
-  // in ~20-25% of ALL seasons (well over 3 per career on average) — nowhere near special enough
-  // for what's supposed to be the league's ultimate prize every year.
+  // harder to repeat, on top of the raw team+player quality that was already required.
   const priorTitles = career.trophies.filter((t) => t.id.includes('-champion')).length;
-  const leagueResistance = Math.min(55, priorTitles * 18);
+  const leagueResistance = Math.min(20, priorTitles * 7);
   const contention = teamStrength * 0.4 + playerContribution * 0.6 - leagueResistance;
-  // Winning the title is resolved as its own direct roll rather than spreading every team across
-  // a continuous 1..total scale — with a large league, "exactly rank 1" is a razor-thin sliver of
-  // that scale, so mapping it that way made a title all but impossible even for a flawless
-  // season. A real MVP-level year on a good roster now has a genuine, meaningful shot; an average
-  // year on an average team still essentially never wins it. Even after a first pass at tuning
-  // this down, simulation showed the AMBIENT roll (not the guaranteed Finals-shot path) was still
-  // ~75% of all titles awarded and averaging 3+ per career — a per-season chance compounds fast
-  // across a 15-20 season career even when individually modest, so this needed to come down
-  // further, not just the repeat-title resistance.
-  const winChance = Math.max(0, Math.min(0.15, (contention - 68) / 150));
-  if (Math.random() < winChance) {
-    return { rank: 1, total };
-  }
-  const score = contention + randFloat(-15, 15);
-  const rank = Math.max(2, Math.min(total, Math.round(total - (score / 100) * (total - 1))));
+  // The standing is earned, not rolled: rather than a fixed-odds coin flip for 1st place, the
+  // player's team+performance score is measured directly against every other real team in the
+  // league that season — each with its own actual quality (ambition/coachQuality, which now also
+  // drift season to season) plus its own bit of in-season variance, same as anyone gets from
+  // injuries, hot streaks, and matchup luck. Finishing 1st means genuinely outplaying all 29 (or
+  // however many) other teams that year, not clearing an arbitrary probability threshold — an
+  // average season on an average roster is then structurally unable to finish 1st, rather than
+  // merely unlikely to.
+  const myScore = contention + randFloat(-15, 15);
+  const opponents = pool.filter((t) => t.id !== career.currentTeam.id);
+  const beatenBy = opponents.reduce((count, t) => {
+    const opponentScore = (t.ambition + t.coachQuality) / 2 + randFloat(-15, 15);
+    return opponentScore > myScore ? count + 1 : count;
+  }, 0);
+  const rank = Math.max(1, Math.min(total, beatenBy + 1));
   return { rank, total };
 }
 
