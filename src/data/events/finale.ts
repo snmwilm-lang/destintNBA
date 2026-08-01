@@ -152,11 +152,28 @@ export const finaleEvents: EventTemplate[] = [
       "Tomorrow, everything is on the line. Sleep won't come, thoughts keep racing.",
     ),
     leagues: ['nba', 'gLeague'],
+    // Only ever reached as the opening beat of the guaranteed first Finals trip (see
+    // FINALE_BUILDUP_ENTRY_ID in forcedMilestone) — excluded from the normal random draw, since a
+    // "night before the finals" card firing in a season where the team isn't actually in the
+    // finals was a real reported incoherence ("arrives with no follow-up"). Chains straight into
+    // the locker-room speech, then the timeout beat, then the decisive shot.
     weight: 2,
     choices: [
-      { label: tt('Visualiser le match dans le calme', 'Visualize the game calmly'), effects: { mental: 5, moral: 3 } },
-      { label: tt('Sortir se changer les idées', 'Go out to clear your head'), effects: { moral: 4, forme: -2 } },
-      { label: tt('Réviser les schémas tactiques une dernière fois', 'Review the game plan one last time'), effects: { iqBasket: 4, forme: -1 } },
+      {
+        label: tt('Visualiser le match dans le calme', 'Visualize the game calmly'),
+        effects: { mental: 5, moral: 3 },
+        linkedNextEventId: 'finale-discours-vestiaire',
+      },
+      {
+        label: tt('Sortir se changer les idées', 'Go out to clear your head'),
+        effects: { moral: 4, forme: -2 },
+        linkedNextEventId: 'finale-discours-vestiaire',
+      },
+      {
+        label: tt('Réviser les schémas tactiques une dernière fois', 'Review the game plan one last time'),
+        effects: { iqBasket: 4, forme: -1 },
+        linkedNextEventId: 'finale-discours-vestiaire',
+      },
     ],
   },
   {
@@ -168,10 +185,20 @@ export const finaleEvents: EventTemplate[] = [
       'In the silence of the locker room, the coach hands you the floor before you head out.',
     ),
     leagues: ['nba', 'gLeague'],
+    // Same as finale-veille-de-match above — only reached via that card's linkedNextEventId,
+    // never an independent draw. Chains into the timeout beat, then the decisive shot.
     weight: 2,
     choices: [
-      { label: tt('Prendre la parole avec émotion', 'Speak with emotion'), effects: { relationCoequipiers: 5, mental: 3, reputation: 2 } },
-      { label: tt("Rester silencieux et montrer l'exemple", 'Stay silent and lead by example'), effects: { mental: 2, relationCoequipiers: 1 } },
+      {
+        label: tt('Prendre la parole avec émotion', 'Speak with emotion'),
+        effects: { relationCoequipiers: 5, mental: 3, reputation: 2 },
+        linkedNextEventId: 'finale-prequel-timeout',
+      },
+      {
+        label: tt("Rester silencieux et montrer l'exemple", 'Stay silent and lead by example'),
+        effects: { mental: 2, relationCoequipiers: 1 },
+        linkedNextEventId: 'finale-prequel-timeout',
+      },
     ],
   },
 ];

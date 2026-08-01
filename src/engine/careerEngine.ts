@@ -408,6 +408,7 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
   if (RIVAL_SHOWDOWN_IDS.has(event.id)) return false;
   if (PLAYOFF_RUN_IDS.has(event.id)) return false;
   if (event.id === FINALE_DECISIVE_ID) return false;
+  if (event.id === 'finale-veille-de-match' || event.id === 'finale-discours-vestiaire') return false;
   // A percentage-based weight decay alone wasn't enough here — a career draws thousands of events
   // over its lifetime, so even a heavily damped-but-nonzero weight on the normal draw eventually
   // gets hit, letting some careers snowball to 6-8 championships (verified in simulation). Once a
@@ -437,7 +438,11 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
 /** The draft is a scripted three-beat sequence, not a random draw — force it in order once eligible. */
 const DRAFT_SEQUENCE = ['draft-declaration', 'draft-combine', 'draft-soiree'];
 
-const FINALE_PREQUEL_EVENT_ID = 'finale-prequel-timeout';
+// The guaranteed first Finals trip now opens on the pre-game buildup beats (previously two
+// free-floating "finale" category flavor cards that could fire in ANY nba/gLeague season with no
+// actual finals happening that year — "the night before the finals... then nothing" was a real
+// reported incoherence) and chains straight through to the decisive shot.
+const FINALE_BUILDUP_ENTRY_ID = 'finale-veille-de-match';
 const RIVALRY_PROVOCATION_EVENT_ID = 'conflit-defi-public';
 const HIGH_SCHOOL_RIVALRY_EVENT_ID = 'conflit-derby-lycee';
 
@@ -510,11 +515,11 @@ function forcedMilestone(career: Career): GameEvent | null {
   if (
     career.currentTeam.league === 'nba' &&
     !career.hasReachedFinale &&
-    !career.usedThisSeasonIds.includes(FINALE_PREQUEL_EVENT_ID) &&
+    !career.usedThisSeasonIds.includes(FINALE_BUILDUP_ENTRY_ID) &&
     seasonsPlayedInLeague(career, 'nba') >= 2 &&
     career.eventInSeasonIndex === career.eventsPerSeason - 1
   ) {
-    return getEvent(FINALE_PREQUEL_EVENT_ID) ?? null;
+    return getEvent(FINALE_BUILDUP_ENTRY_ID) ?? null;
   }
   // A rare, full playoff run — three real elimination rounds instead of the usual single generic
   // playoffs card — only ever offered as bonus texture once the player has already banked their
@@ -1098,7 +1103,13 @@ interface TrophyResult {
    * not happening. `reason` picks which press framing fits: a clean note-for-note edge, or (once
    * the player's own rating is already near the 10/10 ceiling and a "better number" can't really
    * exist) a team-success/momentum framing instead, so the snub still reads as earned. */
-  mvpSnub: { winnerName: string; winnerNote: number; reason: 'noteMoyenne' | 'formCollective' } | null;
+  mvpSnub: {
+    winnerName: string;
+    winnerNote: number;
+    winnerPoints: number;
+    winnerPasses: number;
+    reason: 'noteMoyenne' | 'formCollective';
+  } | null;
   /** Only set alongside mvpSnub — the winner's name, so the caller can keep a short no-repeat
    * history and stop the same "other player" winning the vote over and over. */
   mvpSnubWinnerName: string | null;
@@ -1109,7 +1120,7 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
   const idBase = `trophy-s${career.season}`;
   const league = career.currentTeam.league;
   const isFirstProSeason = league !== 'lycee' && !career.history.some((h) => h.league === league);
-  let mvpSnub: { winnerName: string; winnerNote: number; reason: 'noteMoyenne' | 'formCollective' } | null = null;
+  let mvpSnub: TrophyResult['mvpSnub'] = null;
   let mvpSnubWinnerName: string | null = null;
 
   if (rank === 1) {
@@ -1182,7 +1193,13 @@ function generateTrophies(career: Career, statLine: SeasonStatLine, rank: number
       const winnerNote = isTight
         ? Math.round(Math.max(best.note, statLine.noteMoyenne - randFloat(0, 0.2)) * 10) / 10
         : Math.round(Math.max(best.note, Math.min(10, statLine.noteMoyenne + randFloat(0.1, 0.6))) * 10) / 10;
-      mvpSnub = { winnerName: best.name, winnerNote, reason: isTight ? 'formCollective' : 'noteMoyenne' };
+      // Even a "perfect" rating and huge box-score numbers deserve a concrete answer for why the
+      // vote went elsewhere — not just a name and an almost-identical note. Give the winner their
+      // own plausible stat line (built off the player's own, so it reads as a real, comparable
+      // season rather than an arbitrary number) so the press can point at something tangible.
+      const winnerPoints = Math.max(12, Math.round((statLine.points + randFloat(-3, 5)) * 10) / 10);
+      const winnerPasses = Math.max(2, Math.round((statLine.passes + randFloat(-2, 3)) * 10) / 10);
+      mvpSnub = { winnerName: best.name, winnerNote, winnerPoints, winnerPasses, reason: isTight ? 'formCollective' : 'noteMoyenne' };
       mvpSnubWinnerName = best.name;
     }
   } else if (isFirstProSeason && statLine.noteMoyenne >= 6.5) {
