@@ -1724,10 +1724,15 @@ export function spendSkillPoint(career: Career, stat: StatKey): Career {
   };
 }
 
-// Bad teams draft first, just like the real lottery/draft order — a proxy sort by ambition
-// (low-ambition teams are the ones rebuilding and picking early).
+// Bad teams draft first, just like the real lottery/draft order — the worst team in the
+// standings gets the 1st pick, the strongest gets the very last one. Sorted by the exact same
+// teamStrength metric computeClassement uses to decide the standings themselves (ambition +
+// coachQuality), not ambition alone — a team can have low ambition but a genuinely strong coach
+// (or vice versa) and still be competitive on the floor, so ambition by itself was an inconsistent
+// stand-in for "how this team actually finished."
 function draftOrderPool(): Team[] {
-  return [...NBA_TEAM_POOL].sort((a, b) => a.ambition - b.ambition);
+  const teamStrength = (t: Team) => (t.ambition + t.coachQuality) / 2;
+  return [...NBA_TEAM_POOL].sort((a, b) => teamStrength(a) - teamStrength(b));
 }
 
 export function teamForDraftPick(pick: number): Team {
