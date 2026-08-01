@@ -1092,7 +1092,23 @@ function computeClassement(career: Career, noteMoyenne: number, forcedChampion?:
     const opponentScore = (t.ambition + t.coachQuality) / 2 + randFloat(-15, 15);
     return opponentScore > myScore ? count + 1 : count;
   }, 0);
-  const rank = Math.max(1, Math.min(total, beatenBy + 1));
+  const relativeRank = Math.max(1, Math.min(total, beatenBy + 1));
+  // The relative comparison above already makes an average season on an average roster unable to
+  // win outright — but simulation showed noteMoyenne is heavily compressed near the top of its
+  // 0-10 scale (measured: 25th percentile 8.3, median 9.1, 75th 9.5 — barely any room to tell
+  // "decent" from "outstanding"), so a merely good, unremarkable season could still occasionally
+  // edge out most of the league on a lucky roll. Both the top 10 and 1st place are meant to be a
+  // genuine exploit, not just "happened to have the better dice roll that day" — so reaching
+  // either additionally requires the season to have actually been excellent by this game's own
+  // real, measured standards, not just a threshold anyone eventually stumbles into. A season that
+  // clears the relative comparison but not these bars gets pushed just outside the tier it
+  // "won" on paper — never dumped to the bottom of the table, just denied the exploit itself.
+  const isTop10Caliber = noteMoyenne >= 9.3 && career.stats.reputation >= 75;
+  const isGenuineChampionCaliber = noteMoyenne >= 9.6 && career.stats.reputation >= 85;
+  let rank = relativeRank;
+  if (relativeRank <= 10 && !isTop10Caliber) rank = 11;
+  else if (relativeRank === 1 && !isGenuineChampionCaliber) rank = 2;
+  rank = Math.max(1, Math.min(total, rank));
   return { rank, total };
 }
 
