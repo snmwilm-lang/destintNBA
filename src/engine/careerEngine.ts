@@ -391,6 +391,11 @@ const FINALE_DECISIVE_ID = 'finale-moment-decisif';
 // random draw, or it would show up untethered from the count/spacing rules that keep it rare.
 const RIVAL_SHOWDOWN_IDS = new Set(['rival-showdown-prequel', 'rival-showdown-decisif']);
 
+// The "stuck on a genuinely bad team" moment is gated on career.currentTeam.ambition, which the
+// generic StatKey-based requirements system has no way to check — so like the beats above, it's
+// reached exclusively through forcedMilestone, never the normal weighted draw.
+const BAD_TEAM_EVENT_ID = 'equipe-reconstruction-role';
+
 // Same "forced-path only" idea, for the rare full playoff-run sequence — every step is reached
 // exclusively through pendingPlayoffRunEventId, never a random draw.
 const PLAYOFF_RUN_IDS = new Set([
@@ -410,6 +415,7 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
   if (PLAYOFF_RUN_IDS.has(event.id)) return false;
   if (event.id === FINALE_DECISIVE_ID) return false;
   if (event.id === 'finale-veille-de-match' || event.id === 'finale-discours-vestiaire') return false;
+  if (event.id === BAD_TEAM_EVENT_ID) return false;
   if (event.minAge !== undefined && career.age < event.minAge) return false;
   if (event.maxAge !== undefined && career.age > event.maxAge) return false;
   if (event.minSeason !== undefined && career.season < event.minSeason) return false;
@@ -560,6 +566,21 @@ function forcedMilestone(career: Career): GameEvent | null {
     Math.random() < 0.25
   ) {
     return getEvent('entrainement-travail-specifique') ?? null;
+  }
+  // Landing on a genuinely bad team (low ambition — whether from the draft, a trade, or a roster
+  // that's simply declined since) is meant to actually mean something: a real choice between
+  // trying to single-handedly drag the team up (real risk, real payoff) or accepting the
+  // rebuilding season and playing for personal development instead. Gated on a team property, not
+  // a player stat, so it's checked here directly rather than through the generic requirements
+  // system. A different slot than the other forced season-openers so they don't compete.
+  if (
+    career.currentTeam.league !== 'lycee' &&
+    career.currentTeam.ambition <= 45 &&
+    career.eventInSeasonIndex === 1 &&
+    !career.usedThisSeasonIds.includes(BAD_TEAM_EVENT_ID) &&
+    Math.random() < 0.35
+  ) {
+    return getEvent(BAD_TEAM_EVENT_ID) ?? null;
   }
   // The deliberate "start a rivalry" choice is meant to be a real, discoverable decision — not a
   // needle buried in a pool of well over a thousand event variants. Guarantee it's offered once,
@@ -1701,6 +1722,10 @@ export function teamForDraftPick(pick: number): Team {
 export interface DraftResult {
   pick: number;
   team: Team;
+  /** False on a genuine draft failure — two full rounds pass and the player's name is never
+   * called. Not a guaranteed floor: a weak enough stock/performance combo, plus bad luck on the
+   * night, can end the draft empty-handed, same as it can in a real draft. */
+  drafted: boolean;
 }
 
 // The draft is never pure stats: it blends 4 years of accumulated draft stock (performance +
@@ -1710,9 +1735,18 @@ export function computeDraftResult(career: Career): DraftResult {
   const performanceScore = (career.stats.technique + career.stats.physique + career.stats.mental + career.stats.iqBasket + career.stats.reputation) / 5;
   const combined = career.draftStock * 0.5 + performanceScore * 0.5;
   const roll = Math.max(0, Math.min(100, combined + randFloat(-25, 25)));
+  // Going undrafted is a real, earned failure state, not a coin flip applied to everyone — the
+  // threshold sits low enough on the roll scale that only a genuinely weak stock/performance
+  // combination (and some bad luck on top) can land there; a decent-or-better prospect's roll
+  // range never dips this low no matter how unlucky the draw.
+  if (roll < 15) {
+    // Only a rebuilding team takes a flier on an undrafted player — the same worst-ambition team
+    // that would otherwise hold the very first pick.
+    return { pick: 0, team: draftOrderPool()[0], drafted: false };
+  }
   const poolSize = NBA_TEAM_POOL.length;
   const pick = Math.max(1, Math.min(poolSize, Math.round(poolSize - (roll / 100) * (poolSize - 1))));
-  return { pick, team: teamForDraftPick(pick) };
+  return { pick, team: teamForDraftPick(pick), drafted: true };
 }
 
 export function startNextSeason(career: Career): Career {

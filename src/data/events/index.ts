@@ -20,6 +20,7 @@ import { draftEvents } from './draft';
 import { allStarEvents } from './allStar';
 import { jeuxOlympiquesEvents } from './jeuxOlympiques';
 import { coupeDuMondeEvents } from './coupeDuMonde';
+import { equipeFaibleEvents } from './equipeFaible';
 
 export const allEventTemplates: EventTemplate[] = [
   ...matchEvents,
@@ -42,6 +43,7 @@ export const allEventTemplates: EventTemplate[] = [
   ...allStarEvents,
   ...jeuxOlympiquesEvents,
   ...coupeDuMondeEvents,
+  ...equipeFaibleEvents,
 ];
 
 export const allEvents = expandTemplates(allEventTemplates);

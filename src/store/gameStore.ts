@@ -26,6 +26,7 @@ import {
   spendSkillPoint,
   startNextSeason,
 } from '../engine/careerEngine';
+import { applyEffects } from '../engine/statUtils';
 import { ACHIEVEMENTS, MAX_ACHIEVEMENT_BONUS_POINTS } from '../data/achievements';
 import { type DailyChallengeMetric, pickDailyChallenges, todayKey } from '../data/dailyChallenges';
 
@@ -354,14 +355,35 @@ export const useGameStore = create<GameStore>()(
             // the next season boundary (startNextSeason picks it up from career.draftPick).
             let draftPick = c.draftPick;
             let resultText = linkedNextEventId ? null : outcome.resultText;
+            // Undrafted is a real, earned failure state — a weak enough draft stock/performance
+            // combo (plus bad luck on the night) can end the draft with the player's name never
+            // called, same as it can for a real prospect. It still leads somewhere (a rebuilding
+            // team offers a training-camp spot), but the setback has to actually cost something:
+            // a real hit to reputation/morale/standing, not just a worse-flavored headline.
+            let draftStats = outcome.stats;
+            let draftStatDeltas = outcome.statDeltas;
             if (event.id === 'draft-soiree') {
               const draftResult = computeDraftResult({ ...c, stats: outcome.stats, draftStock });
               draftPick = draftResult.pick;
               if (resultText) {
-                resultText = {
-                  fr: resultText.fr.replace('{pick}', String(draftResult.pick)).replace('{team}', draftResult.team.name),
-                  en: resultText.en.replace('{pick}', String(draftResult.pick)).replace('{team}', draftResult.team.name),
-                };
+                resultText = draftResult.drafted
+                  ? {
+                      fr: resultText.fr.replace('{pick}', String(draftResult.pick)).replace('{team}', draftResult.team.name),
+                      en: resultText.en.replace('{pick}', String(draftResult.pick)).replace('{team}', draftResult.team.name),
+                    }
+                  : {
+                      fr: `Les deux tours s'achèvent et ton nom n'est jamais appelé. Un coup dur devant ta famille — mais ${draftResult.team.name} t'offre une place en camp d'entraînement pour te faire une place par toi-même.`,
+                      en: `Both rounds come and go and your name is never called. A real gut punch in front of your family — but ${draftResult.team.name} offers you a training-camp spot to earn a roster spot on your own.`,
+                    };
+              }
+              if (!draftResult.drafted) {
+                const undraftedPenalty: Partial<Record<StatKey, number>> = { reputation: -8, moral: -10, popularite: -5, tempsDeJeu: -8 };
+                draftStats = applyEffects(outcome.stats, undraftedPenalty);
+                const mergedDeltas: Partial<Record<StatKey, number>> = { ...draftStatDeltas };
+                for (const key of Object.keys(undraftedPenalty) as StatKey[]) {
+                  mergedDeltas[key] = (mergedDeltas[key] ?? 0) + (undraftedPenalty[key] ?? 0);
+                }
+                draftStatDeltas = mergedDeltas;
               }
             }
             // The Finals-clinching shot is the title, not a separate roll — whether it drops (or
@@ -412,7 +434,7 @@ export const useGameStore = create<GameStore>()(
                 : c.recordsBrokenCount;
             const withChoice: Career = {
               ...c,
-              stats: outcome.stats,
+              stats: draftStats,
               argent: outcome.argent,
               seenEventIds,
               usedThisSeasonIds,
@@ -445,7 +467,7 @@ export const useGameStore = create<GameStore>()(
               phase: linkedNextEventId ? 'event' : 'choiceResult',
               currentEventId: linkedNextEventId ?? c.currentEventId,
               lastChoiceResultText: resultText,
-              lastChoiceStatDeltas: outcome.statDeltas,
+              lastChoiceStatDeltas: draftStatDeltas,
               lastChoiceMoneyDelta: outcome.moneyDelta,
               lastChoiceWasSuccess: outcome.wasSuccess,
               eventInSeasonIndex: linkedNextEventId ? c.eventInSeasonIndex : c.eventInSeasonIndex + 1,
