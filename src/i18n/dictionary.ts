@@ -152,6 +152,9 @@ export const dictionary = {
   recapContinue: { fr: 'Saison suivante', en: 'Next season' },
   recapNewTraits: { fr: 'Nouveau trait de caractère', en: 'New personality trait' },
   endingTraits: { fr: 'Traits de caractère', en: 'Personality traits' },
+  traitRarityCommun: { fr: 'Commun', en: 'Common' },
+  traitRarityRare: { fr: 'Rare', en: 'Rare' },
+  traitRarityLegendaire: { fr: 'Légendaire', en: 'Legendary' },
   recapVintageSeason: {
     fr: 'Saison vintage — ton corps a défié le temps cette année.',
     en: 'Vintage season — your body defied the years this time around.',

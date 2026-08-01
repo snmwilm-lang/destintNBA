@@ -156,9 +156,24 @@ export function EndingScreen({ career, onRestart, onBackToMenu }: EndingScreenPr
               {career.traits.map((id) => {
                 const trait = getTrait(id);
                 if (!trait) return null;
+                const rarityClasses =
+                  trait.rarity === 'legendaire'
+                    ? 'border-gold-400/50 bg-gold-400/10 text-gold-300'
+                    : trait.rarity === 'rare'
+                      ? 'border-sky-400/50 bg-sky-400/10 text-sky-300'
+                      : 'border-slate-500/50 bg-slate-500/10 text-slate-300';
+                const rarityLabel =
+                  trait.rarity === 'legendaire'
+                    ? t('traitRarityLegendaire')
+                    : trait.rarity === 'rare'
+                      ? t('traitRarityRare')
+                      : t('traitRarityCommun');
                 return (
                   <li key={id} className="text-sm text-sky-300">
                     <span className="font-semibold">🧬 {trait.name[lang]}</span>
+                    <span className={`ml-2 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${rarityClasses}`}>
+                      {rarityLabel}
+                    </span>
                     <span className="text-slate-500 text-xs"> — {trait.description[lang]}</span>
                   </li>
                 );

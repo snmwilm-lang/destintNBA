@@ -62,10 +62,22 @@ export function SeasonRecapScreen({ career, result, onContinue }: SeasonRecapScr
         {career.newlyUnlockedTraits.map((id) => {
           const trait = getTrait(id);
           if (!trait) return null;
+          const borderClasses =
+            trait.rarity === 'legendaire' ? 'border-gold-400/50 bg-gold-400/10' : 'border-sky-400/40 bg-sky-400/10';
+          const labelClasses = trait.rarity === 'legendaire' ? 'text-gold-300' : 'text-sky-300';
+          const nameClasses = trait.rarity === 'legendaire' ? 'text-gold-200' : 'text-sky-200';
+          const rarityLabel =
+            trait.rarity === 'legendaire'
+              ? t('traitRarityLegendaire')
+              : trait.rarity === 'rare'
+                ? t('traitRarityRare')
+                : t('traitRarityCommun');
           return (
-            <div key={id} className="col-span-2 sm:col-span-3 rounded-xl border border-sky-400/40 bg-sky-400/10 px-4 py-2.5 text-left">
-              <div className="text-xs uppercase tracking-wide text-sky-300">{t('recapNewTraits')}</div>
-              <div className="text-sm font-bold text-sky-200">🧬 {trait.name[lang]}</div>
+            <div key={id} className={`col-span-2 sm:col-span-3 rounded-xl border px-4 py-2.5 text-left ${borderClasses}`}>
+              <div className={`text-xs uppercase tracking-wide ${labelClasses}`}>
+                {t('recapNewTraits')} · {rarityLabel}
+              </div>
+              <div className={`text-sm font-bold ${nameClasses}`}>🧬 {trait.name[lang]}</div>
               <div className="text-xs text-slate-300">{trait.description[lang]}</div>
             </div>
           );

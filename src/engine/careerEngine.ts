@@ -326,6 +326,7 @@ export function createNewCareer(
     history: [],
     trophies: [],
     pressArticles: [],
+    recordsBrokenCount: 0,
     seenEventIds: skip ? [...DRAFT_SEQUENCE] : [],
     usedThisSeasonIds: [],
     recentEventIds: [],

@@ -358,6 +358,9 @@ export interface Career {
   history: SeasonResult[];
   trophies: Trophy[];
   pressArticles: PressArticle[];
+  /** How many historical single-game records (see match-chasse-record* events) this career has
+   * successfully broken — feeds the "record-breaker" trait and the daily-challenge tracker. */
+  recordsBrokenCount: number;
   /** Permanently used unique/milestone event ids (never redrawn). */
   seenEventIds: string[];
   /** Event ids already drawn this season (reset every season, avoids repeats). */

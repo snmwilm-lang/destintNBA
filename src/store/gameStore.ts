@@ -104,6 +104,7 @@ function reconcileCareer(c: Partial<Career> & Record<string, unknown>): Career {
     skillShoot: c.skillShoot ?? 0,
     skillPass: c.skillPass ?? 0,
     skillDef: c.skillDef ?? 0,
+    recordsBrokenCount: c.recordsBrokenCount ?? 0,
     nationality: c.nationality ?? 'US',
     momentum: c.momentum ?? 50,
     pendingNationalCampaign: c.pendingNationalCampaign ?? null,
@@ -405,6 +406,10 @@ export const useGameStore = create<GameStore>()(
             const skillShoot = choice?.skillBoost?.skill === 'shoot' ? Math.min(10, c.skillShoot + choice.skillBoost.amount) : c.skillShoot;
             const skillPass = choice?.skillBoost?.skill === 'pass' ? Math.min(10, c.skillPass + choice.skillBoost.amount) : c.skillPass;
             const skillDef = choice?.skillBoost?.skill === 'def' ? Math.min(10, c.skillDef + choice.skillBoost.amount) : c.skillDef;
+            const recordsBrokenCount =
+              event.id.startsWith('match-chasse-record') && choiceId === event.choices[0]?.id && outcome.wasSuccess === true
+                ? c.recordsBrokenCount + 1
+                : c.recordsBrokenCount;
             const withChoice: Career = {
               ...c,
               stats: outcome.stats,
@@ -426,6 +431,7 @@ export const useGameStore = create<GameStore>()(
               skillShoot,
               skillPass,
               skillDef,
+              recordsBrokenCount,
               pendingPlayoffRunEventId,
               momentum,
               rivalryProvoked,
