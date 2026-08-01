@@ -1,6 +1,13 @@
 import type { LocalizedText } from '../types';
 
-export type DailyChallengeMetric = 'choicesMade' | 'successfulRisks' | 'seasonsCompleted' | 'trophiesWon' | 'moneyEarned';
+export type DailyChallengeMetric =
+  | 'choicesMade'
+  | 'successfulRisks'
+  | 'seasonsCompleted'
+  | 'trophiesWon'
+  | 'moneyEarned'
+  | 'recordsBroken'
+  | 'skillsTrained';
 
 export interface DailyChallengeTemplate {
   id: string;
@@ -66,6 +73,27 @@ export const DAILY_CHALLENGE_POOL: DailyChallengeTemplate[] = [
     description: { fr: 'Gagne 500 000 € de salaire sur une saison.', en: 'Earn €500,000 in salary in a single season.' },
     metric: 'moneyEarned',
     target: 500_000,
+  },
+  {
+    id: 'daily-record-1',
+    name: { fr: 'Entrée dans les livres', en: 'Into the record books' },
+    description: { fr: 'Bats un record historique de la ligue en un match.', en: "Break a league single-game record." },
+    metric: 'recordsBroken',
+    target: 1,
+  },
+  {
+    id: 'daily-skill-1',
+    name: { fr: 'Travail spécifique', en: 'Specialized work' },
+    description: { fr: 'Progresse dans une compétence spécialisée (Dunk, Tir, Passe ou Défense).', en: 'Improve a specialty skill (Dunk, Shoot, Pass, or Def).' },
+    metric: 'skillsTrained',
+    target: 1,
+  },
+  {
+    id: 'daily-skill-2',
+    name: { fr: 'Double séance', en: 'Double session' },
+    description: { fr: 'Progresse 2 fois dans tes compétences spécialisées.', en: 'Improve your specialty skills 2 times.' },
+    metric: 'skillsTrained',
+    target: 2,
   },
 ];
 

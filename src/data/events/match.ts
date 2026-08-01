@@ -419,4 +419,156 @@ export const matchEvents: EventTemplate[] = [
       },
     ],
   },
+  // Four more single-game league records, each leaning on a different build archetype's
+  // strength — a rebounding/shot-blocking record for bigs, a passing record for playmakers, a
+  // steals record for defensive guards, on top of the existing scoring/3pt record above. Same
+  // standard throughout: the "go for it" choice stays genuinely rare even for a maxed build.
+  {
+    id: 'match-chasse-record-rebonds',
+    category: 'match',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Une domination totale au rebond face à {opponent}', 'Total rebounding dominance against {opponent}'),
+    description: tt(
+      "Tu arraches tout ce qui traîne près du cercle depuis le coup d'envoi. À la mi-temps, le record de la ligue — 30 rebonds en un seul match — commence à sembler jouable.",
+      "You've ripped down everything near the rim since tip-off. At halftime, the league record — 30 rebounds in a single game — starts to feel within reach.",
+    ),
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
+    minSeason: 2,
+    requirements: [{ stat: 'reputation', min: 40 }],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Attaquer chaque rebond, viser le record', 'Attack every rebound, chase the record'),
+        successChance: {
+          baseChance: 0.08,
+          statBonus: { physique: 0.012, iqBasket: 0.006 },
+          onSuccess: { reputation: 6, popularite: 6, moral: 4 },
+          onFailure: { moral: -3, forme: -2 },
+          successText: tt(
+            'Tu domines la raquette comme personne. 30 rebonds : un nouveau record de la ligue !',
+            'You own the paint like nobody else. 30 boards — a new league record!',
+          ),
+          failureText: tt(
+            'Tu finis avec un chiffre énorme, mais le record résiste de peu.',
+            'You finish with a huge number, but the record narrowly holds.',
+          ),
+        },
+      },
+      {
+        label: tt('Rester focus sur ton rôle habituel', 'Stay focused on your usual role'),
+        effects: { iqBasket: 2, relationCoequipiers: 2 },
+      },
+    ],
+  },
+  {
+    id: 'match-chasse-record-passes',
+    category: 'match',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Une distribution historique face à {opponent}', 'A historic playmaking clinic against {opponent}'),
+    description: tt(
+      "Tout ce que tu touches se transforme en panier pour un coéquipier. À la mi-temps, le record de la ligue — 20 passes décisives en un seul match — n'a jamais semblé aussi proche.",
+      "Everything you touch turns into a teammate's basket. At halftime, the league record — 20 assists in a single game — has never felt closer.",
+    ),
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
+    minSeason: 2,
+    requirements: [{ stat: 'reputation', min: 40 }],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Chercher la passe décisive à chaque possession', 'Hunt the assist on every possession'),
+        successChance: {
+          baseChance: 0.08,
+          statBonus: { iqBasket: 0.01, relationCoequipiers: 0.006 },
+          onSuccess: { reputation: 6, popularite: 6, moral: 4 },
+          onFailure: { moral: -3, forme: -2 },
+          successText: tt(
+            'Chaque ballon trouve le bon coéquipier au bon moment. 20 passes décisives : record de la ligue battu !',
+            'Every pass finds the right teammate at the right time. 20 assists — the league record falls!',
+          ),
+          failureText: tt(
+            'La distribution est brillante, mais quelques paniers manqués privent du record.',
+            'The playmaking is brilliant, but a few missed shots keep the record just out of reach.',
+          ),
+        },
+      },
+      {
+        label: tt("Scorer quand l'occasion se présente", 'Score when the opportunity is there'),
+        effects: { technique: 2, popularite: 1 },
+      },
+    ],
+  },
+  {
+    id: 'match-chasse-record-contres',
+    category: 'match',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Un mur infranchissable face à {opponent}', 'An impenetrable wall against {opponent}'),
+    description: tt(
+      "Rien ne passe près de ton cercle ce soir. À la mi-temps, le record de la ligue — 10 contres en un seul match — devient une vraie possibilité.",
+      "Nothing gets through near your rim tonight. At halftime, the league record — 10 blocks in a single game — becomes a real possibility.",
+    ),
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
+    minSeason: 2,
+    requirements: [{ stat: 'reputation', min: 40 }],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Protéger le cercle sur chaque action', 'Protect the rim on every single play'),
+        successChance: {
+          baseChance: 0.07,
+          statBonus: { physique: 0.01, iqBasket: 0.007 },
+          onSuccess: { reputation: 6, popularite: 6, moral: 4 },
+          onFailure: { moral: -3, forme: -2, risqueBlessure: 2 },
+          successText: tt(
+            "Tu rejettes tout ce qui s'approche du cercle. 10 contres : un nouveau record de la ligue !",
+            'You reject everything that comes near the rim. 10 blocks — a new league record!',
+          ),
+          failureText: tt(
+            'Une masterclass défensive, mais le record de justesse t\'échappe.',
+            'A defensive masterclass, but the record narrowly slips away.',
+          ),
+        },
+      },
+      {
+        label: tt('Jouer prudent pour éviter les fautes', 'Play it safe to avoid foul trouble'),
+        effects: { mental: 2, tempsDeJeu: 1 },
+      },
+    ],
+  },
+  {
+    id: 'match-chasse-record-interceptions',
+    category: 'match',
+    leagues: ['nba', 'gLeague', 'europe'],
+    title: tt('Une soirée de vol face à {opponent}', 'A night of larceny against {opponent}'),
+    description: tt(
+      "Tu anticipes toutes les passes adverses depuis le début du match. À la mi-temps, le record de la ligue — 10 interceptions en un seul match — semble enfin atteignable.",
+      "You've read every opposing pass since tip-off. At halftime, the league record — 10 steals in a single game — finally feels reachable.",
+    ),
+    slots: [{ key: 'opponent', pool: opponents, leaguesForValue: leaguesForOpponent }],
+    minSeason: 2,
+    requirements: [{ stat: 'reputation', min: 40 }],
+    weight: 1,
+    choices: [
+      {
+        label: tt('Prendre tous les risques en défense de passe', 'Gamble on every passing lane'),
+        successChance: {
+          baseChance: 0.07,
+          statBonus: { mental: 0.01, iqBasket: 0.007 },
+          onSuccess: { reputation: 6, popularite: 6, moral: 4 },
+          onFailure: { moral: -3, forme: -2 },
+          successText: tt(
+            'Tu lis chaque intention adverse. 10 interceptions : un nouveau record de la ligue !',
+            'You read every opposing intention. 10 steals — a new league record!',
+          ),
+          failureText: tt(
+            "Tu voles ballon après ballon, mais le record t'échappe de justesse.",
+            'You pick pocket after pocket, but the record narrowly slips away.',
+          ),
+        },
+      },
+      {
+        label: tt('Jouer une défense de position classique', 'Play standard positional defense'),
+        effects: { iqBasket: 2, relationCoach: 1 },
+      },
+    ],
+  },
 ];

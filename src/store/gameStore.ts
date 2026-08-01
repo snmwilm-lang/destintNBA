@@ -450,6 +450,8 @@ export const useGameStore = create<GameStore>()(
           const daily = applyDailyProgress(stateAfterChoice, {
             choicesMade: 1,
             successfulRisks: outcome.wasSuccess === true ? 1 : 0,
+            recordsBroken: event.id.startsWith('match-chasse-record') && choiceId === event.choices[0]?.id && outcome.wasSuccess === true ? 1 : 0,
+            skillsTrained: event.id === 'entrainement-travail-specifique' ? 1 : 0,
           });
           return { ...afterChoice, ...daily };
         });
