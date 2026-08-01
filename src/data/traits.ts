@@ -291,10 +291,14 @@ export const TRAITS: Trait[] = [
       "Championships, repeated peaks of dominance, a reputation near the ceiling: people no longer talk about you as a star, but as one of the sport's all-time peaks — a weight nobody else in the league carries.",
     ),
     rarity: 'legendaire',
+    // Deliberately set at the hard ceiling of each underlying system (elite breakthroughs cap at
+    // 6 for the whole career, repeat Finals trips are capped at 3 titles) rather than a merely
+    // high threshold — simulation showed a 5-breakthrough/2-title/95-rep version fired in roughly
+    // 1 in 4 careers even under random, unoptimized play, nowhere close to "legendary."
     check: (career) =>
-      career.eliteBreakthroughCount >= 5 &&
-      career.trophies.filter((t) => t.id.includes('-champion')).length >= 2 &&
-      career.stats.reputation >= 95,
+      career.eliteBreakthroughCount >= 6 &&
+      career.trophies.filter((t) => t.id.includes('-champion')).length >= 3 &&
+      career.stats.reputation >= 97,
     buff: { reputation: 10, mental: 8, potentiel: 5 },
     nerf: { forme: -6, popularite: -4 },
   },
