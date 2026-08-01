@@ -410,13 +410,6 @@ function meetsRequirements(event: GameEvent, career: Career): boolean {
   if (PLAYOFF_RUN_IDS.has(event.id)) return false;
   if (event.id === FINALE_DECISIVE_ID) return false;
   if (event.id === 'finale-veille-de-match' || event.id === 'finale-discours-vestiaire') return false;
-  // A percentage-based weight decay alone wasn't enough here — a career draws thousands of events
-  // over its lifetime, so even a heavily damped-but-nonzero weight on the normal draw eventually
-  // gets hit, letting some careers snowball to 6-8 championships (verified in simulation). Once a
-  // dynasty's already real (3+ titles), a repeat Finals trip through the normal draw becomes
-  // genuinely impossible rather than just unlikely — the rare full-playoff-run system (capped at
-  // 3 draws of its own) is left as the one remaining, deliberately rare path back.
-  if (event.id === 'finale-prequel-timeout' && career.trophies.filter((t) => t.id.includes('-champion')).length >= 3) return false;
   if (event.minAge !== undefined && career.age < event.minAge) return false;
   if (event.maxAge !== undefined && career.age > event.maxAge) return false;
   if (event.minSeason !== undefined && career.season < event.minSeason) return false;
@@ -1740,6 +1733,35 @@ export function startNextSeason(career: Career): Career {
   let rivalTeamName = career.rivalTeamName;
   if (currentTeam.name === rivalTeamName) {
     rivalTeamName = pickRivalTeamName(currentTeam.name);
+  }
+  // A team's front office isn't frozen the moment the player joins — ambition, coaching, and
+  // media spotlight all drift season to season, the same way generateTransferOffers already
+  // re-rolls a fresh "form" swing for every OTHER team shown. Without this, staying put for years
+  // left the "stay with your team" card on the transfer-offers screen showing the exact same
+  // three numbers every single season, while every rival offer kept fluctuating — a team that
+  // never moves an inch reads as broken, not stable. Nudged by how the just-finished season
+  // actually went (a title run pulls in real ambition and coaching; a lottery finish erodes it),
+  // plus independent noise. Only applies when the team is actually being kept — a freshly
+  // assigned team (draft, league move, a just-signed contract) already got its own fresh baseline
+  // this instant, so drifting it again immediately would be double-dipping.
+  if (nextLeague === career.currentTeam.league && currentTeam.id === career.currentTeam.id) {
+    const lastResult = career.lastSeasonResult;
+    const wonTitle = lastResult?.trophies.some((t) => t.id.includes('-champion')) ?? false;
+    const rankTilt = !lastResult
+      ? 0
+      : wonTitle
+        ? 6
+        : lastResult.classementRank <= Math.ceil(lastResult.classementTotal * 0.25)
+          ? 3
+          : lastResult.classementRank >= Math.floor(lastResult.classementTotal * 0.75)
+            ? -3
+            : 0;
+    currentTeam = {
+      ...currentTeam,
+      ambition: clampStat(currentTeam.ambition + rankTilt + randFloat(-4, 4)),
+      coachQuality: clampStat(currentTeam.coachQuality + rankTilt * 0.7 + randFloat(-4, 4)),
+      mediaExposure: clampStat(currentTeam.mediaExposure + (wonTitle ? 5 : 0) + randFloat(-3, 3)),
+    };
   }
   let stats = career.stats;
   if (justDrafted) {

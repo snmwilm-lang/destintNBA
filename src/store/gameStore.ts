@@ -373,7 +373,7 @@ export const useGameStore = create<GameStore>()(
             // on whether the choice actually won — see PLAYOFF_RUN_TRANSITIONS. Round 3 specifically
             // gets swapped for the rival-fanbase version once that rivalry has genuinely escalated.
             const playoffRunTransition = PLAYOFF_RUN_TRANSITIONS[event.id];
-            const rawPlayoffRunNext = playoffRunTransition
+            const pendingPlayoffRunEventId = playoffRunTransition
               ? outcome.wasSuccess
                 ? (event.id === 'playoffs-run-round2' &&
                   c.rivalryProvoked &&
@@ -387,14 +387,6 @@ export const useGameStore = create<GameStore>()(
                 event.id === c.pendingPlayoffRunEventId
                 ? null
                 : c.pendingPlayoffRunEventId;
-            // forcedMilestone's pendingPlayoffRunEventId check is unconditional (top priority, no
-            // meetsRequirements pass) — a playoff-run hand-off into the Finals chain must enforce
-            // the same career-wide 3-title cap that normal finale-prequel-timeout draws already
-            // get in meetsRequirements, or a run-heavy career can sneak a 4th+ title straight past
-            // that cap (confirmed via simulation: max titles hit 4 before this guard).
-            const priorTitles = c.trophies.filter((t) => t.id.includes('-champion')).length;
-            const pendingPlayoffRunEventId =
-              rawPlayoffRunNext === 'finale-prequel-timeout' && priorTitles >= 3 ? null : rawPlayoffRunNext;
             const hasBeenSelectedForJo = c.hasBeenSelectedForJo || selectionCompetition === 'jeuxOlympiques';
             const hasBeenSelectedForCdm = c.hasBeenSelectedForCdm || selectionCompetition === 'coupeDuMonde';
             // The rival showdown resolving is what actually consumes one of the career's two
